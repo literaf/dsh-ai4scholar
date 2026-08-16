@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly canary against the latest dsh prerelease: the harness is in developer
+    # preview and its client/tool APIs move; this run fails early when they do.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm test
+      - name: pack (publish dry run)
+        run: pnpm pack --pack-destination /tmp
+
+  canary:
+    name: canary against dsh@next
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: bump every @deepseek-ai/* dev dependency to the next tag
+        run: |
+          set -euo pipefail
+          pkgs=$(node -e 'const p=require("./package.json");console.log(Object.keys(p.devDependencies).filter(k=>k.startsWith("@deepseek-ai/")).map(k=>k+"@next").join(" "))')
+          pnpm add -D $pkgs
+      - run: pnpm run typecheck
+      - run: pnpm test

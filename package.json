@@ -1,0 +1,143 @@
+{
+  "name": "dsh-ai4scholar",
+  "version": "0.2.0",
+  "description": "AI4Scholar for DeepSeek Harness (dsh): 37 native academic tools — Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, DOI resolution, PDF full text, auto-cite, scientific figures, credit balance — with an API-key card in the Web UI settings. Powered by ai4scholar.net.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ai4scholar",
+  "homepage": "https://ai4scholar.net?src=dsh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/literaf/ai4scholar-plugin-dsh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/literaf/ai4scholar-plugin-dsh/issues"
+  },
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client-types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README_CN.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "ai4scholar",
+    "academic",
+    "literature",
+    "paper-search",
+    "semantic-scholar",
+    "pubmed",
+    "google-scholar",
+    "arxiv",
+    "biorxiv",
+    "medrxiv",
+    "doi",
+    "auto-cite",
+    "scientific-figures",
+    "citation-graph"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm run build:lib && pnpm run build:client",
+    "build:lib": "tsc -p tsconfig.build.json",
+    "build:client": "tsdown && tsc -p tsconfig.client-types.json",
+    "clean": "rm -rf lib",
+    "typecheck": "tsc -p tsconfig.json",
+    "pretest": "pnpm run build",
+    "test": "vitest run",
+    "prepare": "pnpm run build",
+    "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm run test"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1",
+    "@deepseek-ai/dsh-commands": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.6",
+    "@deepseek-ai/schemastery": ">=3.18.1",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-host-webserver": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-commands": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-api-remotes": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-connection": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-web-react": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-commands": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "3.18.1",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.20.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "jsdom": "^26.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

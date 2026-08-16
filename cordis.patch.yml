@@ -1,0 +1,20 @@
+# dsh-ai4scholar bundle layer.
+#
+# `dsh plugin --profile <name> add dsh-ai4scholar` appends this layer to the
+# profile's `dsh.profile.bundles`. It inserts ONE row that mounts the plugin
+# with its shipped defaults; override any field from the profile's own
+# `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key
+# you keep):
+#
+#   - id: ai4scholar
+#     config:
+#       apiKeyEnv: AI4SCHOLAR_API_KEY
+#       defaultMaxResults: 20
+#       googleScholar: false
+#
+# The API key itself is never written here: the plugin resolves the reference
+# named by `apiKeyEnv` through the dsh credentials service (`$DSH_HOME/.credentials.yaml`
+# or the launching environment).
+- insert:
+    - id: ai4scholar
+      name: dsh-ai4scholar
