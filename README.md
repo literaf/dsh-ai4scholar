@@ -1,3 +1,4 @@
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
 # AI4Scholar for DeepSeek Harness
@@ -26,9 +27,9 @@ Every paper-list tool returns one normalized record shape — title, authors, ye
 
 ## Screenshots
 
-| Settings → Plugins card | Search results as citation cards | `/ai4scholar` balance card |
-|---|---|---|
-| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![search results](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/search-cards.png) | ![balance card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
+| Settings → Plugins card | `/ai4scholar` balance card |
+|---|---|
+| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![balance card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
 
 ## Install
 

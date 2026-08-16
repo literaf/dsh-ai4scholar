@@ -1,3 +1,4 @@
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
 # AI4Scholar × DeepSeek Harness
@@ -26,9 +27,9 @@
 
 ## 截图
 
-| 设置 → 插件 卡片 | 搜索结果引用卡片 | `/ai4scholar` 余额卡 |
-|---|---|---|
-| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![搜索结果](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/search-cards.png) | ![余额卡](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
+| 设置 → 插件 卡片 | `/ai4scholar` 余额卡 |
+|---|---|
+| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![余额卡](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
 
 ## 安装
 
