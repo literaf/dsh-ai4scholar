@@ -2,6 +2,12 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [Unreleased]
+
+### Changed
+- `postpublish` triggers and waits for the npmmirror sync, so installs from the default registry in China see a release within a minute.
+- README: complete quick start (Node, pnpm, dsh, plugin, keys) at the top of Install.
+
 ## [0.3.0] - 2026-08-16
 
 ### Added

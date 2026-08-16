@@ -35,16 +35,34 @@
 
 ## 安装
 
-前提：一个可运行的 `dsh`（见[官方 README](https://github.com/deepseek-ai/deepseek-harness/blob/master/README.zh.md#运行)）和一个 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取）。
+**快速开始**（macOS / Linux；Windows 用 PowerShell 同理）：
 
 ```sh
-dsh plugin --profile web add dsh-ai4scholar   # 装进你使用的 profile（web / headless / 自定义）
-dsh web                                       # 启动（或重启）dsh
+# 0. 前置：Node.js ≥ 22.19（或 ≥ 24）和 pnpm（dsh 用 pnpm 管理插件）
+node -v
+npm i -g pnpm                     # 已有可跳过
+
+# 1. 安装 DeepSeek Harness
+npm i -g @deepseek-ai/dsh
+dsh --version
+
+# 2. 安装本插件（装进 web profile；命令行一次性任务用 --profile headless）
+dsh plugin --profile web add dsh-ai4scholar
+
+# 3. 启动
+dsh web                           # 打印 http://127.0.0.1:3080
 ```
 
-然后打开 **设置 → 插件 → AI4Scholar**，粘贴 Key，点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600）——和模型页保存 DeepSeek Key 是同一个地方——下一次工具调用即生效，无需重启。保存后会立即测试这把 Key（`✓ Key 有效 · 可用积分 89,419`），也可以随时点「刷新」；浏览器始终拿不到 Key——检测走的是插件在宿主上的 `GET /ai4scholar/balance` 路由。
+然后在网页里配置一次：
 
-更喜欢文件或 CI 方式？插件解析的是凭据引用 `AI4SCHOLAR_API_KEY`，以下途径同样有效（优先级从高到低）：启动 dsh 的 shell 里 `export AI4SCHOLAR_API_KEY=…` · `$DSH_HOME/.credentials.yaml` 中一行 · 项目目录或 `$DSH_HOME` 下的 `.env` 中一行。卡片会显示当前 Key 来自哪一层；来自环境变量时卡片变为只读。
+1. **设置 → 模型**：填 DeepSeek API Key（[platform.deepseek.com](https://platform.deepseek.com) 获取）。
+2. **设置 → 插件 → AI4Scholar**：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。浏览器始终拿不到 Key——检测走的是插件在宿主上的 `GET /ai4scholar/balance` 路由。
+
+选一个工作区目录就可以直接提问了。升级：`dsh plugin --profile web add dsh-ai4scholar@latest`，然后重启 `dsh web`。
+
+更喜欢文件或 CI 方式？插件解析的是凭据引用 `AI4SCHOLAR_API_KEY`，以下途径同样有效（优先级从高到低）：启动 dsh 的 shell 里 `export AI4SCHOLAR_API_KEY=…` · `$DSH_HOME/.credentials.yaml` 中一行 · 项目目录或 `$DSH_HOME` 下的 `.env` 中一行。卡片会显示当前 Key 来自哪一层；来自环境变量时卡片变为只读。headless 没有设置页，请用其中一种。
+
+每次发布后会自动触发 npmmirror 同步，国内默认源一分钟内也能装到新版本。
 
 不启动也能验证配置层：`dsh --profile web --dump-config` 会打印出 `# == dsh-ai4scholar` 一节。
 

@@ -35,16 +35,34 @@ Every paper-list tool returns one normalized record shape — title, authors, ye
 
 ## Install
 
-You need a running `dsh` (see the [harness README](https://github.com/deepseek-ai/deepseek-harness#run)) and an AI4Scholar API key from [ai4scholar.net](https://ai4scholar.net?src=dsh).
+**Quick start** (macOS / Linux; Windows PowerShell is the same):
 
 ```sh
-dsh plugin --profile web add dsh-ai4scholar   # add to the profile you use (web, headless, or your own)
-dsh web                                       # start (or restart) dsh
+# 0. Prerequisites: Node.js ≥ 22.19 (or ≥ 24) and pnpm (dsh manages plugins with pnpm)
+node -v
+npm i -g pnpm                     # skip if you already have it
+
+# 1. DeepSeek Harness
+npm i -g @deepseek-ai/dsh
+dsh --version
+
+# 2. This plugin (into the web profile; use --profile headless for the CLI runner)
+dsh plugin --profile web add dsh-ai4scholar
+
+# 3. Start
+dsh web                           # prints http://127.0.0.1:3080
 ```
 
-Then open **Settings → Plugins → AI4Scholar**, paste the key, and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600) — the same place the Models page keeps provider keys — and it takes effect on the next tool call, no restart. Saving also tests the key at once (`✓ Key works · 89,419 credits available`), and a **Refresh** link re-checks any time; the browser never sees the key — the check goes through the plugin's host route `GET /ai4scholar/balance`.
+Then, once, in the browser:
 
-Prefer files or CI? The plugin resolves the credential reference `AI4SCHOLAR_API_KEY`, so any of these also work (highest precedence first): `export AI4SCHOLAR_API_KEY=…` in the shell that launches dsh · a line in `$DSH_HOME/.credentials.yaml` · a line in the project or `$DSH_HOME/.env`. The card reports which layer is supplying the key and goes read-only when the environment does.
+1. **Settings → Models** — paste your DeepSeek API key ([platform.deepseek.com](https://platform.deepseek.com)).
+2. **Settings → Plugins → AI4Scholar** — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. A **Refresh** link re-checks any time; the browser never sees the key (the check goes through the plugin's host route `GET /ai4scholar/balance`).
+
+Pick a workspace folder and ask away. Upgrades: `dsh plugin --profile web add dsh-ai4scholar@latest`, then restart `dsh web`.
+
+Prefer files or CI? The plugin resolves the credential reference `AI4SCHOLAR_API_KEY`, so any of these also work (highest precedence first): `export AI4SCHOLAR_API_KEY=…` in the shell that launches dsh · a line in `$DSH_HOME/.credentials.yaml` · a line in the project or `$DSH_HOME/.env`. The card reports which layer is supplying the key and goes read-only when the environment does. Headless has no settings page, so use one of these there.
+
+Releases are pushed to npmmirror right after publishing, so the default registry in China serves new versions within a minute as well.
 
 Verify the layer without booting: `dsh --profile web --dump-config` prints a `# == dsh-ai4scholar` section.
 

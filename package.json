@@ -1,7 +1,7 @@
 {
   "name": "dsh-ai4scholar",
   "version": "0.3.0",
-  "description": "AI4Scholar for DeepSeek Harness (dsh): 38 native academic tools \u2014 Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, DOI resolution, PDF full text, auto-cite, scientific figures, credit balance \u2014 with an API-key card in the Web UI settings. Powered by ai4scholar.net.",
+  "description": "AI4Scholar for DeepSeek Harness (dsh): 38 native academic tools — Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, DOI resolution, PDF full text, auto-cite, scientific figures, credit balance — with an API-key card in the Web UI settings. Powered by ai4scholar.net.",
   "type": "module",
   "license": "MIT",
   "author": "ai4scholar",
@@ -85,7 +85,9 @@
     "pretest": "pnpm run build",
     "test": "vitest run",
     "prepare": "pnpm run build",
-    "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm run test"
+    "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm run test",
+    "postpublish": "node scripts/sync-mirror.mjs",
+    "sync-mirror": "node scripts/sync-mirror.mjs"
   },
   "dependencies": {
     "pdf-parse": "^2.4.5"
