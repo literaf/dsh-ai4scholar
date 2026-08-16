@@ -281,10 +281,10 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
     const face = (entry.options.inject as () => Record<string, unknown>)()
     const render = async (outcome: unknown) => {
+      if (root !== undefined) await act(async () => { root!.unmount() })
       container?.remove()
       container = document.createElement('div')
       document.body.appendChild(container)
-      root?.unmount()
       root = createRoot(container)
       const node = { kind: 'command', seq: 1, time: 0, commandId: 'c', name: 'ai4scholar', args: '', outcome }
       await act(async () => { root!.render(createElement(entry.component as never, { t, node, ...face } as never)) })
