@@ -1,13 +1,13 @@
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
 # AI4Scholar for DeepSeek Harness
 
 English | [中文](README_CN.md)
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
 Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 38 native agent tools — the same coverage as the AI4Scholar plugins for OpenClaw, Codex, and Hermes. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
 
@@ -31,7 +31,7 @@ Every paper-list tool returns one normalized record shape — title, authors, ye
 
 | Settings → Plugins card | `/ai4scholar` balance card |
 |---|---|
-| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![balance card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
+| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![balance card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
 
 ## Install
 
@@ -135,10 +135,10 @@ pnpm test          # builds lib/ (Node half via tsc, browser bundle via tsdown),
 pnpm typecheck
 
 # try it in a dsh profile without publishing:
-dsh plugin --profile web add /absolute/path/to/ai4scholar-plugin-dsh
+dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ```
 
-`dsh plugin add github:<you>/ai4scholar-plugin-dsh` also works: the `prepare` script builds `lib/` from source, and pnpm asks you to allow it once via `allowBuilds` in the profile's `pnpm-workspace.yaml`.
+`dsh plugin add github:<you>/dsh-ai4scholar` also works: the `prepare` script builds `lib/` from source, and pnpm asks you to allow it once via `allowBuilds` in the profile's `pnpm-workspace.yaml`.
 
 ## Notes
 

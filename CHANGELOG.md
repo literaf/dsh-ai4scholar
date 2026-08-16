@@ -8,6 +8,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 - `postpublish` triggers and waits for the npmmirror sync, so installs from the default registry in China see a release within a minute.
 - README: complete quick start (Node, pnpm, dsh, plugin, keys) at the top of Install.
 
+## [0.3.1] - 2026-08-16
+
+### Changed
+- The repository is now `literaf/dsh-ai4scholar`, matching the npm package name; every link and image URL points at the new name rather than relying on GitHub's rename redirect.
+
 ## [0.3.0] - 2026-08-16
 
 ### Added

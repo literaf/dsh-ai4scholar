@@ -1,13 +1,13 @@
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
 # AI4Scholar × DeepSeek Harness
 
 [English](README.md) | 中文
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：38 个原生 agent 工具，覆盖面与 AI4Scholar 的 OpenClaw / Codex / Hermes 插件一致。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
 
@@ -31,7 +31,7 @@
 
 | 设置 → 插件 卡片 | `/ai4scholar` 余额卡 |
 |---|---|
-| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![余额卡](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
+| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![余额卡](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
 
 ## 安装
 
@@ -135,10 +135,10 @@ pnpm test          # 先构建 lib/（Node 半侧 tsc，浏览器 bundle tsdown�
 pnpm typecheck
 
 # 不发布也能在 dsh profile 中试用：
-dsh plugin --profile web add /absolute/path/to/ai4scholar-plugin-dsh
+dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ```
 
-也支持 `dsh plugin add github:<you>/ai4scholar-plugin-dsh`：`prepare` 脚本会从源码构建 `lib/`，pnpm 会要求你在 profile 的 `pnpm-workspace.yaml` 中通过 `allowBuilds` 授权一次。
+也支持 `dsh plugin add github:<you>/dsh-ai4scholar`：`prepare` 脚本会从源码构建 `lib/`，pnpm 会要求你在 profile 的 `pnpm-workspace.yaml` 中通过 `allowBuilds` 授权一次。
 
 ## 说明
 

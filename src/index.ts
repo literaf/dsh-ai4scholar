@@ -49,7 +49,7 @@ export const name = 'ai4scholar'
 export const inject = ['tools', 'systemPrompt']
 
 /** Version string sent as `User-Agent`; kept in sync with package.json by the release script. */
-export const VERSION = '0.3.0'
+export const VERSION = '0.3.1'
 
 /** Plugin configuration; every deployment-varying value is a field with a schema default. */
 export interface Config {
