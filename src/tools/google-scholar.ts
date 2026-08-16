@@ -18,7 +18,7 @@ import {
   renderPaperSearch,
   str,
 } from '../paper.js'
-import type { Paper } from '../paper.js'
+import type { Paper, PaperSearchValue } from '../paper.js'
 import { boundResults, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 
@@ -64,6 +64,77 @@ export function normalizeScholarResult(record: unknown): Paper | undefined {
   })
 }
 
+/** Parameters of one Google Scholar search. */
+export interface ScholarSearchParams {
+  query: string
+  /** Already bounded number of results wanted (fetched in pages of 10). */
+  wanted: number
+  yearFrom?: number | undefined
+  yearTo?: number | undefined
+}
+
+/**
+ * Run one Google Scholar search (shared by `search_google_scholar` and `search_papers`).
+ * @param runtime - plugin runtime.
+ * @param params - query, wanted count, and year range.
+ * @param signal - cancellation.
+ * @param agent - executing agent for the credit tally.
+ * @returns the normalized result set.
+ */
+export async function runScholarSearch(runtime: Runtime, params: ScholarSearchParams, signal: AbortSignal | undefined, agent: object | undefined): Promise<PaperSearchValue> {
+  const query = requireQuery(params.query)
+  const wanted = params.wanted
+  if (params.yearFrom !== undefined && params.yearTo !== undefined && params.yearFrom > params.yearTo) {
+    throw new Error('year_from must not be later than year_to')
+  }
+  const apiKey = await runtime.requireApiKey()
+  const papers: Paper[] = []
+  let page = 1
+  let exhausted = false
+  let firstError: string | undefined
+  let credits: ReturnType<Runtime['creditsOf']>
+  while (papers.length < wanted && !exhausted) {
+    signal?.throwIfAborted()
+    const body: Record<string, unknown> = { query, page }
+    if (params.yearFrom !== undefined) body.yearFrom = params.yearFrom
+    if (params.yearTo !== undefined) body.yearTo = params.yearTo
+    const res = await runtime.client.post<{ results?: unknown[]; resultsCount?: number }>('/google-scholar/v1/search', body, { apiKey, signal })
+    if (!res.ok) {
+      // A later page failing keeps the pages already fetched; the first page failing is the failure.
+      if (papers.length === 0) throw new Error(`Google Scholar search failed: ${res.error}`)
+      firstError = res.error
+      break
+    }
+    const pageCredits = runtime.creditsOf(res, agent)
+    if (pageCredits !== undefined) {
+      // Each page is one billed call: sum the charges, keep the latest balance.
+      credits = compact({
+        charged: (credits?.charged ?? 0) + (pageCredits.charged ?? 0),
+        remaining: pageCredits.remaining ?? credits?.remaining,
+        sessionTotal: pageCredits.sessionTotal ?? credits?.sessionTotal,
+      })
+    }
+    const batch = (res.data.results ?? []).map(normalizeScholarResult).filter((p): p is Paper => p !== undefined)
+    papers.push(...batch)
+    const pageCount = typeof res.data.resultsCount === 'number' ? res.data.resultsCount : batch.length
+    if (batch.length === 0 || pageCount < GS_PAGE_SIZE) exhausted = true
+    page += 1
+  }
+  const kept = papers.slice(0, wanted)
+  // Google Scholar reports no total; more may exist whenever the last page was full.
+  const truncated = !exhausted || papers.length > kept.length
+  return compact({
+    source: SOURCE,
+    query,
+    total: kept.length,
+    papers: kept,
+    truncated,
+    // A later page failing is a degraded success: keep the fetched pages and say why it stopped.
+    warning: firstError !== undefined ? `Pagination stopped early: ${firstError}` : undefined,
+    credits,
+  })
+}
+
 /**
  * Register the Google Scholar search tool.
  * @param ctx - context whose `tools` registry receives the effect-scoped registration.
@@ -91,60 +162,12 @@ export function applyGoogleScholarTools(ctx: Context, runtime: Runtime): void {
     presentCall: (args) => presentPaperSearchCall(SOURCE, args.query),
     presentResult: (args, result) => presentPaperSearchResult(SOURCE, args.query, result),
     async execute(args, exec) {
-      const query = requireQuery(args.query)
-      const wanted = boundResults(args.max_results, limits)
-      if (args.year_from !== undefined && args.year_to !== undefined && args.year_from > args.year_to) {
-        throw new Error('year_from must not be later than year_to')
-      }
-      const apiKey = await runtime.requireApiKey()
-      const papers: Paper[] = []
-      let page = 1
-      let exhausted = false
-      let firstError: string | undefined
-      let credits: ReturnType<Runtime['creditsOf']>
-      while (papers.length < wanted && !exhausted) {
-        exec.signal.throwIfAborted()
-        const body: Record<string, unknown> = { query, page }
-        if (args.year_from !== undefined) body.yearFrom = args.year_from
-        if (args.year_to !== undefined) body.yearTo = args.year_to
-        const res = await client.post<{ results?: unknown[]; resultsCount?: number }>('/google-scholar/v1/search', body, {
-          apiKey,
-          signal: exec.signal,
-        })
-        if (!res.ok) {
-          // A later page failing keeps the pages already fetched; the first page failing is the failure.
-          if (papers.length === 0) throw new Error(`Google Scholar search failed: ${res.error}`)
-          firstError = res.error
-          break
-        }
-        const pageCredits = runtime.creditsOf(res, exec.agent)
-        if (pageCredits !== undefined) {
-          // Each page is one billed call: sum the charges, keep the latest balance.
-          credits = compact({
-            charged: (credits?.charged ?? 0) + (pageCredits.charged ?? 0),
-            remaining: pageCredits.remaining ?? credits?.remaining,
-            sessionTotal: pageCredits.sessionTotal ?? credits?.sessionTotal,
-          })
-        }
-        const batch = (res.data.results ?? []).map(normalizeScholarResult).filter((p): p is Paper => p !== undefined)
-        papers.push(...batch)
-        const pageCount = typeof res.data.resultsCount === 'number' ? res.data.resultsCount : batch.length
-        if (batch.length === 0 || pageCount < GS_PAGE_SIZE) exhausted = true
-        page += 1
-      }
-      const kept = papers.slice(0, wanted)
-      // Google Scholar reports no total; more may exist whenever the last page was full.
-      const truncated = !exhausted || papers.length > kept.length
-      return compact({
-        source: SOURCE,
-        query,
-        total: kept.length,
-        papers: kept,
-        truncated,
-        // A later page failing is a degraded success: keep the fetched pages and say why it stopped.
-        warning: firstError !== undefined ? `Pagination stopped early: ${firstError}` : undefined,
-        credits,
-      })
+      return runScholarSearch(runtime, {
+        query: args.query,
+        wanted: boundResults(args.max_results, limits),
+        yearFrom: args.year_from,
+        yearTo: args.year_to,
+      }, exec.signal, exec.agent)
     },
   }))
 }

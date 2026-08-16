@@ -6,10 +6,11 @@ English | [中文](README_CN.md)
 
 [![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
-Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 37 native agent tools — the same coverage as the AI4Scholar plugins for OpenClaw, Codex, and Hermes. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
+Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 38 native agent tools — the same coverage as the AI4Scholar plugins for OpenClaw, Codex, and Hermes. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
 
 | Family | Tools | Cost |
 |---|---|---|
+| **All at once** | `search_papers` — one query across Semantic Scholar + PubMed (optionally arXiv, Google Scholar), duplicates merged by DOI / arXiv id / PMID / title, multi-platform hits ranked first | per platform |
 | **Semantic Scholar** (200M+ papers, all fields) | `search_semantic`, `search_semantic_bulk`, `search_semantic_snippets` (full-text excerpts), `search_semantic_paper_match` (title → paper), `get_semantic_paper_detail`, `get_semantic_paper_batch`, `get_semantic_citations`, `get_semantic_references`, `get_semantic_paper_authors`, `search_semantic_authors`, `get_semantic_author_detail`, `get_semantic_author_batch`, `get_semantic_author_papers`, `get_semantic_recommendations`, `get_semantic_recommendations_for_paper`, `download_semantic`, `read_semantic_paper` | credits |
 | **PubMed** (biomedical & life sciences) | `search_pubmed`, `get_pubmed_paper_detail`, `get_pubmed_paper_batch`, `get_pubmed_citations`, `get_pubmed_related` | credits |
 | **Google Scholar** (broadest coverage, cited-by counts) | `search_google_scholar` | credits |
@@ -22,6 +23,12 @@ Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/
 Every paper-list tool returns one normalized record shape — title, authors, year, venue, citation count, DOI/PMID/arXiv ids, URL, open-access PDF, abstract — so the model (and Code Mode programs) can chain calls across platforms without special cases. Results render as citation cards in the dsh Web UI; full-text tools return the PDF text in slices (`offset` / `max_chars`) so a 40-page paper never floods the context.
 
 **Credits are visible.** Every billed tool card in the chat carries the charge in its title (`Semantic Scholar: protein folding · 10 credits · 4,990 left`), the model-facing result ends with `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960` (from the API's `X-Credits-*` headers) and the model is asked to close a billed turn with a one-line credit note; `/ai4scholar` renders a balance card (available credits, breakdown, membership, key status, session spend) and `get_ai4scholar_credits` gives the model the same numbers. Free platforms (arXiv, bioRxiv/medRxiv, DOI) carry no credit line.
+
+## Screenshots
+
+| Settings → Plugins card | Search results as citation cards | `/ai4scholar` balance card |
+|---|---|---|
+| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![search results](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/search-cards.png) | ![balance card](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
 
 ## Install
 

@@ -6,10 +6,11 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：37 个原生 agent 工具，覆盖面与 AI4Scholar 的 OpenClaw / Codex / Hermes 插件一致。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
+为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：38 个原生 agent 工具，覆盖面与 AI4Scholar 的 OpenClaw / Codex / Hermes 插件一致。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
 
 | 家族 | 工具 | 计费 |
 |---|---|---|
+| **一次全查** | `search_papers`——一次调用查 Semantic Scholar + PubMed（可选 arXiv、Google Scholar），按 DOI / arXiv id / PMID / 标题去重合并，多平台同时命中的排前面 | 按平台计 |
 | **Semantic Scholar**（2 亿+ 论文，全学科） | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
 | **PubMed**（生物医学） | `search_pubmed`、`get_pubmed_paper_detail`、`get_pubmed_paper_batch`、`get_pubmed_citations`、`get_pubmed_related` | 积分 |
 | **Google Scholar**（覆盖面最广，含被引数） | `search_google_scholar` | 积分 |
@@ -22,6 +23,12 @@
 所有论文列表类工具返回统一的结构——标题、作者、年份、期刊/会议、被引数、DOI/PMID/arXiv 等标识、链接、开放获取 PDF、摘要——模型（以及 Code Mode 程序）可以跨平台链式调用而无需特判。结果在 dsh Web UI 中渲染为引用卡片；全文类工具按片段返回（`offset` / `max_chars`），40 页的论文不会一次冲爆上下文。
 
 **积分看得见。** 对话里每张计费工具卡片的标题都带本次消耗（`Semantic Scholar: protein folding · 10 credits · 4,990 left`）；模型看到的结果末尾有 `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960`（来自 API 的 `X-Credits-*` 响应头），并且提示词要求模型在用了计费工具的回合结尾用一句话汇报本轮消耗与余额；`/ai4scholar` 渲染成余额卡片（可用积分、明细、会员、Key 状态、本会话消耗），`get_ai4scholar_credits` 给模型同样的数字。免费源（arXiv、bioRxiv/medRxiv、DOI）不带积分行。
+
+## 截图
+
+| 设置 → 插件 卡片 | 搜索结果引用卡片 | `/ai4scholar` 余额卡 |
+|---|---|---|
+| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/settings-card.png) | ![搜索结果](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/search-cards.png) | ![余额卡](https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/balance-card.png) |
 
 ## 安装
 

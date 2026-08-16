@@ -25,6 +25,7 @@ import { applyDoiTools } from './tools/doi.js'
 import { applyAutoCiteTool } from './tools/auto-cite.js'
 import { applySciDrawTool } from './tools/sci-draw.js'
 import { applyCreditsTools } from './tools/credits.js'
+import { applyUnifiedSearchTool } from './tools/unified.js'
 
 export { Ai4ScholarClient } from './api-client.js'
 export type { ApiClientOptions, ApiResult, RequestOptions, CreditsInfo } from './api-client.js'
@@ -36,6 +37,7 @@ export { normalizeScholarResult } from './tools/google-scholar.js'
 export { parseArxivFeed, normalizeArxivId } from './tools/arxiv.js'
 export { normalizeRxivPaper, normalizeRxivDoi } from './tools/rxiv.js'
 export { normalizeDoi } from './tools/doi.js'
+export { mergePaperLists, identityKeys, titleKey, UNIFIED_SOURCES } from './tools/unified.js'
 export { READ_OUTPUT_SCHEMA, sliceText, pdfCandidatesFor } from './pdf.js'
 export { CreditLedger } from './runtime.js'
 export { buildGuidance } from './prompt.js'
@@ -47,7 +49,7 @@ export const name = 'ai4scholar'
 export const inject = ['tools', 'systemPrompt']
 
 /** Version string sent as `User-Agent`; kept in sync with package.json by the release script. */
-export const VERSION = '0.2.0'
+export const VERSION = '0.3.0'
 
 /** Plugin configuration; every deployment-varying value is a field with a schema default. */
 export interface Config {
@@ -73,6 +75,8 @@ export interface Config {
   autoCite?: boolean
   /** Register `sci_draw`. */
   sciDraw?: boolean
+  /** Register `search_papers` (unified cross-platform search over the enabled families). */
+  unifiedSearch?: boolean
   /** Register `get_ai4scholar_credits`. */
   creditsTool?: boolean
   /** Register the `/ai4scholar` command (needs the commands service). */
@@ -119,6 +123,7 @@ export const Config: Schema<Config> = Schema.object({
   fullText: Schema.boolean().default(true).description('Register the full-text read_* tools.'),
   autoCite: Schema.boolean().default(true).description('Register auto_cite.'),
   sciDraw: Schema.boolean().default(true).description('Register sci_draw.'),
+  unifiedSearch: Schema.boolean().default(true).description('Register search_papers (unified cross-platform search).'),
   creditsTool: Schema.boolean().default(true).description('Register get_ai4scholar_credits.'),
   command: Schema.boolean().default(true).description('Register the /ai4scholar command.'),
   balanceRoute: Schema.boolean().default(true).description('Register GET /ai4scholar/balance for the settings card.'),
@@ -199,6 +204,14 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.arxiv) applyArxivTools(ctx, runtime, resolved.fullText)
   if (resolved.biorxiv) applyRxivTools(ctx, runtime, resolved.fullText)
   if (resolved.doi) applyDoiTools(ctx, runtime, resolved.fullText)
+  if (resolved.unifiedSearch) {
+    applyUnifiedSearchTool(ctx, runtime, {
+      'semantic-scholar': resolved.semanticScholar,
+      'pubmed': resolved.pubmed,
+      'arxiv': resolved.arxiv,
+      'google-scholar': resolved.googleScholar,
+    })
+  }
   if (resolved.autoCite) applyAutoCiteTool(ctx, runtime)
   if (resolved.sciDraw) applySciDrawTool(ctx, runtime)
   if (resolved.creditsTool || resolved.command || resolved.balanceRoute) applyCreditsTools(ctx, runtime, resolved.command, resolved.creditsTool, resolved.balanceRoute)
@@ -215,6 +228,7 @@ export function apply(ctx: Context, config: Config): void {
       autoCite: resolved.autoCite,
       sciDraw: resolved.sciDraw,
       credits: resolved.creditsTool,
+      unified: resolved.unifiedSearch,
     })
     if (text !== undefined) ctx.systemPrompt.section({ name: 'tool:ai4scholar', order: resolved.promptOrder, text })
   }

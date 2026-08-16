@@ -10,6 +10,7 @@ import {
   PAPER_SEARCH_OUTPUT_SCHEMA,
   compact,
   creditsMeta,
+  decodeEntities,
   int,
   isRecord,
   paperSearchMeta,
@@ -40,8 +41,9 @@ const PUBMED_BATCH_CAP = 200
 export function normalizePubmedPaper(record: unknown): Paper | undefined {
   if (!isRecord(record)) return undefined
   const pmid = str(record, 'pmid')
-  const title = str(record, 'title')
-  if (pmid === undefined || title === undefined) return undefined
+  const rawTitle = str(record, 'title')
+  if (pmid === undefined || rawTitle === undefined) return undefined
+  const title = decodeEntities(rawTitle)
   const authors = Array.isArray(record.authors)
     ? record.authors.flatMap((a) => {
       if (typeof a === 'string') return a.trim().length > 0 ? [a.trim()] : []
@@ -51,7 +53,9 @@ export function normalizePubmedPaper(record: unknown): Paper | undefined {
     })
     : []
   const journal = isRecord(record.journal) ? record.journal : undefined
-  const venue = journal !== undefined ? str(journal, 'title') ?? str(journal, 'name') : str(record, 'journal')
+  const rawVenue = journal !== undefined ? str(journal, 'title') ?? str(journal, 'name') : str(record, 'journal')
+  const venue = rawVenue !== undefined ? decodeEntities(rawVenue) : undefined
+  const rawAbstract = str(record, 'abstract')
   const date = str(record, 'pubDate') ?? (journal !== undefined ? str(journal, 'pubDate') : undefined)
   const yearMatch = date !== undefined ? /\d{4}/.exec(date) : null
   const year = int(record, 'year') ?? (yearMatch !== null ? Number.parseInt(yearMatch[0], 10) : undefined)
@@ -67,7 +71,7 @@ export function normalizePubmedPaper(record: unknown): Paper | undefined {
     year,
     date,
     venue,
-    abstract: str(record, 'abstract'),
+    abstract: rawAbstract !== undefined ? decodeEntities(rawAbstract) : undefined,
     citationCount: int(record, 'citationCount'),
     doi,
     url: str(record, 'url') ?? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
@@ -86,6 +90,46 @@ function paperRows(data: unknown): unknown[] {
     if (Array.isArray(data.data)) return data.data
   }
   return []
+}
+
+/** Parameters of one PubMed search. */
+export interface PubmedSearchParams {
+  query: string
+  /** Already bounded page size. */
+  limit: number
+  offset?: number | undefined
+  sort?: 'relevance' | 'date' | undefined
+  /** `YYYY`, `YYYY/MM`, or `YYYY/MM/DD`. */
+  minDate?: string | undefined
+  maxDate?: string | undefined
+}
+
+/**
+ * Run one PubMed search (shared by `search_pubmed` and `search_papers`).
+ * @param runtime - plugin runtime.
+ * @param params - query, paging, sort, and date range.
+ * @param signal - cancellation.
+ * @param agent - executing agent for the credit tally.
+ * @returns the normalized page.
+ */
+export async function runPubmedSearch(runtime: Runtime, params: PubmedSearchParams, signal: AbortSignal | undefined, agent: object | undefined): Promise<PaperSearchValue> {
+  const query = requireQuery(params.query)
+  const offset = params.offset !== undefined && params.offset > 0 ? Math.trunc(params.offset) : 0
+  for (const [name, value] of [['min_date', params.minDate], ['max_date', params.maxDate]] as const) {
+    if (value !== undefined && value.trim().length > 0 && !PUBMED_DATE.test(value.trim())) {
+      throw new Error(`${name} must be YYYY, YYYY/MM, or YYYY/MM/DD`)
+    }
+  }
+  const apiKey = await runtime.requireApiKey()
+  const body: Record<string, unknown> = { query, limit: params.limit, offset, sort: params.sort ?? 'relevance' }
+  if (params.minDate !== undefined && params.minDate.trim().length > 0) body.minDate = params.minDate.trim()
+  if (params.maxDate !== undefined && params.maxDate.trim().length > 0) body.maxDate = params.maxDate.trim()
+  const res = await runtime.client.post<{ papers?: unknown[]; total?: number }>('/pubmed/v1/paper/search', body, { apiKey, signal })
+  if (!res.ok) throw new Error(`PubMed search failed: ${res.error}`)
+  const papers = paperRows(res.data).map(normalizePubmedPaper).filter((p): p is Paper => p !== undefined)
+  const total = typeof res.data.total === 'number' ? res.data.total : offset + papers.length
+  const truncated = offset + papers.length < total
+  return compact({ source: SOURCE, query, total, papers, truncated, nextOffset: truncated ? offset + papers.length : undefined, credits: runtime.creditsOf(res, agent) })
 }
 
 /**
@@ -122,23 +166,14 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     presentCall: (args) => presentPaperSearchCall(SOURCE, args.query),
     presentResult: (args, result) => presentPaperSearchResult(SOURCE, args.query, result),
     async execute(args, exec) {
-      const query = requireQuery(args.query)
-      const limit = boundResults(args.max_results, limits)
-      const offset = args.offset !== undefined && args.offset > 0 ? Math.trunc(args.offset) : 0
-      for (const [name, value] of [['min_date', args.min_date], ['max_date', args.max_date]] as const) {
-        if (value !== undefined && value.trim().length > 0 && !PUBMED_DATE.test(value.trim())) {
-          throw new Error(`${name} must be YYYY, YYYY/MM, or YYYY/MM/DD`)
-        }
-      }
-      const apiKey = await runtime.requireApiKey()
-      const body: Record<string, unknown> = { query, limit, offset, sort: args.sort ?? 'relevance' }
-      if (args.min_date !== undefined && args.min_date.trim().length > 0) body.minDate = args.min_date.trim()
-      if (args.max_date !== undefined && args.max_date.trim().length > 0) body.maxDate = args.max_date.trim()
-      const res = await client.post<{ papers?: unknown[]; total?: number }>('/pubmed/v1/paper/search', body, { apiKey, signal: exec.signal })
-      if (!res.ok) throw new Error(`PubMed search failed: ${res.error}`)
-      const papers = paperRows(res.data).map(normalizePubmedPaper).filter((p): p is Paper => p !== undefined)
-      const total = typeof res.data.total === 'number' ? res.data.total : offset + papers.length
-      return listValue(query, papers, total, offset, runtime.creditsOf(res, exec.agent))
+      return runPubmedSearch(runtime, {
+        query: args.query,
+        limit: boundResults(args.max_results, limits),
+        offset: args.offset,
+        sort: args.sort,
+        minDate: args.min_date,
+        maxDate: args.max_date,
+      }, exec.signal, exec.agent)
     },
   }))
 

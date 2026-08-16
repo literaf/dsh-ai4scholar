@@ -203,6 +203,6 @@ describe('client copy and styles', () => {
   })
 
   it('guidance still lists the search tools (sanity)', () => {
-    expect(buildGuidance({ semanticScholar: true, pubmed: false, googleScholar: false, arxiv: false, biorxiv: false, doi: false, fullText: false, autoCite: false, sciDraw: false, credits: false })).toContain('search_semantic')
+    expect(buildGuidance({ semanticScholar: true, pubmed: false, googleScholar: false, arxiv: false, biorxiv: false, doi: false, fullText: false, autoCite: false, sciDraw: false, credits: false, unified: false })).toContain('search_semantic')
   })
 })

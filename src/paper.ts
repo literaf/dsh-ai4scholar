@@ -119,6 +119,17 @@ export function compact<T extends Record<string, unknown>>(record: T): { [K in k
   return out as { [K in keyof T]: Exclude<T[K], undefined> }
 }
 
+const NAMED_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', beta: 'β', alpha: 'α', gamma: 'γ', delta: 'δ', micro: 'µ', deg: '°', plusmn: '±', times: '×' }
+
+/** Decode the HTML entities some platform payloads (PubMed) leave in titles and abstracts. */
+export function decodeEntities(text: string): string {
+  if (!text.includes('&')) return text
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replace(/&([a-z]+);/gi, (m, name: string) => NAMED_ENTITIES[name.toLowerCase()] ?? m)
+}
+
 /** Read a string field from an untyped platform record; blank strings count as absent. */
 export function str(record: Record<string, unknown>, key: string): string | undefined {
   const value = record[key]
@@ -269,7 +280,7 @@ export function presentPaperSearchCall(source: PaperSource, query: string): Gene
 }
 
 /** Project a paper into the `web` card's source shape (as plain JSON for the persisted meta). */
-function paperToSource(paper: Paper): Record<string, string> {
+export function paperToSource(paper: Paper): Record<string, string> {
   const snippetParts: string[] = [formatAuthors(paper.authors)]
   if (paper.venue !== undefined) snippetParts.push(paper.venue)
   if (paper.citationCount !== undefined) snippetParts.push(`${paper.citationCount} citations`)
@@ -284,7 +295,12 @@ function paperToSource(paper: Paper): Record<string, string> {
 
 /** Replayable presentation meta for a paper-list result: the structured sources, the truncation flag, and the credits. */
 export function paperSearchMeta(value: PaperSearchValue): JsonValue {
-  return { sources: value.papers.map(paperToSource), truncated: value.truncated, ...creditsMeta(value) }
+  return paperListMeta(value.papers, value.truncated, value.credits)
+}
+
+/** Replayable presentation meta for any paper list (shared by platform searches and the unified search). */
+export function paperListMeta(papers: readonly Paper[], truncated: boolean, credits: CreditsValue | undefined): JsonValue {
+  return { sources: papers.map(paperToSource), truncated, ...creditsMeta({ credits }) }
 }
 
 /** The `credits` member of a presentation meta object (empty when the value carries none). */
@@ -337,6 +353,16 @@ function toWebSource(value: unknown): WebSource | undefined {
  * meta is malformed, e.g. a log written by a different plugin version.
  */
 export function presentPaperSearchResult(source: PaperSource, query: string, result: ToolResult): WebSearchResultView | undefined {
+  return presentPaperListResult(`${SOURCE_LABEL[source]}: ${query}`, result)
+}
+
+/**
+ * Completed-call `web` search card for any paper list, titled by the caller.
+ * @param title - card title without the credit suffix.
+ * @param result - the final tool result whose meta carries the sources.
+ * @returns the card, or `undefined` (generic card) on failure or malformed meta.
+ */
+export function presentPaperListResult(title: string, result: ToolResult): WebSearchResultView | undefined {
   if (result.isError || !isRecord(result.meta)) return undefined
   const { sources: rawSources, truncated } = result.meta
   if (!Array.isArray(rawSources) || typeof truncated !== 'boolean') return undefined
@@ -346,5 +372,5 @@ export function presentPaperSearchResult(source: PaperSource, query: string, res
     if (source === undefined) return undefined
     sources.push(source)
   }
-  return { card: 'web', kind: 'search', title: `${SOURCE_LABEL[source]}: ${query}${creditsTitleSuffix(result.meta)}`, sources, truncated }
+  return { card: 'web', kind: 'search', title: `${title}${creditsTitleSuffix(result.meta)}`, sources, truncated }
 }

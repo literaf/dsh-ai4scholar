@@ -16,6 +16,7 @@ export interface EnabledFamilies {
   autoCite: boolean
   sciDraw: boolean
   credits: boolean
+  unified: boolean
 }
 
 /**
@@ -25,6 +26,10 @@ export interface EnabledFamilies {
  */
 export function buildGuidance(enabled: EnabledFamilies): string | undefined {
   const lines: string[] = []
+  const anySearch = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.arxiv
+  if (enabled.unified && anySearch) {
+    lines.push('- search_papers: one call queries several platforms (default Semantic Scholar + PubMed; add arxiv / google-scholar via sources) and merges duplicates, ranking papers found on more than one platform first — a good first call for a new topic. Use the platform tools below for filters, sorting, and paging.')
+  }
   // Full-text tools exist only under a family that ships PDFs.
   const fullText = enabled.fullText && (enabled.semanticScholar || enabled.arxiv || enabled.biorxiv || enabled.doi)
   if (enabled.semanticScholar) {

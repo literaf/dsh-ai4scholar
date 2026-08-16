@@ -24,7 +24,7 @@ describe.skipIf(!existsSync(LIB_ENTRY))('built plugin in the real tool runtime',
 
     const fiber = await ctx.plugin(plugin, { googleScholar: false })
     const names = ctx.tools.schemas().map((s) => s.name).sort()
-    expect(names).toHaveLength(36) // 37 defaults minus search_google_scholar
+    expect(names).toHaveLength(37) // 38 defaults minus search_google_scholar
     expect(names).not.toContain('search_google_scholar')
     for (const expected of ['search_semantic', 'search_pubmed', 'search_arxiv', 'read_by_doi', 'auto_cite', 'sci_draw', 'get_ai4scholar_credits']) expect(names).toContain(expected)
     const schema = ctx.tools.schemas().find((s) => s.name === 'search_semantic')!

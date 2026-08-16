@@ -13,7 +13,7 @@ import {
   presentPaperSearchResult,
   renderPaperSearch,
 } from '../paper.js'
-import type { Paper } from '../paper.js'
+import type { Paper, PaperSearchValue } from '../paper.js'
 import { READ_OUTPUT_SCHEMA, extractPdfText, fetchPdf, presentReadCall, renderRead, sliceText } from '../pdf.js'
 import { boundResults, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
@@ -100,6 +100,55 @@ export function parseArxivFeed(xml: string): { papers: Paper[]; total: number } 
   return { papers, total }
 }
 
+/** Parameters of one arXiv search. */
+export interface ArxivSearchParams {
+  query: string
+  /** Already bounded page size. */
+  limit: number
+  offset?: number | undefined
+  sortBy?: keyof typeof SORT_BY | undefined
+  /** `YYYY-MM-DD` lower bound on submission date. */
+  dateFrom?: string | undefined
+}
+
+/**
+ * Run one arXiv search (shared by `search_arxiv` and `search_papers`). Free; no key.
+ * @param runtime - plugin runtime (client only).
+ * @param params - query, paging, sort, and date bound.
+ * @param signal - cancellation.
+ * @returns the normalized page.
+ */
+export async function runArxivSearch(runtime: Runtime, params: ArxivSearchParams, signal: AbortSignal | undefined): Promise<PaperSearchValue> {
+  const query = requireQuery(params.query)
+  const offset = params.offset !== undefined && params.offset > 0 ? Math.trunc(params.offset) : 0
+  let searchQuery = query
+  if (params.dateFrom !== undefined && params.dateFrom.trim().length > 0) {
+    const d = params.dateFrom.trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error('date_from must be YYYY-MM-DD')
+    searchQuery = `(${query}) AND submittedDate:[${d.replace(/-/g, '')}0000 TO 99991231]`
+  }
+  const urlParams = new URLSearchParams({
+    search_query: searchQuery,
+    start: String(offset),
+    max_results: String(params.limit),
+    sortBy: SORT_BY[params.sortBy ?? 'relevance'],
+    sortOrder: 'descending',
+  })
+  const res = await runtime.client.fetchText(`${ARXIV_API}?${urlParams.toString()}`, { signal })
+  if (!res.ok) throw new Error(`arXiv search failed: ${res.error}`)
+  const { papers, total } = parseArxivFeed(res.data)
+  const reported = Math.max(total, offset + papers.length)
+  const truncated = offset + papers.length < reported
+  return compact({
+    source: SOURCE,
+    query,
+    total: reported,
+    papers,
+    truncated,
+    nextOffset: truncated ? offset + papers.length : undefined,
+  })
+}
+
 /**
  * Register the arXiv tools.
  * @param ctx - context whose `tools` registry receives the effect-scoped registrations.
@@ -129,35 +178,13 @@ export function applyArxivTools(ctx: Context, runtime: Runtime, fullText: boolea
     presentCall: (args) => presentPaperSearchCall(SOURCE, args.query),
     presentResult: (args, result) => presentPaperSearchResult(SOURCE, args.query, result),
     async execute(args, exec) {
-      const query = requireQuery(args.query)
-      const limit = boundResults(args.max_results, limits, ARXIV_PAGE_CAP)
-      const offset = args.offset !== undefined && args.offset > 0 ? Math.trunc(args.offset) : 0
-      let searchQuery = query
-      if (args.date_from !== undefined && args.date_from.trim().length > 0) {
-        const d = args.date_from.trim()
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error('date_from must be YYYY-MM-DD')
-        searchQuery = `(${query}) AND submittedDate:[${d.replace(/-/g, '')}0000 TO 99991231]`
-      }
-      const params = new URLSearchParams({
-        search_query: searchQuery,
-        start: String(offset),
-        max_results: String(limit),
-        sortBy: SORT_BY[args.sort_by ?? 'relevance'],
-        sortOrder: 'descending',
-      })
-      const res = await client.fetchText(`${ARXIV_API}?${params.toString()}`, { signal: exec.signal })
-      if (!res.ok) throw new Error(`arXiv search failed: ${res.error}`)
-      const { papers, total } = parseArxivFeed(res.data)
-      const reported = Math.max(total, offset + papers.length)
-      const truncated = offset + papers.length < reported
-      return compact({
-        source: SOURCE,
-        query,
-        total: reported,
-        papers,
-        truncated,
-        nextOffset: truncated ? offset + papers.length : undefined,
-      })
+      return runArxivSearch(runtime, {
+        query: args.query,
+        limit: boundResults(args.max_results, limits, ARXIV_PAGE_CAP),
+        offset: args.offset,
+        sortBy: args.sort_by,
+        dateFrom: args.date_from,
+      }, exec.signal)
     },
   }))
 

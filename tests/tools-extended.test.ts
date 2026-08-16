@@ -538,6 +538,16 @@ describe('sci_draw', () => {
   })
 })
 
+describe('PubMed entity decoding', () => {
+  it('decodes hex, decimal, and named entities in titles and abstracts', async () => {
+    const { normalizePubmedPaper } = await import('../src/tools/pubmed.js')
+    const paper = normalizePubmedPaper({ pmid: '1', title: 'Gene Editing for &#x3b2;-Thalassemia &amp; SCD &#946;', abstract: 'IL-6 &gt; 10 pg/mL', journal: { title: 'Nature &amp; Science' } })!
+    expect(paper.title).toBe('Gene Editing for β-Thalassemia & SCD β')
+    expect(paper.abstract).toBe('IL-6 > 10 pg/mL')
+    expect(paper.venue).toBe('Nature & Science')
+  })
+})
+
 describe('sliceText', () => {
   it('clamps offsets and reports continuation', () => {
     expect(sliceText('abcdef', undefined, 4)).toEqual({ totalChars: 6, offset: 0, text: 'abcd', truncated: true, nextOffset: 4 })

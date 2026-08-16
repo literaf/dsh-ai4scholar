@@ -53,7 +53,7 @@ const S2_PAPER_BATCH_CAP = 500
 const S2_AUTHOR_BATCH_CAP = 1000
 
 /** Year filter syntax accepted by the Graph API: `2019`, `2016-2020`, `2010-`, `-2015`. */
-const YEAR_FILTER = /^(\d{4}(-\d{4}?)?|-\d{4})$/
+const YEAR_FILTER = /^(\d{4}(-(\d{4})?)?|-\d{4})$/
 
 function authorNames(value: unknown): string[] {
   return Array.isArray(value)
@@ -328,6 +328,44 @@ function listValue(query: string, papers: Paper[], total: number, offset: number
   })
 }
 
+/** Parameters of one Semantic Scholar paper search. */
+export interface SemanticSearchParams {
+  query: string
+  /** Already bounded page size. */
+  limit: number
+  offset?: number | undefined
+  /** Graph API year filter: `2019`, `2016-2020`, `2010-`, `-2015`. */
+  year?: string | undefined
+}
+
+/**
+ * Run one Semantic Scholar paper search (shared by `search_semantic` and `search_papers`).
+ * @param runtime - plugin runtime.
+ * @param params - query and paging.
+ * @param signal - cancellation.
+ * @param agent - executing agent for the credit tally.
+ * @returns the normalized page.
+ */
+export async function runSemanticSearch(runtime: Runtime, params: SemanticSearchParams, signal: AbortSignal | undefined, agent: object | undefined): Promise<PaperSearchValue> {
+  const query = requireQuery(params.query)
+  const offset = params.offset !== undefined && params.offset > 0 ? Math.trunc(params.offset) : 0
+  const year = params.year?.trim()
+  if (year !== undefined && year.length > 0 && !YEAR_FILTER.test(year)) {
+    throw new Error('year must look like "2019", "2016-2020", "2010-", or "-2015"')
+  }
+  const apiKey = await runtime.requireApiKey()
+  const res = await runtime.client.get<{ data?: unknown[]; total?: number; next?: number }>('/graph/v1/paper/search', {
+    apiKey,
+    signal,
+    query: { query, limit: params.limit, offset, fields: PAPER_FIELDS, year: year !== undefined && year.length > 0 ? year : undefined },
+  })
+  if (!res.ok) throw new Error(`Semantic Scholar search failed: ${res.error}`)
+  const papers = (res.data.data ?? []).map((p) => normalizeS2Paper(p)).filter((p): p is Paper => p !== undefined)
+  const total = typeof res.data.total === 'number' ? res.data.total : offset + papers.length
+  const next = typeof res.data.next === 'number' ? res.data.next : undefined
+  return listValue(query, papers, total, offset, runtime.creditsOf(res, agent), next)
+}
+
 /**
  * Register the Semantic Scholar tools.
  * @param ctx - context whose `tools` registry receives the effect-scoped registrations.
@@ -359,24 +397,12 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     presentCall: (args) => presentPaperSearchCall(SOURCE, args.query),
     presentResult: (args, result) => presentPaperSearchResult(SOURCE, args.query, result),
     async execute(args, exec) {
-      const query = requireQuery(args.query)
-      const limit = boundResults(args.max_results, limits, S2_SEARCH_PAGE_CAP)
-      const offset = args.offset !== undefined && args.offset > 0 ? Math.trunc(args.offset) : 0
-      const year = args.year?.trim()
-      if (year !== undefined && year.length > 0 && !YEAR_FILTER.test(year)) {
-        throw new Error('year must look like "2019", "2016-2020", "2010-", or "-2015"')
-      }
-      const apiKey = await runtime.requireApiKey()
-      const res = await client.get<{ data?: unknown[]; total?: number; next?: number }>('/graph/v1/paper/search', {
-        apiKey,
-        signal: exec.signal,
-        query: { query, limit, offset, fields: PAPER_FIELDS, year: year !== undefined && year.length > 0 ? year : undefined },
-      })
-      if (!res.ok) throw new Error(`Semantic Scholar search failed: ${res.error}`)
-      const papers = (res.data.data ?? []).map((p) => normalizeS2Paper(p)).filter((p): p is Paper => p !== undefined)
-      const total = typeof res.data.total === 'number' ? res.data.total : offset + papers.length
-      const next = typeof res.data.next === 'number' ? res.data.next : undefined
-      return listValue(query, papers, total, offset, runtime.creditsOf(res, exec.agent), next)
+      return runSemanticSearch(runtime, {
+        query: args.query,
+        limit: boundResults(args.max_results, limits, S2_SEARCH_PAGE_CAP),
+        offset: args.offset,
+        year: args.year,
+      }, exec.signal, exec.agent)
     },
   }))
 
@@ -591,9 +617,9 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
         })
         if (!res.ok) throw new Error(`Semantic Scholar ${endpoint} lookup failed: ${res.error}`)
         const papers = (res.data.data ?? []).map((row) => normalizeEdge(row, side)).filter((p): p is Paper => p !== undefined)
+        // The graph endpoints report no total: `next` only says another page exists.
         const next = typeof res.data.next === 'number' ? res.data.next : undefined
-        const total = next !== undefined ? next + 1 : offset + papers.length
-        return listValue(`${endpoint} of ${paperId}`, papers, total, offset, runtime.creditsOf(res, exec.agent), next)
+        return listValue(`${endpoint} of ${paperId}`, papers, offset + papers.length, offset, runtime.creditsOf(res, exec.agent), next)
       },
     }))
   }
@@ -627,7 +653,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
       const authors = (res.data.data ?? []).map(normalizeS2Author).filter((a): a is Author => a !== undefined)
       const next = typeof res.data.next === 'number' ? res.data.next : undefined
       const truncated = next !== undefined
-      return compact({ query: paperId, total: truncated ? next + 1 : offset + authors.length, authors, truncated, nextOffset: truncated ? next : undefined, credits: runtime.creditsOf(res, exec.agent) })
+      return compact({ query: paperId, total: offset + authors.length, authors, truncated, nextOffset: truncated ? next : undefined, credits: runtime.creditsOf(res, exec.agent) })
     },
   }))
 
@@ -752,7 +778,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
       if (!res.ok) throw new Error(`Semantic Scholar author papers lookup failed: ${res.error}`)
       const papers = (res.data.data ?? []).map((p) => normalizeS2Paper(p)).filter((p): p is Paper => p !== undefined)
       const next = typeof res.data.next === 'number' ? res.data.next : undefined
-      return listValue(`papers of author ${authorId}`, papers, next !== undefined ? next + 1 : offset + papers.length, offset, runtime.creditsOf(res, exec.agent), next)
+      return listValue(`papers of author ${authorId}`, papers, offset + papers.length, offset, runtime.creditsOf(res, exec.agent), next)
     },
   }))
 

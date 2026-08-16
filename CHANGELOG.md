@@ -2,6 +2,17 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.3.0] - 2026-08-16
+
+### Added
+- `search_papers`: one query across several platforms (default Semantic Scholar + PubMed; `sources` may add arXiv and Google Scholar), merged and de-duplicated by DOI / arXiv id / PMID / normalized title; papers found on more than one platform rank first, then each platform's own relevance rank, then citations. Per-platform counts and failures are reported; credits are summed. Config `unifiedSearch`.
+- Screenshots in the README.
+
+### Fixed
+- Semantic Scholar year filters with an open end (`2022-`, `-2015`) were rejected by the validator.
+- Citation/reference/author-paper lists no longer invent a total from the platform's `next` cursor; they report the returned count and a continuation offset.
+- PubMed titles, abstracts, and journal names decode HTML entities (`&#x3b2;` → `β`).
+
 ## [0.2.0] - 2026-08-16
 
 ### Added
