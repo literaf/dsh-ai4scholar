@@ -17,6 +17,9 @@ import type { Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 
 // jsdom rewrites import.meta.url to the page origin, so anchor on the project root instead.
+// React's act() checks this flag; without it every act() call logs a warning.
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
 const BUNDLE = resolve(process.cwd(), 'lib/client.js')
 const require = createRequire(resolve(process.cwd(), 'package.json'))
 
