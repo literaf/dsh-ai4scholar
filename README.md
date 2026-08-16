@@ -7,6 +7,8 @@ English | [中文](README_CN.md)
 
 [![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/ai4scholar-plugin-dsh/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
+<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/ai4scholar-plugin-dsh/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+
 Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 38 native agent tools — the same coverage as the AI4Scholar plugins for OpenClaw, Codex, and Hermes. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
 
 | Family | Tools | Cost |
