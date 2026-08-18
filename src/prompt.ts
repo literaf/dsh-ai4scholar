@@ -28,7 +28,17 @@ export function buildGuidance(enabled: EnabledFamilies): string | undefined {
   const lines: string[] = []
   const anySearch = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.arxiv
   if (enabled.unified && anySearch) {
-    lines.push('- search_papers: one call queries several platforms (default Semantic Scholar + PubMed; add arxiv / google-scholar via sources) and merges duplicates, ranking papers found on more than one platform first — a good first call for a new topic. Use the platform tools below for filters, sorting, and paging.')
+    // Name only the billed search tools that are actually mounted: this line
+    // must never tell the model about a tool the composition disabled.
+    const billed = [
+      enabled.semanticScholar ? 'search_semantic' : undefined,
+      enabled.pubmed ? 'search_pubmed' : undefined,
+      enabled.googleScholar ? 'search_google_scholar' : undefined,
+    ].filter((name) => name !== undefined)
+    const repeat = billed.length > 0
+      ? ` It already covers the platform tools, and re-running the same query through ${billed.join(' / ')} bills those credits a second time for the same papers.`
+      : ''
+    lines.push(`- search_papers: one call queries several platforms (default Semantic Scholar + PubMed) and merges duplicates, ranking papers found on more than one platform first. For a plain topic search make this the ONLY search call.${repeat} Want more platforms in the sweep? Add them via sources in the same call. Reach for a platform search tool only for what search_papers lacks: its filters, sorting, paging, or a follow-up query.`)
   }
   // Full-text tools exist only under a family that ships PDFs.
   const fullText = enabled.fullText && (enabled.semanticScholar || enabled.arxiv || enabled.biorxiv || enabled.doi)

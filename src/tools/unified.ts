@@ -220,7 +220,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
 
   ctx.tools.register(defineTool({
     name: 'search_papers',
-    description: `Search several platforms in one call and merge the results: duplicates are collapsed by DOI / arXiv id / PMID / title, papers found on more than one platform rank first, then by citation count. Good first call for a topic; use the platform tools for filters and paging. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}; arXiv is free, the others cost credits, Google Scholar is slowest).`,
+    description: `Search several platforms in one call and merge the results: duplicates are collapsed by DOI / arXiv id / PMID / title, papers found on more than one platform rank first, then by citation count. For a plain topic search this call REPLACES the per-platform search tools — do not also run the same query through them, that repeats the charge; add extra platforms via sources instead. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}; arXiv is free, the others cost credits, Google Scholar is slowest).`,
     parameters: {
       query: { type: 'string', required: true, description: 'Topic or keywords; sent to every selected platform as-is.' },
       sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}).` },
