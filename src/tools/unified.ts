@@ -61,10 +61,37 @@ const OUTPUT_SCHEMA = {
 } as const
 type UnifiedValue = InferValue<typeof OUTPUT_SCHEMA>
 
-/** Lower-cased alphanumeric title for near-duplicate matching. */
+/**
+ * Normalized title for near-duplicate matching.
+ *
+ * NFKC runs first because the same title arrives composed from one platform
+ * and decomposed from another — "é" as one code point, or as "e" followed by
+ * U+0301 — and full-width from a third. Without it those are three different
+ * keys and one paper is listed three times.
+ *
+ * Then keep letters and digits of any script. The previous rule kept only
+ * `[a-z0-9]` plus the CJK Unified Ideographs block, which erased a Russian or
+ * Greek title down to the empty string (no title key at all, so those papers
+ * could only ever dedup by DOI) and quietly dropped every accent out of a
+ * French or German one.
+ *
+ * Sliced by code point rather than UTF-16 unit so an astral character is never
+ * cut in half.
+ */
 export function titleKey(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, '').slice(0, 120)
+  const folded = title.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  return Array.from(folded).slice(0, 120).join('')
 }
+
+/**
+ * Title keys shorter than this are not used: "introduction" and "deep
+ * learning" are real titles that different papers share, and a wrong merge
+ * hides a paper, which is worse than showing a duplicate. Counted in code
+ * points, so a CJK title is measured in characters — which does mean a short
+ * Chinese title dedups by identifier only. That is the conservative side of
+ * the same trade.
+ */
+const MIN_TITLE_KEY = 12
 
 /** Every identity key of one paper: DOI, arXiv id, PMID, and the normalized title. */
 export function identityKeys(paper: Paper): string[] {
@@ -76,7 +103,7 @@ export function identityKeys(paper: Paper): string[] {
   const pmid = paper.source === 'pubmed' ? paper.id : typeof paper.externalIds?.PubMed === 'string' ? paper.externalIds.PubMed : undefined
   if (pmid !== undefined) keys.push(`pmid:${pmid}`)
   const t = titleKey(paper.title)
-  if (t.length >= 12) keys.push(`title:${t}`)
+  if (Array.from(t).length >= MIN_TITLE_KEY) keys.push(`title:${t}`)
   return keys
 }
 

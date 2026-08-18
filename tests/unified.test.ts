@@ -27,6 +27,35 @@ describe('merge logic', () => {
     expect(identityKeys(paper({ source: 'pubmed', id: '99', title: 'Some reasonably long title here' }))).toEqual(['pmid:99', 'title:somereasonablylongtitlehere'])
   })
 
+  it('normalizes titles across scripts and Unicode forms', () => {
+    // The same paper arrives composed from one platform and decomposed from
+    // another. Before NFKC these produced 'rseaux…' and 'reseaux…' — two keys,
+    // one paper listed twice.
+    const composed = 'R\u00e9seaux de neurones convolutifs profonds'
+    const decomposed = 'Re\u0301seaux de neurones convolutifs profonds'
+    expect(composed).not.toBe(decomposed)
+    expect(titleKey(composed)).toBe(titleKey(decomposed))
+    expect(titleKey(composed)).toBe('réseauxdeneuronesconvolutifsprofonds')
+
+    // Full-width forms fold to their half-width equivalents.
+    expect(titleKey('ＡＩ在科研中的应用')).toBe(titleKey('AI在科研中的应用'))
+
+    // Non-Latin scripts survive. The old rule left these empty, which dropped
+    // the title key entirely and left DOI as the only way to dedup them.
+    expect(titleKey('Нейронные сети глубокого обучения')).toBe('нейронныесетиглубокогообучения')
+    expect(titleKey('Μελέτη των νευρωνικών δικτύων')).toBe('μελέτητωννευρωνικώνδικτύων')
+    expect(identityKeys(paper({ source: 'google-scholar', id: 'g1', title: 'Нейронные сети глубокого обучения' })))
+      .toEqual(['title:нейронныесетиглубокогообучения'])
+
+    // Accents are kept rather than stripped, so two different words stay two
+    // different keys.
+    expect(titleKey('Über die Grössenordnung der Moleküle')).toBe('überdiegrössenordnungdermoleküle')
+
+    // Short titles still dedup by identifier only, counted in code points.
+    expect(identityKeys(paper({ source: 'arxiv', id: '2401.00001', title: '深度学习综述' })))
+      .toEqual(['arxiv:2401.00001'])
+  })
+
   it('collapses duplicates across lists, unions ids/sources, keeps the best fields, and ranks multi-hits first', () => {
     const s2 = [
       paper({ source: 'semantic-scholar', id: 'a', title: 'Attention Is All You Need', doi: '10.1/x', citationCount: 100, year: 2017 }),
