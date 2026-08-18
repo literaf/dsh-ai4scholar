@@ -18,13 +18,15 @@ export interface FakeContext {
   sections: PromptSection[]
   commands: Map<string, CommandDefinition>
   routes: Map<string, FakeRoute>
+  settingsNamespaces: Map<string, unknown>
 }
 
-export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean } = {}): FakeContext {
+export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean } = {}): FakeContext {
   const tools = new Map<string, ToolDefinition>()
   const sections: PromptSection[] = []
   const commands = new Map<string, CommandDefinition>()
   const routes = new Map<string, FakeRoute>()
+  const settingsNamespaces = new Map<string, unknown>()
   const apiKey = options.apiKey
   const credentials = options.credentialsSeam === false
     ? undefined
@@ -52,8 +54,15 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
     inject(deps: string[], callback: (child: unknown) => void) {
       if (deps.includes('commands') && options.commands === false) return
       if (deps.includes('webServer') && options.webServer === false) return
+      if (deps.includes('settings') && options.settings === false) return
       callback({
         ...ctx,
+        settings: {
+          register(namespace: string, schema: unknown) {
+            settingsNamespaces.set(namespace, schema)
+            return { get: () => ({}), watch: () => () => undefined }
+          },
+        },
         commands: {
           register(definition: CommandDefinition) {
             if (commands.has(definition.name)) throw new Error(`duplicate command ${definition.name}`)
@@ -71,11 +80,11 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
       })
     },
   } as unknown as Context
-  return { ctx, tools, sections, commands, routes }
+  return { ctx, tools, sections, commands, routes, settingsNamespaces }
 }
 
 /** Mount the plugin with schemastery defaults applied over `overrides`. */
-export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean } = { apiKey: 'test-key' }): FakeContext {
+export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean } = { apiKey: 'test-key' }): FakeContext {
   const fake = fakeContext(options)
   const config = new Config(overrides)
   apply(fake.ctx, config)

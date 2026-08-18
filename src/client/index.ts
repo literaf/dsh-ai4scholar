@@ -74,12 +74,23 @@ export function apply(ctx: ClientContext): void {
     testKey: () => { void controller.testKey() },
   })
 
+  // dsh ≤0.1.0-rc.6 declares `settings.plugin.item` as a list slot — register
+  // throws without `id`. rc.7 redeclared it keyed by the settings namespace
+  // the card edits — register throws without `key`, and because loader
+  // entries apply at boot, that single throw took the whole web client down
+  // ("failed to apply loader entry … requires options.key"). Each kind checks
+  // only its own field and ignores the other, so sending both works on every
+  // dsh this package supports. The spread hides `key` from the rc.6 typings
+  // this package builds against; the value must equal the namespace the host
+  // half registers with the settings service, or rc.7 never dispatches the
+  // card.
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     id: 'ai4scholar',
     order: 100,
     locale: NS,
     inject: face,
+    ...({ key: 'ai4scholar' } as object),
   }, Ai4ScholarCard))
 
   // The `/ai4scholar` command row: a balance card instead of the generic

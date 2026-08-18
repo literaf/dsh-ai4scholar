@@ -187,7 +187,11 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(document.head.querySelector('style[data-plugin="dsh-ai4scholar"]')).not.toBeNull()
     expect(Object.keys(fake.remoteHandlers)).toEqual(['credentials/updated'])
     expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'settings.plugin.item'])
-    expect(fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!.options).toMatchObject({ id: 'ai4scholar', order: 100, locale: 'ai4scholar' })
+    expect(fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!.options).toMatchObject({ id: 'ai4scholar', key: 'ai4scholar', order: 100, locale: 'ai4scholar' })
+    // Both identity fields, deliberately: dsh ≤rc.6 declares the slot as a
+    // list (register throws without `id`), rc.7 declares it keyed by the
+    // settings namespace (throws without `key`, which is how #user-report
+    // "failed to apply loader entry … requires options.key" happened).
     await flush()
     expect(fake.api.calls[0]).toEqual({ method: 'describe', payload: { refs: ['AI4SCHOLAR_API_KEY'] } })
 

@@ -408,3 +408,16 @@ describe('search_google_scholar', () => {
     await expect(tool.execute({ query: 'x', year_from: 2025, year_to: 2020 }, runContext())).rejects.toThrow(/year_from/)
   })
 })
+
+describe('settings namespace (rc.7 keyed card pairing)', () => {
+  it('registers the ai4scholar namespace when the settings service is composed', () => {
+    const fake = mount()
+    expect([...fake.settingsNamespaces.keys()]).toContain('ai4scholar')
+  })
+
+  it('mounts cleanly when the deployment has no settings service', () => {
+    const fake = mount({}, { apiKey: 'test-key', settings: false })
+    expect(fake.settingsNamespaces.size).toBe(0)
+    expect(fake.tools.size).toBeGreaterThan(0)
+  })
+})

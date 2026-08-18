@@ -232,4 +232,18 @@ export function apply(ctx: Context, config: Config): void {
     })
     if (text !== undefined) ctx.systemPrompt.section({ name: 'tool:ai4scholar', order: resolved.promptOrder, text })
   }
+
+  // From dsh 0.1.0-rc.7 the Settings → Plugins tab renders the intersection
+  // of two ledgers: cards registered under `settings.plugin.item` and the
+  // namespaces the Host's settings service serves. The card is in the browser
+  // bundle; this is the other half — a namespace whose only job is to make
+  // "ai4scholar" a served key, so the key card keeps appearing. The API key
+  // itself stays in the credentials store and never enters settings. On rc.6
+  // and earlier the tab rendered every card unconditionally and this
+  // registration is inert; in a deployment with no settings service the
+  // callback simply never runs.
+  ctx.inject(['settings'], (settingsCtx) => {
+    const service = (settingsCtx as Context & { settings: { register(namespace: string, schema: unknown): unknown } }).settings
+    service.register('ai4scholar', Schema.object({}).description('AI4Scholar — configured through its Settings card; the API key lives in the credential store.'))
+  })
 }

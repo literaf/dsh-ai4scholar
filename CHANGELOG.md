@@ -4,6 +4,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-08-18
+
+### Fixed
+- On DeepSeek Harness 0.1.0-rc.7 the web client failed to load with `keyed slot "settings.plugin.item" requires options.key`: rc.7 redeclared that slot keyed by settings namespace where earlier releases declared it as a list. The card now registers with both identity fields (`id` for ≤rc.6, `key` for rc.7), and the host half registers an `ai4scholar` settings namespace so rc.7's namespace-paired tab still dispatches the card. The API key continues to live in the credential store only.
+
 ## [0.3.2] - 2026-08-18
 
 ### Fixed
