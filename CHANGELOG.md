@@ -4,7 +4,13 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-18
+
+### Fixed
+- Title de-duplication in `search_papers` now normalizes Unicode (NFKC, any script's letters and digits, sliced by code point). Previously Russian and Greek titles produced no title key at all — they could only ever dedup by DOI — accents were stripped from French and German titles, and the same paper arriving composed from one platform and decomposed from another was listed twice.
+
 ### Changed
+- Prompt guidance and the `search_papers` description now state the exclusion outright: for a plain topic search, `search_papers` is the only search call — re-running the same query through a per-platform search tool repeats the charge; extra platforms belong in `sources` on the same call. Observed in a real session: `search_papers` (Semantic Scholar + PubMed) plus a parallel `search_semantic` with the same query billed Semantic Scholar twice for the same papers.
 - `postpublish` triggers and waits for the npmmirror sync, so installs from the default registry in China see a release within a minute.
 - README: complete quick start (Node, pnpm, dsh, plugin, keys) at the top of Install.
 
