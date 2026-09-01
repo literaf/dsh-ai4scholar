@@ -101,7 +101,7 @@ function fakeModernApi(initial: { configured?: boolean; source?: string; writabl
       state.source = undefined
     },
   }
-  return { port: () => resolveCredentialsPort({ remote: { credentials } }), calls, state }
+  return { port: () => resolveCredentialsPort({ remoteCredentials: credentials }), calls, state }
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -142,7 +142,7 @@ describe('resolveCredentialsPort', () => {
     expect(controller.store.getSnapshot()).toMatchObject({ configured: false, notice: { kind: 'removed' } })
   })
 
-  it('prefers remote.credentials when a host carries both faces', async () => {
+  it('prefers the alpha face when a host carries both', async () => {
     // A host mid-migration keeps the newer face; picking the legacy one would
     // work today and break on the build that finishes removing it.
     const reached: string[] = []
@@ -153,7 +153,7 @@ describe('resolveCredentialsPort', () => {
     })
     const port = resolveCredentialsPort({
       connection: { api: { credentials: face('legacy') } },
-      remote: { credentials: face('modern') },
+      remoteCredentials: face('modern'),
     })
     await port.describe('AI4SCHOLAR_API_KEY')
     expect(reached).toEqual(['modern'])
@@ -163,7 +163,7 @@ describe('resolveCredentialsPort', () => {
     // What the desktop app actually presented: a bare
     // "Cannot read properties of undefined (reading 'credentials')". The card
     // now explains itself, and says so before anything is typed.
-    expect(() => resolveCredentialsPort({ connection: {}, remote: {} })).toThrow(/no credentials API/)
+    expect(() => resolveCredentialsPort({ connection: {}, remoteCredentials: undefined })).toThrow(/no credentials API/)
 
     const controller = new ApiKeyCardController(() => resolveCredentialsPort({}), 'AI4SCHOLAR_API_KEY')
     await controller.refresh()
@@ -176,7 +176,7 @@ describe('resolveCredentialsPort', () => {
   it('ignores a partial face rather than half-using it', () => {
     // A face missing a method is not a contract; falling back is safer than
     // discovering the gap on the user's first remove().
-    expect(() => resolveCredentialsPort({ remote: { credentials: { describe: async () => ({ ok: true, value: {} }) } } })).toThrow(/no credentials API/)
+    expect(() => resolveCredentialsPort({ remoteCredentials: { describe: async () => ({ ok: true, value: {} }) } })).toThrow(/no credentials API/)
   })
 })
 

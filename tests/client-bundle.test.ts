@@ -128,6 +128,11 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
       // `api`. That is the shape that produced "Cannot read properties of
       // undefined (reading 'credentials')", so it is emulated exactly.
       if (name === 'connection') return host === 'desktop' ? { isLoopback: true, rpc: {} } : { api }
+      // The alpha credentials domain is a *flat store entry* under a dotted
+      // name, reachable only through `ctx.get()`. Serving it here rather than as
+      // a property of `remote` is what the real host does; see the throwing
+      // proxy below for the other half of that shape.
+      if (name === 'remote.credentials' && host === 'desktop') return remoteCredentials
       return undefined
     },
     locale: {
@@ -142,13 +147,23 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
         }
       },
     },
-    remote: {
+    // `remote` is a cordis Service on a real host, so its traceable proxy
+    // rewrites `.credentials` into a guarded `Reflect.get(ctx,
+    // "remote.credentials")` and throws without that name injected. A plain
+    // object with a nested `credentials` would let the bundle pass here while
+    // every save failed on the desktop app — that is how the guard bug shipped —
+    // so the guard is emulated instead of the nesting.
+    remote: new Proxy({
       $on(event: string, handler: (arg: string) => void) {
         remoteHandlers[event] = handler
         return () => { delete remoteHandlers[event] }
       },
-      ...(host === 'desktop' ? { credentials: remoteCredentials } : {}),
-    },
+    } as Record<string, unknown>, {
+      get(target, prop, receiver) {
+        if (prop === 'credentials') throw new Error('cannot get property "remote.credentials" without inject')
+        return Reflect.get(target, prop, receiver)
+      },
+    }),
     slots: {
       inject(name: string, callback: () => (() => void) | Iterable<() => void>) {
         if (!declared.has(name)) throw new Error(`slot ${name} not declared`)

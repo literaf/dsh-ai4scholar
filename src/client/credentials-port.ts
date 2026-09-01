@@ -10,7 +10,7 @@
  *     set({ ref, value })   unset({ ref })      event: credentials/updated
  *
  *   ≥0.1.2-alpha (what DSH Desktop 2.0.4 bundles — alpha.1)
- *     ctx.remote.credentials
+ *     ctx.get('remote.credentials')
  *     describe([ref]) -> { ok, value: { [ref]: view } }
  *     set(ref, value)       unset(ref)          event: credentials/reference-updated
  *
@@ -20,13 +20,25 @@
  * The view payload is identical on both (configured / source? / writable), so
  * only the call shape and the envelope need bridging.
  *
+ * The alpha face is passed in already resolved, and this module never dots into
+ * `ctx.remote` to find it. `remote` is a cordis Service registering its
+ * sub-domains as flat store entries under dotted names, and reading `.credentials`
+ * off it goes through the traceable proxy, which rewrites the access into
+ * `Reflect.get(ctx, 'remote.credentials')` — a *guarded* context read. Without
+ * that exact name in `inject` the guard throws
+ * "cannot get property "remote.credentials" without inject", which is what the
+ * desktop app reported after the first fix. `ctx.get(name)` reads the same flat
+ * store with no inject requirement, returning undefined instead of throwing when
+ * the name is absent, so the caller resolves it that way.
+ *
  * Resolved per call, never captured at apply() time, for two reasons:
  *   - which face exists is a property of the host, not of our plugin, and on the
  *     desktop app the answer is not the one the types promise;
  *   - the alternative — declaring `remote.credentials` in `inject` — would make
  *     cordis withhold apply() entirely on stable dsh, where that service does
- *     not exist. The card would vanish with no message at all, which is a worse
- *     failure than the one being fixed.
+ *     not exist (cordis 4.0.x has no optional inject: every declared name is
+ *     required and checked). The card would vanish with no message at all, which
+ *     is a worse failure than the one being fixed.
  * @module dsh-ai4scholar/client/credentials-port
  */
 
@@ -67,8 +79,12 @@ export type CredentialsPortSource = () => CredentialsPort
 export interface CredentialsFaces {
   /** `ctx.get('connection')` — carries `.api.credentials` up to 0.1.1-rc.2. */
   connection?: unknown
-  /** `ctx.remote` — carries `.credentials` from 0.1.2-alpha. */
-  remote?: unknown
+  /**
+   * `ctx.get('remote.credentials')` from 0.1.2-alpha — the service itself, already
+   * resolved. Deliberately not `ctx.remote`: see the module note on why dotting
+   * into that proxy throws on the very host this face exists to support.
+   */
+  remoteCredentials?: unknown
 }
 
 /** Narrow an unknown to something with a readable property, without `any`. */
@@ -103,7 +119,7 @@ const METHODS = ['describe', 'set', 'unset'] as const
  */
 class NoCredentialsFace extends Error {
   constructor() {
-    super('this dsh build exposes no credentials API (neither connection.api.credentials nor remote.credentials) — the plugin cannot store the key here')
+    super('this dsh build exposes no credentials API (neither connection.api.credentials nor the remote.credentials service) — the plugin cannot store the key here')
     this.name = 'NoCredentialsFace'
   }
 }
@@ -178,14 +194,14 @@ function modernPort(credentials: ModernFace): CredentialsPort {
 /**
  * Pick the face this host actually has.
  *
- * `remote.credentials` is preferred: a host carrying both is mid-migration, and
- * the newer face is the one it will keep.
- * @param faces - the two candidate hosts, as read from the client context.
+ * The alpha face is preferred: a host carrying both is mid-migration, and the
+ * newer face is the one it will keep.
+ * @param faces - the two candidate faces, as resolved from the client context.
  * @returns a port for whichever contract is present.
  * @throws NoCredentialsFace when neither is.
  */
 export function resolveCredentialsPort(faces: CredentialsFaces): CredentialsPort {
-  const modern = at(faces.remote, 'credentials')
+  const modern = faces.remoteCredentials
   if (callable(modern, METHODS)) return modernPort(modern as ModernFace)
 
   const legacy = at(at(faces.connection, 'api'), 'credentials')

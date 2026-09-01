@@ -21,6 +21,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
+import { Context, Service } from '@deepseek-ai/cordis'
 import { resolveCredentialsPort } from '../src/client/credentials-port.js'
 import type { CredentialsFaces } from '../src/client/credentials-port.js'
 
@@ -81,19 +82,19 @@ function legacyFaces(log: Call[]): CredentialsFaces {
     },
     async set(arg: unknown) { log.push(['set', arg]); return { rpcId: 'r', result: { ok: true, value: {} } } },
     async unset(arg: unknown) { log.push(['unset', arg]); return { rpcId: 'r', result: { ok: true, value: {} } } },
-  } } }, remote: {} }
+  } } } }
 }
 
 /** The ≥0.1.2-alpha face: positional arguments, bare envelope, void writes. */
 function modernFaces(log: Call[]): CredentialsFaces {
-  return { remote: { credentials: {
+  return { remoteCredentials: {
     async describe(refs: string[]) {
       log.push(['describe', refs])
       return { ok: true, value: { [refs[0] ?? '']: { configured: true, source: 'file', writable: true } } }
     },
     async set(ref: string, value: string) { log.push(['set', { ref, value }]) },
     async unset(ref: string) { log.push(['unset', { ref }]) },
-  } }, connection: {} }
+  }, connection: {} }
 }
 
 const REF = 'AI4SCHOLAR_API_KEY'
@@ -136,5 +137,95 @@ describe('installed dsh credentials contracts', () => {
     if (version === undefined) console.log('   (DSH Desktop.app not installed; its contract was not exercised)')
     else console.log(`   (DSH Desktop.app ships dsh-client-connection ${version}: ${String(contractOf(desktop.dir))})`)
     expect(true).toBe(true)
+  })
+})
+
+/**
+ * How the alpha face is *reached*, against a real cordis context.
+ *
+ * The cases above pass plain objects to the port, which is why they stayed green
+ * through a bug that broke every save on the desktop app: a plain object has no
+ * cordis proxy, so reading `.credentials` off a fake `remote` is an ordinary
+ * property access. On a real host `remote` is a `Service`, its sub-domains are
+ * separate flat store entries under dotted names, and the traceable proxy
+ * rewrites `ctx.remote.credentials` into a *guarded* `Reflect.get(ctx,
+ * "remote.credentials")` that throws unless that exact name is injected. These
+ * assertions pin the access path itself, so swapping it back for the obvious
+ * dotted read goes red here instead of in a user's settings pane.
+ */
+describe('reaching the alpha face on a real cordis context', () => {
+  class Remote extends Service<unknown> {
+    constructor(ctx: Context) { super(ctx, 'remote') }
+  }
+
+  /** The desktop's `remote.credentials`: one dotted store key, not a nested object. */
+  class RemoteCredentials extends Service<unknown> {
+    constructor(ctx: Context) { super(ctx, 'remote.credentials') }
+    calls: string[] = []
+    async describe(refs: string[]) {
+      this.calls.push('describe')
+      return { ok: true, value: { [refs[0] ?? '']: { configured: true, source: 'file', writable: true } } }
+    }
+    async set(ref: string, _value: string) { this.calls.push(`set:${ref}`) }
+    async unset(ref: string) { this.calls.push(`unset:${ref}`) }
+  }
+
+  /**
+   * Run `body` in a consumer fiber whose inject list matches `src/client/index.ts`
+   * minus the browser-only services, with both host services provided.
+   * @param body - receives the consumer context, as the entry's `apply` would.
+   */
+  async function withHost(body: (ctx: Context) => void | Promise<void>): Promise<void> {
+    const root = new Context()
+    await root.plugin(Remote).await()
+    await root.plugin(RemoteCredentials).await()
+
+    // The context is captured out of the fiber and the body awaited outside it,
+    // rather than run inside the callback: an `apply` body is sync-called and its
+    // returned promise is not awaited by cordis, so a rejected assertion there
+    // would be swallowed and the test would pass while asserting nothing.
+    let captured: Context | undefined
+    const consumer = root.inject(['remote'], (ctx: Context) => { captured = ctx })
+    await consumer.await()
+    expect(captured, 'consumer fiber never applied').toBeDefined()
+    await body(captured as Context)
+  }
+
+  it('throws the reported error when dotting into ctx.remote', async () => {
+    await withHost((ctx) => {
+      // Verbatim the message the desktop app surfaced as "保存失败".
+      expect(() => (ctx as unknown as { remote: { credentials: unknown } }).remote.credentials)
+        .toThrow(/cannot get property "remote\.credentials" without inject/)
+    })
+  })
+
+  it('resolves the face with ctx.get and drives describe/set/unset', async () => {
+    await withHost(async (ctx) => {
+      const faces: CredentialsFaces = {
+        connection: ctx.get('connection'),
+        remoteCredentials: ctx.get('remote.credentials'),
+      }
+      // A host with only the alpha face: nothing legacy to fall back to.
+      expect(faces.connection).toBeUndefined()
+      expect(faces.remoteCredentials).toBeDefined()
+
+      const port = resolveCredentialsPort(faces)
+      expect(await port.describe(REF)).toEqual({ configured: true, source: 'file', writable: true })
+      await port.set(REF, 'sk-test')
+      await port.unset(REF)
+
+      const service = faces.remoteCredentials as RemoteCredentials
+      expect(service.calls).toEqual(['describe', `set:${REF}`, `unset:${REF}`])
+    })
+  })
+
+  it('reports the cordis it ran against', () => {
+    // Desktop 2.0.4 bundles 4.0.1, this repo builds against 4.0.2, and neither
+    // has optional inject — the constraint that rules out injecting the dotted
+    // name to satisfy the guard. A future cordis adding it would let the entry
+    // declare `remote.credentials` instead; this line is where that shows up.
+    const version = versionOf('node_modules/@deepseek-ai', 'cordis')
+    console.log(`   (guard behaviour verified against cordis ${String(version)})`)
+    expect(version).toBeDefined()
   })
 })

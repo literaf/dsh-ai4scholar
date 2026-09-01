@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai4scholar",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "AI4Scholar for DeepSeek Harness (dsh): 38 native academic tools — Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, DOI resolution, PDF full text, auto-cite, scientific figures, credit balance — with an API-key card in the Web UI settings. Powered by ai4scholar.net.",
   "type": "module",
   "license": "MIT",

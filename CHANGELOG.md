@@ -4,6 +4,14 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-09-01
+
+### Fixed
+- Saving the API key in DSH Desktop still failed after 0.3.4, now with `保存失败: cannot get property "remote.credentials" without inject`. The alpha credentials service is present on that host; cordis simply refuses the read. `remote` is a cordis `Service` that registers its sub-domains as *flat* store entries under dotted names, so `ctx.remote.credentials` is not an ordinary property access — the traceable proxy rewrites it into a guarded `Reflect.get(ctx, "remote.credentials")`, which throws unless that exact name is in `inject`. The card now resolves the service with `ctx.get('remote.credentials')`, which reads the same store without the inject requirement and returns `undefined` (rather than throwing) on hosts that lack it. Declaring the dotted name in `inject` was rejected as the fix: cordis 4.0.x has no optional inject, so it would withhold `apply()` on every host without the service and the card would vanish silently instead of erroring.
+
+### Changed
+- The credentials adapter takes the alpha face already resolved (`remoteCredentials`) instead of taking `ctx.remote` and dotting into it, so no code path can reach the guard. The host-contract and bundle tests now exercise a real cordis `Context` and a `remote` that throws the guard message the way the desktop does; the previous plain-object fakes had no proxy, which is why 0.3.4 passed 85 tests and still broke every save. Reintroducing the dotted read now fails four tests.
+
 ## [0.3.4] - 2026-09-01
 
 ### Fixed

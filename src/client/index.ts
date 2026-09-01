@@ -55,12 +55,24 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'ai4scholar: settings card styles')
 
   // Resolved per call, not captured here: dsh 0.1.2-alpha removed
-  // `connection.api` and moved credentials to `ctx.remote.credentials`, so the
-  // face that exists depends on the build the plugin is loaded into. Reading it
-  // at apply() time is what made the desktop app report
+  // `connection.api` and moved credentials to a `remote.credentials` service, so
+  // the face that exists depends on the build the plugin is loaded into. Reading
+  // it at apply() time is what made the desktop app report
   // "Cannot read properties of undefined (reading 'credentials')".
+  //
+  // Both faces are fetched with `ctx.get()`, which reads cordis's flat service
+  // store without the inject requirement — absent names come back undefined.
+  // `ctx.remote.credentials` would NOT work here even though `remote` is
+  // injected: `remote` is a Service whose sub-domains are separate store entries
+  // under dotted names, and its traceable proxy turns that property read into a
+  // guarded `Reflect.get(ctx, 'remote.credentials')`, which throws
+  // "cannot get property "remote.credentials" without inject". Injecting that
+  // name instead would gate apply() on every host that lacks the service.
   const controller = new ApiKeyCardController(
-    () => resolveCredentialsPort({ connection: ctx.get('connection'), remote: ctx.remote }),
+    () => resolveCredentialsPort({
+      connection: ctx.get('connection'),
+      remoteCredentials: ctx.get('remote.credentials'),
+    }),
     API_KEY_REF,
   )
   void controller.refresh()
