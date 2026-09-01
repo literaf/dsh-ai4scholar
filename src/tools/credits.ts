@@ -135,7 +135,13 @@ export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boole
   if (route) {
     // `webServer` exists only in the web composition; headless never activates this child.
     ctx.inject(['webServer'], (webCtx) => {
-      webCtx.webServer.register({
+      // `register` returns the disposer that removes the route, and a duplicate
+      // `(kind, path)` pair throws. Hand the disposer to the fiber: a hot remount
+      // (dshmarket toggling the plugin, a settings change) tears the old fiber
+      // down and builds a new one, and without this the dead fiber's route was
+      // still registered when the new one tried — `webserver: duplicate exact
+      // route "/ai4scholar/balance"`, which killed the remount.
+      webCtx.effect(() => webCtx.webServer.register({
         kind: 'exact',
         path: BALANCE_ROUTE,
         handler: async (req, res) => {
@@ -155,7 +161,7 @@ export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boole
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
           res.end(JSON.stringify(body))
         },
-      })
+      }), `webServer.register(${BALANCE_ROUTE})`)
     })
   }
 

@@ -19,14 +19,21 @@ export interface FakeContext {
   commands: Map<string, CommandDefinition>
   routes: Map<string, FakeRoute>
   settingsNamespaces: Map<string, unknown>
+  /** Tear the fiber down the way cordis does on unload, running every effect disposer. */
+  dispose: () => void
 }
 
-export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean } = {}): FakeContext {
+export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean; sharedRoutes?: Map<string, FakeRoute> } = {}): FakeContext {
   const tools = new Map<string, ToolDefinition>()
   const sections: PromptSection[] = []
   const commands = new Map<string, CommandDefinition>()
-  const routes = new Map<string, FakeRoute>()
+  // The host owns the route table, not the plugin: pass one in to model two fibers
+  // of the same plugin meeting the same web server across a remount.
+  const routes = options.sharedRoutes ?? new Map<string, FakeRoute>()
   const settingsNamespaces = new Map<string, unknown>()
+  // Disposers cordis would own: `ctx.effect(body)` runs the body and keeps what it
+  // returns until the fiber is torn down.
+  const effects: (() => void)[] = []
   const apiKey = options.apiKey
   const credentials = options.credentialsSeam === false
     ? undefined
@@ -49,6 +56,12 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
     },
     get(name: string) {
       return name === 'credentials' ? credentials : undefined
+    },
+    // Cordis `ctx.effect(body, label)`: run the body now, hold its disposer until disposal.
+    effect(body: () => (() => void) | void) {
+      const disposer = body()
+      if (typeof disposer === 'function') effects.push(disposer)
+      return () => undefined
     },
     // Cordis `ctx.inject(deps, cb)`: run the callback when the services exist (each optional service is opt-out for tests).
     inject(deps: string[], callback: (child: unknown) => void) {
@@ -80,11 +93,14 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
       })
     },
   } as unknown as Context
-  return { ctx, tools, sections, commands, routes, settingsNamespaces }
+  const dispose = (): void => {
+    while (effects.length > 0) effects.pop()?.()
+  }
+  return { ctx, tools, sections, commands, routes, settingsNamespaces, dispose }
 }
 
 /** Mount the plugin with schemastery defaults applied over `overrides`. */
-export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean } = { apiKey: 'test-key' }): FakeContext {
+export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean; sharedRoutes?: Map<string, FakeRoute> } = { apiKey: 'test-key' }): FakeContext {
   const fake = fakeContext(options)
   const config = new Config(overrides)
   apply(fake.ctx, config)

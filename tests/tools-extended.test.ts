@@ -4,7 +4,7 @@ import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { ARXIV_FEED, CREDITS_BALANCE, FAKE_PDF, RXIV_PAGE, S2_AUTHORS, S2_CITATIONS } from './fixtures-extended.js'
 import { GS_PAGE_2, PUBMED_SEARCH_RESPONSE, S2_SEARCH_RESPONSE } from './fixtures.js'
 import { mount, runContext, stubFetch, textOf } from './helpers.js'
-import type { StubbedFetch } from './helpers.js'
+import type { FakeRoute, StubbedFetch } from './helpers.js'
 import { parseArxivFeed, normalizeArxivId } from '../src/tools/arxiv.js'
 import { normalizeRxivDoi } from '../src/tools/rxiv.js'
 import { normalizeDoi } from '../src/tools/doi.js'
@@ -132,6 +132,22 @@ describe('credits accounting', () => {
     // Compositions without a web server (headless) simply have no route.
     expect(mount({}, { apiKey: 'k', webServer: false }).routes.size).toBe(0)
     expect(mount({ balanceRoute: false }).routes.size).toBe(0)
+  })
+
+  it('gives the balance route back to the web server when the fiber unloads', () => {
+    // The web server owns one route table and throws on a duplicate (kind, path).
+    // A hot remount — dshmarket toggling the plugin, a settings change — tears the
+    // old fiber down and builds a new one against that same table, so the route
+    // has to leave with the fiber it belongs to. It did not: `register`'s disposer
+    // was discarded, and the remount died on `webserver: duplicate exact route
+    // "/ai4scholar/balance"`.
+    const host = new Map<string, FakeRoute>()
+    const first = mount({}, { apiKey: 'k', sharedRoutes: host })
+    expect([...host.keys()]).toEqual(['/ai4scholar/balance'])
+    first.dispose()
+    expect(host.size).toBe(0)
+    expect(() => mount({}, { apiKey: 'k', sharedRoutes: host })).not.toThrow()
+    expect([...host.keys()]).toEqual(['/ai4scholar/balance'])
   })
 
   it('shows credits in completed card titles (web card and generic card)', async () => {

@@ -4,6 +4,9 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+### Fixed
+- Reloading the plugin without restarting the host crashed it with `webserver: duplicate exact route "/ai4scholar/balance"`. The web server owns one route table and rejects a duplicate `(kind, path)`; `register()` hands back the disposer that removes the route, and that disposer was discarded. So a hot remount — dshmarket toggling the plugin, a settings change — built the new fiber while the dead one's route was still registered, and the new fiber died on arrival. The disposer now belongs to the fiber, so the route leaves with it.
+
 ## [0.3.5] - 2026-09-01
 
 ### Fixed
