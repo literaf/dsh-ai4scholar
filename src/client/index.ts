@@ -9,7 +9,6 @@
  */
 
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 // Type-only: the SlotMap merge declaring `settings.plugin.item`.
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 // Type-only: the SlotMap merge declaring `conversation.chat.commandview`.
@@ -19,6 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: the ctx.remote merge and the forwarded-event key face.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { ApiKeyCardController } from './controller.js'
+import { resolveCredentialsPort } from './credentials-port.js'
 import { Ai4ScholarCard } from './Card.js'
 import type { Ai4ScholarCardFace } from './Card.js'
 import { Ai4ScholarCommandCard } from './CommandCard.js'
@@ -54,16 +54,32 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ai4scholar: copy dictionaries')
   ctx.effect(() => installStyles(), 'ai4scholar: settings card styles')
 
-  const connection = ctx.get('connection') as ConnectionHandle
-  const controller = new ApiKeyCardController(connection.api, API_KEY_REF)
+  // Resolved per call, not captured here: dsh 0.1.2-alpha removed
+  // `connection.api` and moved credentials to `ctx.remote.credentials`, so the
+  // face that exists depends on the build the plugin is loaded into. Reading it
+  // at apply() time is what made the desktop app report
+  // "Cannot read properties of undefined (reading 'credentials')".
+  const controller = new ApiKeyCardController(
+    () => resolveCredentialsPort({ connection: ctx.get('connection'), remote: ctx.remote }),
+    API_KEY_REF,
+  )
   void controller.refresh()
 
   // A key written on another surface (env, file, another tab) is only visible
-  // through this forwarded event; the section publishes nothing for it.
-  ctx.effect(
-    () => ctx.remote.$on('credentials/updated', (changed: string) => { controller.onCredentialUpdated(changed) }),
-    'ai4scholar: credential invalidations',
-  )
+  // through this forwarded event; the section publishes nothing for it. The
+  // event was renamed in 0.1.2-alpha, so both names are subscribed — an unknown
+  // name is inert on the host that does not forward it, and registering only the
+  // right one would need a version probe for no gain.
+  // The cast covers `credentials/reference-updated`, which the rc.6 event union
+  // this package builds against does not declare yet. Subscribing to a name a
+  // host does not forward is inert, so the cast costs nothing on either build.
+  type CredentialEvent = Parameters<typeof ctx.remote.$on>[0]
+  for (const event of ['credentials/updated', 'credentials/reference-updated']) {
+    ctx.effect(
+      () => ctx.remote.$on(event as CredentialEvent, (changed: string) => { controller.onCredentialUpdated(changed) }),
+      `ai4scholar: credential invalidations (${event})`,
+    )
+  }
 
   const face = (): Ai4ScholarCardFace => ({
     hooks: { card: controller.store },
@@ -79,18 +95,23 @@ export function apply(ctx: ClientContext): void {
   // the card edits — register throws without `key`, and because loader
   // entries apply at boot, that single throw took the whole web client down
   // ("failed to apply loader entry … requires options.key"). Each kind checks
-  // only its own field and ignores the other, so sending both works on every
-  // dsh this package supports. The spread hides `key` from the rc.6 typings
-  // this package builds against; the value must equal the namespace the host
-  // half registers with the settings service, or rc.7 never dispatches the
-  // card.
+  // only its own field and ignores the other, and register copies through
+  // whichever is present, so sending both works on every dsh this package
+  // supports. The `key` value must equal the namespace the host half registers
+  // with the settings service, or the keyed slot never dispatches the card.
+  //
+  // Which pair the *types* accept flips with the slot's declared kind, so the
+  // spread always hides the pair belonging to the other kind. This package now
+  // builds against 0.1.1-rc.2, where the slot is keyed: `key` is the declared
+  // field and the list pair (`id`/`order`) is what has to hide. `order` is the
+  // list host's display position; the keyed host has no use for it and reads
+  // nothing in its place, so no `priority` is sent.
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    id: 'ai4scholar',
-    order: 100,
+    key: 'ai4scholar',
     locale: NS,
     inject: face,
-    ...({ key: 'ai4scholar' } as object),
+    ...({ id: 'ai4scholar', order: 100 } as object),
   }, Ai4ScholarCard))
 
   // The `/ai4scholar` command row: a balance card instead of the generic

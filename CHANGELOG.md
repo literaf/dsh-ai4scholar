@@ -4,6 +4,15 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-09-01
+
+### Fixed
+- Saving the API key in DSH Desktop failed with `保存失败: Cannot read properties of undefined (reading 'credentials')`, and the card reported `未配置` even with a key stored. DSH Desktop 2.0.4 bundles Harness 0.1.2-alpha.1, which removed `ConnectionHandle.api` and moved the credentials domain to `ctx.remote.credentials` — with positional arguments, a bare `{ok, value}` envelope, and `credentials/reference-updated` in place of `credentials/updated`. The card now resolves whichever face the host exposes, per call, so it works on both the hosted web app (≤0.1.1-rc.2, where `connection.api` still exists) and the desktop build. A host with neither face now says so on the card instead of raising a bare `TypeError`.
+
+### Changed
+- Built and tested against Harness 0.1.1-rc.2 (was 0.1.0-rc.6). `settings.plugin.item` is a keyed slot on that line, so `key` is now the declared field and the list pair (`id`/`order`) is the one passed through untyped — the registration sends the same fields as before, unchanged at runtime. `peerDependencies` still admit `>=0.1.0-rc.6`: rc.6 hosts remain supported, and the credentials adapter covers every line from rc.6 through 0.1.2-alpha.
+- `@deepseek-ai/dsh-client-web-react` dropped from devDependencies. Nothing imports it, its own releases stop at 0.1.0-rc.7, and mixing that line with 0.1.1-rc.2 makes pnpm merge two prerelease peer ranges into `>=0.1.1 <0.2.0-0`, which no published version satisfies. It remains in the bundler's external module table, where no install is needed.
+
 ## [0.3.3] - 2026-08-18
 
 ### Fixed

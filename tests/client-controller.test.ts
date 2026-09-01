@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { ApiKeyCardController, createCardStore } from '../src/client/controller.js'
-import type { CredentialsApi } from '../src/client/controller.js'
+import { resolveCredentialsPort } from '../src/client/credentials-port.js'
 import { buildGuidance } from '../src/prompt.js'
 import { en, zh } from '../src/client/locales.js'
 import { CSS, cls } from '../src/client/styles.js'
 import { parseBalance } from '../src/client/balance.js'
 
-/** A scripted credentials domain: a mutable store behind describe/set/unset. */
+/**
+ * A scripted credentials domain in the ≤0.1.1-rc.2 shape: object arguments, a
+ * `result` envelope, views nested under `credentials`. Reached through the real
+ * `resolveCredentialsPort`, so these tests cover the legacy adapter as well as
+ * the controller; `fakeModernApi` below is the same store in the alpha shape.
+ */
 function fakeApi(initial: { configured?: boolean; source?: string; writable?: boolean } = {}) {
   const state = { configured: initial.configured ?? false, source: initial.source, writable: initial.writable ?? true }
   const calls: Array<{ method: string; payload: unknown }> = []
   let failNext: string | undefined
   let describeDelay: (() => void)[] = []
-  const credentials: CredentialsApi['credentials'] = {
+  const credentials = {
     async describe(payload: { refs: string[] }) {
         calls.push({ method: 'describe', payload })
         if (describeDelay.length > 0) await new Promise<void>((resolve) => describeDelay.push(resolve))
@@ -47,10 +52,10 @@ function fakeApi(initial: { configured?: boolean; source?: string; writable?: bo
         state.source = undefined
         return { rpcId: 'r' as never, result: { ok: true, value: {} } }
       },
-  } as unknown as CredentialsApi['credentials']
-  const api: CredentialsApi = { credentials }
+  }
+  const port = () => resolveCredentialsPort({ connection: { api: { credentials } } })
   return {
-    api,
+    port,
     calls,
     state,
     failNextSet(message: string) { failNext = message },
@@ -59,6 +64,44 @@ function fakeApi(initial: { configured?: boolean; source?: string; writable?: bo
       return () => { for (const r of describeDelay.splice(1)) r() }
     },
   }
+}
+
+/**
+ * The same store in the ≥0.1.2-alpha shape: positional arguments, a bare
+ * `{ok, value}` envelope, views keyed directly by reference, and `set`/`unset`
+ * returning void. This is what DSH Desktop 2.0.4 exposes as
+ * `ctx.remote.credentials`, and reading it as the old shape is what produced
+ * "Cannot read properties of undefined (reading 'credentials')".
+ */
+function fakeModernApi(initial: { configured?: boolean; source?: string; writable?: boolean } = {}) {
+  const state = { configured: initial.configured ?? false, source: initial.source, writable: initial.writable ?? true }
+  const calls: Array<{ method: string; payload: unknown }> = []
+  const credentials = {
+    async describe(refs: string[]) {
+      calls.push({ method: 'describe', payload: refs })
+      return {
+        ok: true,
+        value: Object.fromEntries(refs.map((ref) => [ref, {
+          configured: state.configured,
+          ...(state.source !== undefined ? { source: state.source } : {}),
+          writable: state.writable,
+        }])),
+      }
+    },
+    async set(ref: string, value: string) {
+      calls.push({ method: 'set', payload: { ref, value } })
+      state.configured = value.length > 0
+      state.source = 'file'
+      // Alpha's set resolves void; a port that treats "no ok field" as failure
+      // would report every successful save as an error.
+    },
+    async unset(ref: string) {
+      calls.push({ method: 'unset', payload: { ref } })
+      state.configured = false
+      state.source = undefined
+    },
+  }
+  return { port: () => resolveCredentialsPort({ remote: { credentials } }), calls, state }
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -78,10 +121,69 @@ describe('createCardStore', () => {
   })
 })
 
+describe('resolveCredentialsPort', () => {
+  it('drives the card identically from the alpha contract', async () => {
+    // The regression: DSH Desktop 2.0.4 bundles 0.1.2-alpha.1, where
+    // ConnectionHandle has no `api` and credentials live on ctx.remote. The card
+    // read connection.api.credentials and threw on every save.
+    const fake = fakeModernApi()
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
+    await controller.refresh()
+    expect(controller.store.getSnapshot()).toMatchObject({ loaded: true, configured: false, writable: true })
+    // Positional arguments, not { refs: [...] }.
+    expect(fake.calls[0]).toEqual({ method: 'describe', payload: ['AI4SCHOLAR_API_KEY'] })
+
+    controller.edit('sk-user-abc')
+    await controller.save()
+    expect(controller.store.getSnapshot()).toMatchObject({ draft: '', busy: false, configured: true, source: 'file', notice: { kind: 'saved' } })
+    expect(fake.calls.filter((c) => c.method === 'set')).toEqual([{ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-user-abc' } }])
+
+    await controller.remove()
+    expect(controller.store.getSnapshot()).toMatchObject({ configured: false, notice: { kind: 'removed' } })
+  })
+
+  it('prefers remote.credentials when a host carries both faces', async () => {
+    // A host mid-migration keeps the newer face; picking the legacy one would
+    // work today and break on the build that finishes removing it.
+    const reached: string[] = []
+    const face = (name: string) => ({
+      describe: async () => { reached.push(name); return { ok: true, value: {} } },
+      set: async () => undefined,
+      unset: async () => undefined,
+    })
+    const port = resolveCredentialsPort({
+      connection: { api: { credentials: face('legacy') } },
+      remote: { credentials: face('modern') },
+    })
+    await port.describe('AI4SCHOLAR_API_KEY')
+    expect(reached).toEqual(['modern'])
+  })
+
+  it('reports a host with no credentials face instead of a raw TypeError', async () => {
+    // What the desktop app actually presented: a bare
+    // "Cannot read properties of undefined (reading 'credentials')". The card
+    // now explains itself, and says so before anything is typed.
+    expect(() => resolveCredentialsPort({ connection: {}, remote: {} })).toThrow(/no credentials API/)
+
+    const controller = new ApiKeyCardController(() => resolveCredentialsPort({}), 'AI4SCHOLAR_API_KEY')
+    await controller.refresh()
+    const state = controller.store.getSnapshot()
+    expect(state.loaded).toBe(true)
+    expect(state.notice?.kind).toBe('error')
+    expect(state.notice?.message).toMatch(/no credentials API/)
+  })
+
+  it('ignores a partial face rather than half-using it', () => {
+    // A face missing a method is not a contract; falling back is safer than
+    // discovering the gap on the user's first remove().
+    expect(() => resolveCredentialsPort({ remote: { credentials: { describe: async () => ({ ok: true, value: {} }) } } })).toThrow(/no credentials API/)
+  })
+})
+
 describe('ApiKeyCardController', () => {
   it('starts unloaded, then reflects the described state', async () => {
     const fake = fakeApi({ configured: true, source: 'file' })
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     expect(controller.store.getSnapshot()).toMatchObject({ ref: 'AI4SCHOLAR_API_KEY', loaded: false, configured: false, writable: true, draft: '', busy: false })
     await controller.refresh()
     expect(controller.store.getSnapshot()).toMatchObject({ loaded: true, configured: true, source: 'file', writable: true })
@@ -90,7 +192,7 @@ describe('ApiKeyCardController', () => {
 
   it('saves a trimmed draft, clears it, and re-reads', async () => {
     const fake = fakeApi()
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     await controller.refresh()
     expect(controller.canSave()).toBe(false)
     controller.edit('  sk-user-abc  ')
@@ -109,7 +211,7 @@ describe('ApiKeyCardController', () => {
 
   it('surfaces a rejected write without losing the draft', async () => {
     const fake = fakeApi()
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     controller.edit('sk-user-abc')
     fake.failNextSet('shadowed by the environment')
     await controller.save()
@@ -118,7 +220,7 @@ describe('ApiKeyCardController', () => {
 
   it('removes a stored key and refuses when read-only', async () => {
     const fake = fakeApi({ configured: true, source: 'file' })
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     await controller.refresh()
     expect(controller.canRemove()).toBe(true)
     await controller.remove()
@@ -126,7 +228,7 @@ describe('ApiKeyCardController', () => {
     expect(controller.store.getSnapshot()).toMatchObject({ configured: false, notice: { kind: 'removed' } })
 
     const env = fakeApi({ configured: true, source: 'env', writable: false })
-    const readOnly = new ApiKeyCardController(env.api, 'AI4SCHOLAR_API_KEY')
+    const readOnly = new ApiKeyCardController(env.port, 'AI4SCHOLAR_API_KEY')
     await readOnly.refresh()
     readOnly.edit('sk-new')
     expect(readOnly.canSave()).toBe(false)
@@ -138,7 +240,7 @@ describe('ApiKeyCardController', () => {
 
   it('re-reads on a forwarded credentials/updated for its own ref only', async () => {
     const fake = fakeApi()
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     controller.onCredentialUpdated('DEEPSEEK_API_KEY')
     await flush()
     expect(fake.calls).toHaveLength(0)
@@ -151,7 +253,7 @@ describe('ApiKeyCardController', () => {
 
   it('drops out-of-order describe answers', async () => {
     const fake = fakeApi()
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY')
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY')
     const release = fake.holdDescribe()
     const first = controller.refresh() // held
     fake.state.configured = true
@@ -168,7 +270,7 @@ describe('ApiKeyCardController.testKey', () => {
     const fake = fakeApi()
     let answer: Record<string, unknown> = { ok: true, totalAvailable: 89419, permanent: 89419, memberMonthlyRemaining: 0, keyCreditsUsed: 7472 }
     let fetches = 0
-    const controller = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY', async () => { fetches += 1; return answer as never })
+    const controller = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY', async () => { fetches += 1; return answer as never })
     await controller.testKey()
     expect(controller.store.getSnapshot().check).toEqual({ status: 'ok', totalAvailable: 89419, keyCreditsUsed: 7472 })
     controller.edit('sk-user-new')
@@ -179,7 +281,7 @@ describe('ApiKeyCardController.testKey', () => {
     expect(controller.store.getSnapshot().check).toEqual({ status: 'error', code: 'INVALID_API_KEY', message: 'API Key 无效' })
     await controller.remove()
     expect(controller.store.getSnapshot().check).toBeUndefined()
-    const throwing = new ApiKeyCardController(fake.api, 'AI4SCHOLAR_API_KEY', async () => { throw new Error('offline') })
+    const throwing = new ApiKeyCardController(fake.port, 'AI4SCHOLAR_API_KEY', async () => { throw new Error('offline') })
     await throwing.testKey()
     expect(throwing.store.getSnapshot().check).toMatchObject({ status: 'error', code: 'REQUEST_FAILED', message: 'offline' })
   })

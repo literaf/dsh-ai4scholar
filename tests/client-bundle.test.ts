@@ -63,7 +63,7 @@ interface FakeClientContext {
   dispose(): void
 }
 
-function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean } = {}): FakeClientContext {
+function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean; host?: 'stable' | 'desktop' } = {}): FakeClientContext {
   const effects: Array<() => void> = []
   const registrations: FakeClientContext['registrations'] = []
   const locales: FakeClientContext['locales'] = {}
@@ -71,11 +71,20 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
   const state: FakeClientContext['api']['state'] = { configured: initial.configured ?? false, source: initial.source, writable: initial.writable ?? true }
   const calls: FakeClientContext['api']['calls'] = []
   const ok = <T,>(value: T) => ({ rpcId: 'r', result: { ok: true, value } })
+  /**
+   * Which dsh this emulation is: `stable` (≤0.1.1-rc.2, the hosted web app) puts
+   * credentials on `connection.api`; `desktop` is 0.1.2-alpha as DSH Desktop
+   * 2.0.4 ships it — no `connection.api` at all, credentials on `ctx.remote`,
+   * positional arguments, a bare envelope, and void writes.
+   */
+  const host = initial.host ?? 'stable'
+  /** The view both contracts report; identical payload, different envelope. */
+  const view = (ref: string) => [ref, { configured: state.configured, ...(state.source !== undefined ? { source: state.source } : {}), writable: state.writable }] as const
   const api = {
     credentials: {
       async describe(payload: { refs: string[] }) {
         calls.push({ method: 'describe', payload })
-        return ok({ credentials: Object.fromEntries(payload.refs.map((ref) => [ref, { configured: state.configured, ...(state.source !== undefined ? { source: state.source } : {}), writable: state.writable }])) })
+        return ok({ credentials: Object.fromEntries(payload.refs.map(view)) })
       },
       async set(payload: { ref: string; value: string }) {
         calls.push({ method: 'set', payload })
@@ -91,6 +100,22 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
       },
     },
   }
+  const remoteCredentials = {
+    async describe(refs: string[]) {
+      calls.push({ method: 'describe', payload: refs })
+      return { ok: true, value: Object.fromEntries(refs.map(view)) }
+    },
+    async set(ref: string, value: string) {
+      calls.push({ method: 'set', payload: { ref, value } })
+      state.configured = true
+      state.source = 'file'
+    },
+    async unset(ref: string) {
+      calls.push({ method: 'unset', payload: { ref } })
+      state.configured = false
+      delete state.source
+    },
+  }
   const declared = new Set(['settings.plugin.item', 'conversation.chat.commandview'])
   const ctx = {
     effect(fn: () => (() => void) | void, _label?: string) {
@@ -99,7 +124,10 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
       return () => undefined
     },
     get(name: string) {
-      if (name === 'connection') return { api }
+      // On the desktop build the handle is still provided — it simply has no
+      // `api`. That is the shape that produced "Cannot read properties of
+      // undefined (reading 'credentials')", so it is emulated exactly.
+      if (name === 'connection') return host === 'desktop' ? { isLoopback: true, rpc: {} } : { api }
       return undefined
     },
     locale: {
@@ -119,6 +147,7 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
         remoteHandlers[event] = handler
         return () => { delete remoteHandlers[event] }
       },
+      ...(host === 'desktop' ? { credentials: remoteCredentials } : {}),
     },
     slots: {
       inject(name: string, callback: () => (() => void) | Iterable<() => void>) {
@@ -178,14 +207,17 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(bundle.exports.API_KEY_REF).toBe('AI4SCHOLAR_API_KEY')
   })
 
-  it('mounts: dictionaries, stylesheet, credentials/updated hook, and one settings.plugin.item card', async () => {
+  it('mounts: dictionaries, stylesheet, both credential hooks, and one settings.plugin.item card', async () => {
     const bundle = loadBundle()
     const fake = fakeClientContext()
     bundle.exports.apply(fake.ctx)
     expect(Object.keys(fake.locales)).toEqual(['ai4scholar'])
     expect(fake.locales.ai4scholar?.zh?.title).toBe('AI4Scholar')
     expect(document.head.querySelector('style[data-plugin="dsh-ai4scholar"]')).not.toBeNull()
-    expect(Object.keys(fake.remoteHandlers)).toEqual(['credentials/updated'])
+    // Both event names: dsh renamed this to `credentials/reference-updated` in
+    // 0.1.2-alpha, and only one of the two is forwarded on any given host.
+    // Subscribing to a name a host never emits is inert.
+    expect(Object.keys(fake.remoteHandlers)).toEqual(['credentials/updated', 'credentials/reference-updated'])
     expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'settings.plugin.item'])
     expect(fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!.options).toMatchObject({ id: 'ai4scholar', key: 'ai4scholar', order: 100, locale: 'ai4scholar' })
     // Both identity fields, deliberately: dsh ≤rc.6 declares the slot as a
@@ -271,6 +303,56 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     await act(async () => { fake.remoteHandlers['credentials/updated']!('AI4SCHOLAR_API_KEY') })
     await flush()
     expect(container.textContent).toContain('Not configured')
+  })
+
+  it('saves a key on a desktop-shaped host, where connection.api does not exist', async () => {
+    // The reported failure, reproduced through the built bundle: on DSH Desktop
+    // 2.0.4 (dsh 0.1.2-alpha.1) the connection handle has no `api`, so the card
+    // read `undefined.credentials` and every Save showed
+    // "保存失败: Cannot read properties of undefined (reading 'credentials')".
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, totalAvailable: 100, permanent: 100, memberMonthlyRemaining: 0 }), { status: 200, headers: { 'Content-Type': 'application/json' } })) as typeof fetch
+    const bundle = loadBundle()
+    const fake = fakeClientContext({ host: 'desktop' })
+    bundle.exports.apply(fake.ctx)
+    await flush()
+
+    // Positional refs, not { refs: [...] } — the alpha calling convention.
+    expect(fake.api.calls[0]).toEqual({ method: 'describe', payload: ['AI4SCHOLAR_API_KEY'] })
+
+    const entry = fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string, p?: Record<string, unknown>) => string } }).locale.bind('ai4scholar')
+    container = document.createElement('ul')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => { root!.render(createElement(entry.component as never, propsFor(entry, t) as never)) })
+
+    const header = container.querySelector('button[aria-expanded]') as HTMLButtonElement
+    await act(async () => { header.click() })
+    await flush()
+    const input = container.querySelector('input#plugin-config-ai4scholar-key') as HTMLInputElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(input, 'sk-desktop-test')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const save = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Save')!
+    await act(async () => { save.click() })
+    await flush()
+    await flush()
+
+    expect(fake.api.calls.filter((c) => c.method === 'set')).toEqual([{ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-desktop-test' } }])
+    expect(container.textContent).toContain('Key saved.')
+    expect(container.textContent).toContain('Configured via credentials file')
+    expect(container.textContent).not.toContain('undefined')
+
+    // The renamed event is the one this host forwards.
+    fake.api.state.configured = false
+    delete fake.api.state.source
+    await act(async () => { fake.remoteHandlers['credentials/reference-updated']!('AI4SCHOLAR_API_KEY') })
+    await flush()
+    expect(container.textContent).toContain('Not configured')
+    globalThis.fetch = originalFetch
   })
 
   it('registers a keyed /ai4scholar command card and renders balance, error, and pending states', async () => {

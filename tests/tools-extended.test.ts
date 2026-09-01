@@ -36,6 +36,19 @@ function assertOutput(schema: unknown, value: unknown): void {
 const agent = {} // stands in for exec.agent identity
 const ctxWithAgent = () => ({ ...runContext(), agent } as unknown as ReturnType<typeof runContext>)
 
+/**
+ * A `/ai4scholar` invocation. `attachments` became required on
+ * `CommandInvocation` in dsh 0.1.1-rc.2; it stays empty here because the command
+ * does not declare `input.images`, so the registry never admits any.
+ */
+const invocation = () => ({
+  commandId: 'c' as never,
+  agent: agent as never,
+  rawInput: '',
+  attachments: [],
+  signal: new AbortController().signal,
+})
+
 describe('credits accounting', () => {
   it('folds X-Credits headers into results and tallies the session', async () => {
     stub = stubFetch(() => ({ json: S2_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '4990' } }))
@@ -83,12 +96,12 @@ describe('credits accounting', () => {
     stub = stubFetch(() => ({ json: CREDITS_BALANCE }))
     const fake = mount()
     const command = fake.commands.get('ai4scholar')!
-    const result = await command.handler({ commandId: 'c' as never, agent: agent as never, rawInput: '', signal: new AbortController().signal })
+    const result = await command.handler(invocation())
     expect(result.kind).toBe('success')
     expect(result.text).toContain('Credits available: 5,000')
     expect(result.text?.endsWith('API key: configured (…-key)')).toBe(true)
     const nokey = mount({}, { apiKey: undefined }).commands.get('ai4scholar')!
-    const missing = await nokey.handler({ commandId: 'c' as never, agent: agent as never, rawInput: '', signal: new AbortController().signal })
+    const missing = await nokey.handler(invocation())
     expect(missing.kind).toBe('error')
     expect(missing.text).toContain('Settings → Plugins → AI4Scholar')
   })

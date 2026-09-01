@@ -8,12 +8,9 @@
  */
 
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
-import type { IApiClient } from '@deepseek-ai/dsh-client-connection/client'
 import { BALANCE_ROUTE } from '../shared/balance-route.js'
 import type { BalanceRouteResponse } from '../shared/balance-route.js'
-
-/** The subset of the wire API the card uses. */
-export type CredentialsApi = Pick<IApiClient, 'credentials'>
+import type { CredentialsPortSource, CredentialView } from './credentials-port.js'
 
 /** What the card renders. */
 export interface ApiKeyCardState {
@@ -97,11 +94,13 @@ export class ApiKeyCardController {
   private checkGeneration = 0
 
   /**
-   * @param api - wire face carrying the credentials domain.
+   * @param credentials - resolves the host's credentials face; called per
+   *   operation rather than stored, because which face exists depends on the dsh
+   *   build (see credentials-port.ts) and may settle after apply().
    * @param ref - credential reference the card edits.
    * @param fetchBalance - balance-route fetcher (defaults to same-origin `fetch`).
    */
-  constructor(private readonly api: CredentialsApi, ref: string, private readonly fetchBalance: BalanceFetch = fetchBalanceRoute) {
+  constructor(private readonly credentials: CredentialsPortSource, ref: string, private readonly fetchBalance: BalanceFetch = fetchBalanceRoute) {
     this.store = createCardStore<ApiKeyCardState>({
       ref,
       configured: false,
@@ -133,20 +132,24 @@ export class ApiKeyCardController {
   async refresh(): Promise<void> {
     const generation = ++this.generation
     const { ref } = this.state
-    let response: Awaited<ReturnType<IApiClient['credentials']['describe']>>
+    let view: CredentialView | undefined
     try {
-      response = await this.api.credentials.describe({ refs: [ref] })
-    } catch {
-      // Transport failure: keep the last known state; a later refresh or a write will re-sync.
-      if (generation === this.generation) this.patch({ loaded: true })
-      return
-    }
-    if (generation !== this.generation) return
-    if (!response.result.ok) {
+      view = await this.credentials().describe(ref)
+    } catch (error) {
+      if (generation !== this.generation) return
+      // A host with no credentials face at all is permanent, not a blip, and the
+      // badge alone ("未配置") sent the user hunting through a working key. Say it
+      // here so the card explains itself before anything is typed. Every other
+      // failure keeps the old behaviour: hold the last known state and re-sync on
+      // the next refresh or write.
+      if (error instanceof Error && error.name === 'NoCredentialsFace') {
+        this.patch({ loaded: true, notice: { kind: 'error', message: error.message } })
+        return
+      }
       this.patch({ loaded: true })
       return
     }
-    const view = response.result.value.credentials[ref]
+    if (generation !== this.generation) return
     this.patch({
       loaded: true,
       configured: view?.configured ?? false,
@@ -157,7 +160,9 @@ export class ApiKeyCardController {
   }
 
   /**
-   * React to a forwarded `credentials/updated` event.
+   * React to a forwarded credential-change event (`credentials/updated` on
+   * stable dsh, `credentials/reference-updated` from 0.1.2-alpha; index.ts
+   * subscribes to both).
    * @param ref - the reference the Host reports as changed.
    */
   onCredentialUpdated(ref: string): void {
@@ -215,11 +220,9 @@ export class ApiKeyCardController {
     const value = this.state.draft.trim()
     this.patch({ busy: true, notice: undefined })
     try {
-      const response = await this.api.credentials.set({ ref: this.state.ref, value })
-      if (!response.result.ok) {
-        this.patch({ busy: false, notice: { kind: 'error', message: describeError(response.result.error) } })
-        return
-      }
+      // The port raises the Host's own refusal, so one catch covers both a
+      // rejected write and a transport failure.
+      await this.credentials().set(this.state.ref, value)
       this.patch({ busy: false, draft: '', notice: { kind: 'saved' } })
     } catch (error) {
       this.patch({ busy: false, notice: { kind: 'error', message: describeError(error) } })
@@ -235,11 +238,7 @@ export class ApiKeyCardController {
     if (!this.canRemove()) return
     this.patch({ busy: true, notice: undefined })
     try {
-      const response = await this.api.credentials.unset({ ref: this.state.ref })
-      if (!response.result.ok) {
-        this.patch({ busy: false, notice: { kind: 'error', message: describeError(response.result.error) } })
-        return
-      }
+      await this.credentials().unset(this.state.ref)
       this.patch({ busy: false, draft: '', notice: { kind: 'removed' }, check: undefined })
     } catch (error) {
       this.patch({ busy: false, notice: { kind: 'error', message: describeError(error) } })
