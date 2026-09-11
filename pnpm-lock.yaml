@@ -8,8 +8,11 @@ importers:
 
   .:
     dependencies:
+      '@napi-rs/canvas':
+        specifier: 0.1.80
+        version: 0.1.80
       pdf-parse:
-        specifier: ^2.4.5
+        specifier: 2.4.5
         version: 2.4.5
     devDependencies:
       '@deepseek-ai/cordis':

@@ -4,7 +4,8 @@
  * @module dsh-ai4scholar/pdf
  */
 
-import { PDFParse } from 'pdf-parse'
+import { pathToFileURL } from 'node:url'
+import type { PDFParse as PDFParser } from 'pdf-parse'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { InferValue, GenericCallView } from '@deepseek-ai/dsh-tools'
 import type { Ai4ScholarClient, ApiErr } from './api-client.js'
@@ -46,13 +47,64 @@ export interface PdfText {
   pages: number
 }
 
+type PdfParserConstructor = typeof PDFParser
+type PdfLoadOptions = ConstructorParameters<PdfParserConstructor>[0]
+
+interface PdfRuntime {
+  PDFParse: PdfParserConstructor
+  options: Omit<PdfLoadOptions, 'data'>
+}
+
+let pdfRuntimePromise: Promise<PdfRuntime> | undefined
+
+function isElectronNonBrowserProcess(): boolean {
+  const processType = (process as NodeJS.Process & { type?: string }).type
+  return process.versions.electron !== undefined && processType !== undefined && processType !== 'browser'
+}
+
+function installCanvasGlobals(canvas: typeof import('@napi-rs/canvas')): void {
+  for (const key of ['DOMMatrix', 'ImageData', 'Path2D'] as const) {
+    if (globalThis[key] === undefined) {
+      Object.defineProperty(globalThis, key, { configurable: true, writable: true, value: canvas[key] })
+    }
+  }
+}
+
+async function initializePdfRuntime(): Promise<PdfRuntime> {
+  if (!isElectronNonBrowserProcess()) {
+    const { PDFParse } = await import('pdf-parse')
+    return { PDFParse, options: {} }
+  }
+
+  installCanvasGlobals(await import('@napi-rs/canvas'))
+  const { PDFParse } = await import('pdf-parse')
+  const { CanvasFactory, getPath } = await import('pdf-parse/worker')
+  PDFParse.setWorker(pathToFileURL(getPath()).href)
+  return {
+    PDFParse,
+    options: {
+      CanvasFactory,
+      disableFontFace: true,
+      isOffscreenCanvasSupported: false,
+      isImageDecoderSupported: false,
+      useWorkerFetch: false,
+    },
+  }
+}
+
+function loadPdfRuntime(): Promise<PdfRuntime> {
+  pdfRuntimePromise ??= initializePdfRuntime()
+  return pdfRuntimePromise
+}
+
 /**
  * Extract text from PDF bytes.
  * @param data - PDF bytes.
  * @returns the concatenated page text and page count.
  */
 export async function extractPdfText(data: Uint8Array): Promise<PdfText> {
-  const pdf = new PDFParse({ data })
+  const { PDFParse, options } = await loadPdfRuntime()
+  const pdf = new PDFParse({ ...options, data })
   try {
     const result = await pdf.getText()
     return { text: result.text, pages: result.total }

@@ -1,10 +1,13 @@
+import { createRequire } from 'node:module'
 import { afterEach, describe, expect, it } from 'vitest'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { GS_PAGE_1, GS_PAGE_2, PUBMED_SEARCH_RESPONSE, S2_SEARCH_RESPONSE } from './fixtures.js'
 import { mount, runContext, stubFetch, textOf } from './helpers.js'
 import type { StubbedFetch } from './helpers.js'
-import { Config } from '../src/index.js'
+import { Config, VERSION } from '../src/index.js'
+
+const manifest = createRequire(import.meta.url)('../package.json') as { version: string }
 
 let stub: StubbedFetch | undefined
 afterEach(() => {
@@ -109,7 +112,8 @@ describe('search_semantic', () => {
     expect(call.url.searchParams.get('year')).toBe('2016-2020')
     expect(call.url.searchParams.get('fields')).toContain('externalIds')
     expect(call.headers.authorization).toBe('Bearer sk-test')
-    expect(call.headers['user-agent']).toMatch(/^dsh-ai4scholar\//)
+    expect(VERSION).toBe(manifest.version)
+    expect(call.headers['user-agent']).toBe(`dsh-ai4scholar/${manifest.version}`)
 
     expect(value.source).toBe('semantic-scholar')
     expect(value.total).toBe(1234)

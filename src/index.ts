@@ -7,6 +7,7 @@
  * @module dsh-ai4scholar
  */
 
+import { createRequire } from 'node:module'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -48,8 +49,10 @@ export const name = 'ai4scholar'
 /** Services required before `apply` runs; `credentials` and `commands` are read lazily and stay optional. */
 export const inject = ['tools', 'systemPrompt']
 
-/** Version string sent as `User-Agent`; kept in sync with package.json by the release script. */
-export const VERSION = '0.3.1'
+const manifest = createRequire(import.meta.url)('../package.json') as { version: string }
+
+/** Version string sent as `User-Agent`, sourced from the published package manifest. */
+export const VERSION = manifest.version
 
 /** Plugin configuration; every deployment-varying value is a field with a schema default. */
 export interface Config {
