@@ -48,12 +48,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - name: install current UI runtime in isolation
-        run: >-
-          npm install --prefix "$RUNNER_TEMP/dsh-ui" --ignore-scripts --legacy-peer-deps --no-audit --no-fund
-          @deepseek-ai/cordis@latest
-          @deepseek-ai/dsh-client-ui-slots@latest
-          @deepseek-ai/dsh-client-ui-renderer@latest
-          @deepseek-ai/dsh-client-ui-plugin-manager@latest
+        run: |
+          # Individual UI packages retain old latest tags; the dsh release
+          # version identifies the matching published UI composition.
+          harness_ui_version=$(npm view @deepseek-ai/dsh@latest version --registry=https://registry.npmjs.org)
+          npm install --prefix "$RUNNER_TEMP/dsh-ui" --ignore-scripts --legacy-peer-deps --no-audit --no-fund --registry=https://registry.npmjs.org \
+            @deepseek-ai/cordis@latest \
+            "@deepseek-ai/dsh-client-ui-slots@$harness_ui_version" \
+            "@deepseek-ai/dsh-client-ui-renderer@$harness_ui_version" \
+            "@deepseek-ai/dsh-client-ui-plugin-manager@$harness_ui_version"
       - name: exercise native pages and fiber lifetimes
         run: DSH_COMPAT_ROOT="$RUNNER_TEMP/dsh-ui" pnpm exec vitest run tests/plugin-pages-current.test.ts
 
