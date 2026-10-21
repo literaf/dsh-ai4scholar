@@ -414,6 +414,12 @@ describe('search_google_scholar', () => {
 })
 
 describe('settings namespace (rc.7 keyed card pairing)', () => {
+  it('loads all tools on modern hosts whose settings service has no register method', () => {
+    const fake = mount({}, { apiKey: 'test-key', settings: 'configForms' })
+    expect(fake.settingsNamespaces.size).toBe(0)
+    expect(fake.tools.size).toBe(38)
+  })
+
   it('registers the ai4scholar namespace when the settings service is composed', () => {
     const fake = mount()
     expect([...fake.settingsNamespaces.keys()]).toContain('ai4scholar')

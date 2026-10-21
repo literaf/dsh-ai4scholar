@@ -23,7 +23,7 @@ export interface FakeContext {
   dispose: () => void
 }
 
-export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean; sharedRoutes?: Map<string, FakeRoute> } = {}): FakeContext {
+export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean | 'configForms'; sharedRoutes?: Map<string, FakeRoute> } = {}): FakeContext {
   const tools = new Map<string, ToolDefinition>()
   const sections: PromptSection[] = []
   const commands = new Map<string, CommandDefinition>()
@@ -70,7 +70,7 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
       if (deps.includes('settings') && options.settings === false) return
       callback({
         ...ctx,
-        settings: {
+        settings: options.settings === 'configForms' ? {} : {
           register(namespace: string, schema: unknown) {
             settingsNamespaces.set(namespace, schema)
             return { get: () => ({}), watch: () => () => undefined }
@@ -100,7 +100,7 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
 }
 
 /** Mount the plugin with schemastery defaults applied over `overrides`. */
-export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean; sharedRoutes?: Map<string, FakeRoute> } = { apiKey: 'test-key' }): FakeContext {
+export function mount(overrides: Partial<ConfigType> = {}, options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean | 'configForms'; sharedRoutes?: Map<string, FakeRoute> } = { apiKey: 'test-key' }): FakeContext {
   const fake = fakeContext(options)
   const config = new Config(overrides)
   apply(fake.ctx, config)

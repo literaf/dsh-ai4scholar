@@ -14,7 +14,7 @@ import { act } from 'react'
 import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 // jsdom rewrites import.meta.url to the page origin, so anchor on the project root instead.
 // React's act() checks this flag; without it every act() call logs a warning.
@@ -60,10 +60,13 @@ interface FakeClientContext {
   locales: Record<string, Record<string, Record<string, string>>>
   remoteHandlers: Record<string, (arg: string) => void>
   api: { calls: Array<{ method: string; payload: unknown }>; state: { configured: boolean; source?: string | undefined; writable: boolean } }
+  declare(name: string): void
   dispose(): void
 }
 
-function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean; host?: 'stable' | 'desktop' } = {}): FakeClientContext {
+const clients: FakeClientContext[] = []
+
+function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean; host?: 'stable' | 'desktop'; slots?: 'legacy' | 'modern' | 'late' } = {}): FakeClientContext {
   const effects: Array<() => void> = []
   const registrations: FakeClientContext['registrations'] = []
   const locales: FakeClientContext['locales'] = {}
@@ -116,7 +119,11 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
       delete state.source
     },
   }
-  const declared = new Set(['settings.plugin.item', 'conversation.chat.commandview'])
+  const declared = new Set(initial.slots === 'late' ? [] : [
+    'settings.section', 'conversation.chat.commandview',
+    ...(initial.slots === 'modern' ? ['plugins.bundle.config', 'plugins.row.config'] : ['settings.plugin.item']),
+  ])
+  const waiting = new Map<string, Set<() => void>>()
   const ctx = {
     effect(fn: () => (() => void) | void, _label?: string) {
       const dispose = fn()
@@ -166,23 +173,47 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
     }),
     slots: {
       inject(name: string, callback: () => (() => void) | Iterable<() => void>) {
-        if (!declared.has(name)) throw new Error(`slot ${name} not declared`)
-        const out = callback()
-        if (typeof out === 'function') effects.push(out)
-        else for (const d of out) effects.push(d)
-        return () => undefined
+        let active: Array<() => void> = []
+        const activate = () => {
+          const out = callback()
+          active = typeof out === 'function' ? [out] : [...out]
+        }
+        if (declared.has(name)) activate()
+        else {
+          if (!waiting.has(name)) waiting.set(name, new Set())
+          waiting.get(name)!.add(activate)
+        }
+        const dispose = () => {
+          waiting.get(name)?.delete(activate)
+          for (const d of active.splice(0).reverse()) d()
+        }
+        effects.push(dispose)
+        return dispose
       },
       register(options: Record<string, unknown>, component: FakeClientContext['registrations'][number]['component']) {
-        registrations.push({ options, component })
-        return () => { registrations.splice(registrations.indexOf(registrations.find((r) => r.component === component)!), 1) }
+        if (!declared.has(String(options.name))) throw new Error(`undeclared slot ${options.name}`)
+        const entry = { options, component }
+        registrations.push(entry)
+        return () => {
+          const index = registrations.indexOf(entry)
+          if (index !== -1) registrations.splice(index, 1)
+        }
       },
     },
   }
-  return {
+  const fake = {
     ctx, effects, registrations, locales, remoteHandlers,
     api: { calls, state },
+    declare(name: string) {
+      if (declared.has(name)) return
+      declared.add(name)
+      for (const activate of waiting.get(name) ?? []) activate()
+      waiting.delete(name)
+    },
     dispose() { for (const d of effects.splice(0).reverse()) d() },
   }
+  clients.push(fake)
+  return fake
 }
 
 /** Bind the registered entry's inject face into component props like the slot renderer does. */
@@ -211,14 +242,94 @@ afterEach(() => {
   container?.remove()
   root = undefined
   container = undefined
+  for (const client of clients.splice(0)) client.dispose()
+  vi.unstubAllGlobals()
 })
 
 describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emulation', () => {
+  it.each([
+    ['plugins.bundle.config', 'dsh-ai4scholar'],
+    ['plugins.row.config', 'dsh-ai4scholar#ai4scholar'],
+    ['settings.section', 'ai4scholar'],
+  ])('exposes an editable key immediately in %s on a host without the legacy slot', async (slot, key) => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true, totalAvailable: 125, permanent: 125, memberMonthlyRemaining: 0 }))))
+    const fake = fakeClientContext({ host: 'desktop', slots: 'modern' })
+    loadBundle().exports.apply(fake.ctx)
+    await flush()
+    expect(fake.registrations.some((r) => r.options.name === 'settings.plugin.item')).toBe(false)
+    const entry = fake.registrations.find((r) => r.options.name === slot)!
+    expect(entry.options.key ?? entry.options.id).toBe(key)
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => { root!.render(createElement(entry.component as never, { ...propsFor(entry, t), view: 'page' } as never)) })
+    const input = container.querySelector('input[type="password"]') as HTMLInputElement
+    expect(input).not.toBeNull()
+    expect(container.querySelector('button[aria-expanded]')).toBeNull()
+    expect(container.querySelector('label')?.htmlFor).toBe(input.id)
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(input, 'sk-new-desktop')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const button = (text: string) => [...container!.querySelectorAll('button')].find((b) => b.textContent === text)!
+    await act(async () => { button('Save').click() })
+    await flush()
+    expect(fake.api.calls).toContainEqual({ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-new-desktop' } })
+    expect(input.value).toBe('')
+    expect(container.textContent).toContain('125 credits available')
+    await act(async () => { button('Refresh').click() })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await act(async () => { button('Remove').click() })
+    await flush()
+    expect(fake.api.calls).toContainEqual({ method: 'unset', payload: { ref: 'AI4SCHOLAR_API_KEY' } })
+    expect(container.textContent).toContain('Not configured')
+    expect(container.textContent).not.toContain('125 credits available')
+  })
+
+  it('shares credential state between the native page and settings, with distinct input labels', async () => {
+    const fake = fakeClientContext({ host: 'desktop', slots: 'modern', configured: true, source: 'file' })
+    loadBundle().exports.apply(fake.ctx)
+    await flush()
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
+    const entries = fake.registrations.filter((r) => ['settings.section', 'plugins.bundle.config'].includes(String(r.options.name)))
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(createElement('div', {}, ...entries.map((entry, key) => createElement(entry.component as never, { ...propsFor(entry, t), key, view: 'page' } as never))))
+    })
+    const inputs = [...container.querySelectorAll('input')]
+    expect(inputs).toHaveLength(2)
+    expect(new Set(inputs.map((input) => input.id)).size).toBe(2)
+    expect(inputs.every((input) => input.value === '')).toBe(true)
+    expect([...container.querySelectorAll('section')].every((section) => section.textContent?.includes('Configured via credentials file'))).toBe(true)
+    fake.api.state.configured = false
+    delete fake.api.state.source
+    await act(async () => { fake.remoteHandlers['credentials/reference-updated']!('AI4SCHOLAR_API_KEY') })
+    await flush()
+    expect([...container.querySelectorAll('section')].every((section) => section.textContent?.includes('Not configured'))).toBe(true)
+  })
+
+  it('waits for late page declarations and cancels pending registrations on unload', async () => {
+    const fake = fakeClientContext({ slots: 'late' })
+    loadBundle().exports.apply(fake.ctx)
+    expect(fake.registrations).toHaveLength(0)
+    fake.declare('plugins.bundle.config')
+    expect(fake.registrations).toHaveLength(1)
+    fake.dispose()
+    fake.declare('settings.section')
+    fake.declare('plugins.row.config')
+    expect(fake.registrations).toHaveLength(0)
+    await flush()
+  })
+
   it('registers a CommonJS factory under the package id and requires only platform modules', () => {
     const bundle = loadBundle()
     expect(bundle.id).toBe('dsh-ai4scholar')
     expect(bundle.required.sort()).toEqual(['react', 'react/jsx-runtime'])
-    expect(bundle.exports.inject).toEqual(['slots', 'connection', 'locale', 'remote'])
+    expect(bundle.exports.inject).toEqual(['slots', 'locale', 'remote'])
     expect(bundle.exports.API_KEY_REF).toBe('AI4SCHOLAR_API_KEY')
   })
 
@@ -233,7 +344,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     // 0.1.2-alpha, and only one of the two is forwarded on any given host.
     // Subscribing to a name a host never emits is inert.
     expect(Object.keys(fake.remoteHandlers)).toEqual(['credentials/updated', 'credentials/reference-updated'])
-    expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'settings.plugin.item'])
+    expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'settings.plugin.item', 'settings.section'])
     expect(fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!.options).toMatchObject({ id: 'ai4scholar', key: 'ai4scholar', order: 100, locale: 'ai4scholar' })
     // Both identity fields, deliberately: dsh ≤rc.6 declares the slot as a
     // list (register throws without `id`), rc.7 declares it keyed by the
@@ -278,7 +389,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
 
     await act(async () => { header.click() })
     await flush()
-    const input = container.querySelector('input#plugin-config-ai4scholar-key') as HTMLInputElement
+    const input = container.querySelector('input[type="password"]') as HTMLInputElement
     expect(input).not.toBeNull()
     expect(input.type).toBe('password')
     const buttons = [...container.querySelectorAll('button')].filter((b) => b !== header)
@@ -300,7 +411,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(fake.api.calls.filter((c) => c.method === 'set')).toEqual([{ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-user-test-123' } }])
     expect(container.textContent).toContain('Key saved.')
     expect(container.textContent).toContain('Configured via credentials file')
-    expect((container.querySelector('input#plugin-config-ai4scholar-key') as HTMLInputElement).value).toBe('')
+    expect((container.querySelector('input[type="password"]') as HTMLInputElement).value).toBe('')
     expect(remove.disabled).toBe(false)
     // Auto-test after save: the balance route was called and its answer is shown with a refresh link.
     await flush()
@@ -345,7 +456,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     const header = container.querySelector('button[aria-expanded]') as HTMLButtonElement
     await act(async () => { header.click() })
     await flush()
-    const input = container.querySelector('input#plugin-config-ai4scholar-key') as HTMLInputElement
+    const input = container.querySelector('input[type="password"]') as HTMLInputElement
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
     await act(async () => {
       setter.call(input, 'sk-desktop-test')

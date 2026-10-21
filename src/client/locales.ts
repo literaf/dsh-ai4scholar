@@ -6,6 +6,8 @@ export const NS = 'ai4scholar'
 /** Copy keys of the card. */
 export type Ai4ScholarLocaleKey =
   | 'title'
+  | 'settingsTitle'
+  | 'settingsIntro'
   | 'description'
   | 'apiKeyLabel'
   | 'apiKeyPlaceholder'
@@ -51,6 +53,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 export const en: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
+  settingsTitle: 'AI4Scholar API key',
+  settingsIntro: 'Save your key to enable academic search. Check its status and credit balance here.',
   description: 'Academic search tools: Semantic Scholar, PubMed, Google Scholar',
   apiKeyLabel: 'API key',
   apiKeyPlaceholder: 'sk-user-…',
@@ -90,6 +94,8 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
 
 export const zh: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
+  settingsTitle: 'AI4Scholar API Key',
+  settingsIntro: '填写 Key 即可使用学术检索，也可以在这里查看配置状态与积分余额。',
   description: '学术检索工具：Semantic Scholar、PubMed、Google Scholar',
   apiKeyLabel: 'API Key',
   apiKeyPlaceholder: 'sk-user-…',

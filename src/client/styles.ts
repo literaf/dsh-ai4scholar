@@ -12,6 +12,10 @@ const P = 'ai4s'
 /** Class names used by the card component. */
 export const cls = {
   card: `${P}-card`,
+  page: `${P}-page`,
+  pageHead: `${P}-page-head`,
+  pageTitle: `${P}-page-title`,
+  pageIntro: `${P}-page-intro`,
   cardOpen: `${P}-card-open`,
   header: `${P}-header`,
   headText: `${P}-head-text`,
@@ -58,6 +62,10 @@ export const cls = {
 } as const
 
 export const CSS = `
+.${cls.page} { width: 100%; max-width: 720px; box-sizing: border-box; margin: 16px 0; }
+.${cls.pageHead} { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 20px 16px 16px; }
+.${cls.pageTitle} { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--dsw-alias-label-primary); }
+.${cls.pageIntro} { margin: 0; font-size: 13px; line-height: 1.6; color: var(--dsw-alias-label-secondary); }
 .${cls.cmd} { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-3); max-width: 560px; }
 .${cls.cmdError} { border-color: var(--dsw-alias-label-error); }
 .${cls.cmdHead} { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -88,9 +96,9 @@ export const CSS = `
 .${cls.chevronOpen} { transform: rotate(180deg); }
 .${cls.body} { border-top: 1px solid var(--dsw-alias-border-l2); margin: 0 16px; padding-bottom: 8px; }
 .${cls.field} { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; }
-.${cls.fieldHead} { display: flex; align-items: center; gap: 8px; }
+.${cls.fieldHead} { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .${cls.label} { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--dsw-alias-label-primary); }
-.${cls.input} { height: 34px; padding: 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; line-height: 1.5; }
+.${cls.input} { min-width: 0; height: 36px; padding: 0 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; line-height: 1.5; }
 .${cls.input}:focus-visible { outline: none; border-color: var(--dsw-alias-brand-primary); }
 .${cls.input}:disabled { color: var(--dsw-alias-label-tertiary); cursor: default; }
 .${cls.hint} { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
@@ -106,7 +114,7 @@ export const CSS = `
 .${cls.notice} { flex: 1; min-width: 0; margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); }
 .${cls.noticeError} { color: var(--dsw-alias-label-error); }
 .${cls.readOnly} { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
-.${cls.footer} { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 0 4px; border-top: 1px solid var(--dsw-alias-border-l2); }
+.${cls.footer} { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 0 4px; border-top: 1px solid var(--dsw-alias-border-l2); }
 .${cls.button} { appearance: none; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 5px 14px; font: inherit; font-size: 13px; line-height: 1.5; cursor: pointer; background: none; color: var(--dsw-alias-label-secondary); }
 .${cls.button}:hover:not(:disabled) { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-label-dimmed); }
 .${cls.buttonPrimary} { border-color: transparent; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-layer-3); }

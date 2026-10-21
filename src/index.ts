@@ -246,7 +246,11 @@ export function apply(ctx: Context, config: Config): void {
   // registration is inert; in a deployment with no settings service the
   // callback simply never runs.
   ctx.inject(['settings'], (settingsCtx) => {
-    const service = (settingsCtx as Context & { settings: { register(namespace: string, schema: unknown): unknown } }).settings
-    service.register('ai4scholar', Schema.object({}).description('AI4Scholar — configured through its Settings card; the API key lives in the credential store.'))
+    const service = (settingsCtx as Context & { settings: { register?: (namespace: string, schema: unknown) => unknown } }).settings
+    // Newer hosts replaced namespace registration with config forms. Our new
+    // pages need no namespace; credentials remain in their dedicated store.
+    if (typeof service.register === 'function') {
+      service.register('ai4scholar', Schema.object({}).description('AI4Scholar — configured through its Settings card; the API key lives in the credential store.'))
+    }
   })
 }

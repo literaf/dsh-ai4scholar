@@ -103,7 +103,8 @@ describe('credits accounting', () => {
     const nokey = mount({}, { apiKey: undefined }).commands.get('ai4scholar')!
     const missing = await nokey.handler(invocation())
     expect(missing.kind).toBe('error')
-    expect(missing.text).toContain('Settings → Plugins → AI4Scholar')
+    expect(missing.text).toContain('Plugins → Installed → dsh-ai4scholar')
+    expect(missing.text).toContain('Settings → AI4Scholar')
   })
 
   it('GET /ai4scholar/balance answers ok / missing key / API failure as 200 JSON', async () => {

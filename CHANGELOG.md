@@ -2,7 +2,14 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
-## [Unreleased]
+## [0.3.8] - 2026-10-21
+
+### Fixed
+- Restore API-key configuration after newer Harness versions removed `settings.plugin.item`: opening Plugins → Installed → dsh-ai4scholar now shows the key form directly, with an additional Settings → AI4Scholar entrance. The old card remains available on older hosts; every entrance shares the existing credentials controller and store.
+- Skip the legacy settings namespace registration on hosts that no longer expose `settings.register`, so the plugin still loads.
+
+### Added
+- A configure entry for the bundle’s `ai4scholar` row, including key status, save/remove, and balance checks.
 
 ## [0.3.6] - 2026-09-01
 

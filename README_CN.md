@@ -29,7 +29,7 @@
 
 ## 截图
 
-| 设置 → 插件 卡片 | `/ai4scholar` 余额卡 |
+| API Key 卡片（旧版设置界面） | `/ai4scholar` 余额卡 |
 |---|---|
 | ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![余额卡](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
 
@@ -56,7 +56,9 @@ dsh web                           # 打印 http://127.0.0.1:3080
 然后在网页里配置一次：
 
 1. **设置 → 模型**：填 DeepSeek API Key（[platform.deepseek.com](https://platform.deepseek.com) 获取）。
-2. **设置 → 插件 → AI4Scholar**：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。浏览器始终拿不到 Key——检测走的是插件在宿主上的 `GET /ai4scholar/balance` 路由。
+2. **插件 → 已安装 → dsh-ai4scholar**（也可以打开 **设置 → AI4Scholar**）：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。浏览器始终拿不到 Key——检测走的是插件在宿主上的 `GET /ai4scholar/balance` 路由。
+
+新版 DSH Desktop 在左侧 **插件 → 已安装** 中点击 **dsh-ai4scholar**，详情页就会直接显示 Key 表单。**设置 → 内置插件** 现在是宿主清单，不再承载这个表单。旧版 Harness 仍保留原来的 **设置 → 插件 → AI4Scholar** 卡片。已保存的 Key 继续有效，各入口使用同一个凭据引用。
 
 选一个工作区目录就可以直接提问了。升级：`dsh plugin --profile web add dsh-ai4scholar@latest`，然后重启 `dsh web`。
 
@@ -119,7 +121,7 @@ API Key 通过 `ctx.credentials` **按调用**解析：新存入或轮换的 Key
 
 ## 与 dsh 的契合方式
 
-- 一个包、两个半侧：Node 半侧注册工具；浏览器半侧（`exports["./client"]`，由 `dsh.client` 声明）通过 `settings.plugin.item` slot 贡献设置卡片，只经由凭据 wire API 与宿主通信——Key 明文不会出现在任何响应里，也不会到达模型。
+- 一个包、两个半侧：Node 半侧注册工具；浏览器半侧（`exports["./client"]`，由 `dsh.client` 声明）通过 `plugins.bundle.config` / `plugins.row.config` 贡献原生插件详情页，通过 `settings.section` 贡献独立设置页，并兼容旧版 `settings.plugin.item` 卡片，只经由凭据 wire API 与宿主通信——Key 明文不会出现在任何响应里，也不会到达模型。
 - 工具通过 `defineTool` 注册到 `ctx.tools`：参数有类型且经 schema 校验；每次调用返回规范 JSON 值（`{ source, query, total, papers[], truncated, nextOffset? }`）；给模型看的是 Markdown 渲染；给 Web UI 的是 `web` 结果卡片（结构化来源）。
 - 一段 `tool:ai4scholar` system prompt 告诉模型何时用哪个平台、如何用 DOI/链接引用。
 - 一切皆 effect：卸载插件（或修改其配置触发 HMR）会同时撤销全部工具和提示词片段。

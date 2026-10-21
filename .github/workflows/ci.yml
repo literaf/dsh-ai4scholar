@@ -33,6 +33,30 @@ jobs:
       - name: pack (publish dry run)
         run: pnpm pack --pack-destination /tmp
 
+  plugin-pages:
+    name: native plugin pages (current published Harness)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - name: install current UI runtime in isolation
+        run: >-
+          npm install --prefix "$RUNNER_TEMP/dsh-ui" --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+          @deepseek-ai/cordis@latest
+          @deepseek-ai/dsh-client-ui-slots@latest
+          @deepseek-ai/dsh-client-ui-renderer@latest
+          @deepseek-ai/dsh-client-ui-plugin-manager@latest
+      - name: exercise native pages and fiber lifetimes
+        run: DSH_COMPAT_ROOT="$RUNNER_TEMP/dsh-ui" pnpm exec vitest run tests/plugin-pages-current.test.ts
+
   canary:
     name: canary against dsh@next
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

@@ -190,7 +190,7 @@ export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boole
       handler: async (invocation) => {
         const key = await runtime.apiKey()
         if (key === undefined) {
-          return { kind: 'error', text: 'AI4Scholar API key is not configured. Open Settings → Plugins → AI4Scholar to store one (or set AI4SCHOLAR_API_KEY). Get a key at https://ai4scholar.net' }
+          return { kind: 'error', text: 'AI4Scholar API key is not configured. Open Plugins → Installed → dsh-ai4scholar (or Settings → AI4Scholar) to store one (or set AI4SCHOLAR_API_KEY). Get a key at https://ai4scholar.net' }
         }
         try {
           const balance = await fetchBalance(runtime, invocation.signal, invocation.agent)

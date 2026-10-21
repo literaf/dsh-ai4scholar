@@ -29,7 +29,7 @@ Every paper-list tool returns one normalized record shape — title, authors, ye
 
 ## Screenshots
 
-| Settings → Plugins card | `/ai4scholar` balance card |
+| API key card (legacy Settings view) | `/ai4scholar` balance card |
 |---|---|
 | ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![balance card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
 
@@ -56,7 +56,9 @@ dsh web                           # prints http://127.0.0.1:3080
 Then, once, in the browser:
 
 1. **Settings → Models** — paste your DeepSeek API key ([platform.deepseek.com](https://platform.deepseek.com)).
-2. **Settings → Plugins → AI4Scholar** — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. A **Refresh** link re-checks any time; the browser never sees the key (the check goes through the plugin's host route `GET /ai4scholar/balance`).
+2. **Plugins → Installed → dsh-ai4scholar** (or **Settings → AI4Scholar**) — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. A **Refresh** link re-checks any time; the browser never sees the key (the check goes through the plugin's host route `GET /ai4scholar/balance`).
+
+On current DSH Desktop, click **dsh-ai4scholar** in the sidebar’s **Plugins → Installed** list: the key form is visible immediately on its detail page. **Settings → Built-in plugins** is a host inventory, so it no longer contains this form. Older Harness versions still offer the original **Settings → Plugins → AI4Scholar** card. Existing keys keep working; all entrances use the same credential reference.
 
 Pick a workspace folder and ask away. Upgrades: `dsh plugin --profile web add dsh-ai4scholar@latest`, then restart `dsh web`.
 
@@ -119,7 +121,7 @@ The settings card always edits `AI4SCHOLAR_API_KEY` (the browser half does not r
 
 ## How it fits dsh
 
-- Two halves in one package: the Node half registers the tools; the browser half (`exports["./client"]`, declared by `dsh.client`) contributes the settings card through the `settings.plugin.item` slot and talks to the Host only through the credentials wire API — the key literal never rides a response, and it never reaches the model.
+- Two halves in one package: the Node half registers the tools; the browser half (`exports["./client"]`, declared by `dsh.client`) contributes the settings card through native `plugins.bundle.config` / `plugins.row.config` slots and `settings.section` (plus `settings.plugin.item` on older hosts) and talks to the Host only through the credentials wire API — the key literal never rides a response, and it never reaches the model.
 - Tools are registered on `ctx.tools` with `defineTool`: typed, schema-validated arguments; a canonical JSON value per call (`{ source, query, total, papers[], truncated, nextOffset? }`); a Markdown rendering for the model; and a `web` result card (structured sources) for the Web UI.
 - A single `tool:ai4scholar` system-prompt section tells the model when to use which platform and to cite by DOI/link.
 - Everything is an effect: unloading the plugin (or editing its config, which triggers HMR) withdraws every tool and the prompt section.

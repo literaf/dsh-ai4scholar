@@ -1,6 +1,6 @@
 /**
- * dsh-ai4scholar, browser half. Contributes one card to Settings → Plugins
- * that stores the AI4Scholar API key through the dsh credentials domain —
+ * dsh-ai4scholar, browser half. Contributes native plugin and Settings pages
+ * that store the AI4Scholar API key through the dsh credentials domain —
  * the same wire calls the Models page uses for provider keys — so users
  * configure the plugin without touching files. The Node half (`../index.ts`)
  * resolves the same reference per tool call, so a saved key applies to the
@@ -19,12 +19,13 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { ApiKeyCardController } from './controller.js'
 import { resolveCredentialsPort } from './credentials-port.js'
-import { Ai4ScholarCard } from './Card.js'
+import { Ai4ScholarCard, Ai4ScholarPluginConfig, Ai4ScholarSettings } from './Card.js'
 import type { Ai4ScholarCardFace } from './Card.js'
 import { Ai4ScholarCommandCard } from './CommandCard.js'
 import type { Ai4ScholarCommandFace } from './CommandCard.js'
 import { NS, en, zh } from './locales.js'
 import { installStyles } from './styles.js'
+import { pluginConfigSlots } from './plugin-config.js'
 
 export type { ApiKeyCardState } from './controller.js'
 export { ApiKeyCardController, createCardStore } from './controller.js'
@@ -42,7 +43,7 @@ export type { BalanceView } from './balance.js'
 export const API_KEY_REF = 'AI4SCHOLAR_API_KEY'
 
 /** Services required before `apply` runs — all provided by the dsh web app composition. */
-export const inject = ['slots', 'connection', 'locale', 'remote']
+export const inject = ['slots', 'locale', 'remote']
 
 /**
  * Register the dictionaries, the stylesheet, and the settings card. Every
@@ -93,14 +94,31 @@ export function apply(ctx: ClientContext): void {
     )
   }
 
-  const face = (): Ai4ScholarCardFace => ({
+  const actions: Ai4ScholarCardFace = {
     hooks: { card: controller.store },
     edit: (text) => { controller.edit(text) },
     save: () => { void controller.save() },
     remove: () => { void controller.remove() },
     refresh: () => { void controller.refresh() },
     testKey: () => { void controller.testKey() },
-  })
+  }
+  const face = (): Ai4ScholarCardFace => actions
+
+  // Third-party bundles belong on their own native detail page. These slots
+  // are absent on older hosts, where inject() simply waits for a declaration.
+  const configSlots = pluginConfigSlots(ctx.slots)
+  configSlots.inject('plugins.bundle.config', () => configSlots.register({
+    name: 'plugins.bundle.config', key: 'dsh-ai4scholar', locale: NS, inject: face,
+  }, Ai4ScholarPluginConfig))
+  configSlots.inject('plugins.row.config', () => configSlots.register({
+    name: 'plugins.row.config', key: 'dsh-ai4scholar#ai4scholar', locale: NS, inject: face,
+  }, Ai4ScholarPluginConfig))
+
+  // A second, direct entrance survives changes to the host's plugin inventory.
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section', id: 'ai4scholar', order: 190,
+    label: () => ctx.locale.bind(NS)('title'), locale: NS, inject: face,
+  }, Ai4ScholarSettings))
 
   // dsh ≤0.1.0-rc.6 declares `settings.plugin.item` as a list slot — register
   // throws without `id`. rc.7 redeclared it keyed by the settings namespace
