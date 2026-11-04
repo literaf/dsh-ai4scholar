@@ -1,8 +1,9 @@
 /**
- * `search_papers`: one query across several platforms, merged and
- * de-duplicated (DOI, arXiv id, PMID, then normalized title), papers found
- * on more than one platform first. Free platforms cost nothing; billed ones
- * report their credits summed.
+ * `search_papers`: Semantic Scholar by default; callers can select other
+ * platforms explicitly. Multiple sources are merged and de-duplicated
+ * (DOI, arXiv id, PMID, then normalized title), papers found on more than
+ * one platform first. Free platforms cost nothing; billed ones report
+ * their credits summed.
  * @module dsh-ai4scholar/tools/unified
  */
 
@@ -30,7 +31,7 @@ import { runArxivSearch } from './arxiv.js'
 /** Platforms the unified search can fan out to, in merge priority order (richest metadata first). */
 export const UNIFIED_SOURCES = ['semantic-scholar', 'pubmed', 'arxiv', 'google-scholar'] as const
 export type UnifiedSource = (typeof UNIFIED_SOURCES)[number]
-const DEFAULT_SOURCES: readonly UnifiedSource[] = ['semantic-scholar', 'pubmed']
+const DEFAULT_SOURCES: readonly UnifiedSource[] = ['semantic-scholar']
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -217,13 +218,14 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
   if (offered.length === 0) return
   const defaults = DEFAULT_SOURCES.filter((s) => enabled[s])
   const fallbackDefaults = defaults.length > 0 ? defaults : [offered[0]!]
+  const pubmedHint = enabled.pubmed ? ' For biomedical, clinical, or health topics, select sources ["pubmed"] when appropriate.' : ''
 
   ctx.tools.register(defineTool({
     name: 'search_papers',
-    description: `Search several platforms in one call and merge the results: duplicates are collapsed by DOI / arXiv id / PMID / title, papers found on more than one platform rank first, then by citation count. For a plain topic search this call REPLACES the per-platform search tools — do not also run the same query through them, that repeats the charge; add extra platforms via sources instead. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}; arXiv is free, the others cost credits, Google Scholar is slowest).`,
+    description: `Search academic papers on one platform by default to limit credit use.${pubmedHint} Select multiple sources only for an explicit cross-platform request or when a single source is insufficient. Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first; charges add up across billed API requests. Do not repeat the same query on already searched platforms via their individual tools, as that repeats the charge. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')} only; arXiv is free, the others cost credits, Google Scholar is slowest and bills per page).`,
     parameters: {
       query: { type: 'string', required: true, description: 'Topic or keywords; sent to every selected platform as-is.' },
-      sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}).` },
+      sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}). Prefer one source; select multiple only when broader coverage is requested or needed. Each billed source adds to the cost.` },
       max_results_per_source: { type: 'integer', description: `Results requested from each platform (default ${limits.defaultMaxResults}, max ${limits.maxResultsCap}).` },
       year_from: { type: 'integer', description: 'Earliest publication year.' },
       year_to: { type: 'integer', description: 'Latest publication year.' },

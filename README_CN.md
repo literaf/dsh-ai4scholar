@@ -13,7 +13,7 @@
 
 | 家族 | 工具 | 计费 |
 |---|---|---|
-| **一次全查** | `search_papers`——一次调用查 Semantic Scholar + PubMed（可选 arXiv、Google Scholar），按 DOI / arXiv id / PMID / 标题去重合并，多平台同时命中的排前面 | 按平台计 |
+| **论文检索** | `search_papers`——默认只查 Semantic Scholar；通过 `sources` 按需选择 PubMed、arXiv、Google Scholar。多平台结果按 DOI / arXiv id / PMID / 标题去重合并，同时命中的排前面 | 按所选平台计 |
 | **Semantic Scholar**（2 亿+ 论文，全学科） | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
 | **PubMed**（生物医学） | `search_pubmed`、`get_pubmed_paper_detail`、`get_pubmed_paper_batch`、`get_pubmed_citations`、`get_pubmed_related` | 积分 |
 | **Google Scholar**（覆盖面最广，含被引数） | `search_google_scholar` | 积分 |
@@ -22,6 +22,8 @@
 | **任意 DOI** | `download_by_doi`、`read_by_doi`（开放获取随处可用；付费期刊需校园网/机构权限） | 免费 |
 | **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / 点评 / SVG / 矢量化科研图） | 积分 |
 | **账户** | `get_ai4scholar_credits`，以及斜杠命令 `/ai4scholar` | 免费 |
+
+**优先单平台检索。** 不传 `sources`（或传 `[]`）时只查 Semantic Scholar。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果关闭了 Semantic Scholar，则按 PubMed、arXiv、Google Scholar 的顺序，默认选择第一个已开启的平台。
 
 所有论文列表类工具返回统一的结构——标题、作者、年份、期刊/会议、被引数、DOI/PMID/arXiv 等标识、链接、开放获取 PDF、摘要——模型（以及 Code Mode 程序）可以跨平台链式调用而无需特判。结果在 dsh Web UI 中渲染为引用卡片；全文类工具按片段返回（`offset` / `max_chars`），40 页的论文不会一次冲爆上下文。
 

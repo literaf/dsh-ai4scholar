@@ -87,7 +87,40 @@ describe('merge logic', () => {
 })
 
 describe('search_papers', () => {
-  it('fans out to the default platforms, merges, sums credits, and renders', async () => {
+  it.each([
+    { label: 'omitted', sources: undefined },
+    { label: 'empty', sources: [] },
+  ])('only requests and bills Semantic Scholar when sources are $label', async ({ sources }) => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/graph/v1/paper/search') return { json: S2_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '990' } }
+      return { status: 404, text: 'unexpected platform request' }
+    })
+    const tool = mount().tools.get('search_papers')!
+    const value = await tool.execute({ query: 'transformers', ...(sources !== undefined ? { sources } : {}), max_results_per_source: 2 }, ctxWithAgent()) as Record<string, unknown>
+    expect(stub.calls.map((call) => call.url.pathname)).toEqual(['/graph/v1/paper/search'])
+    expect(validateJsonSchemaValue(tool.output.schema as ObjectJsonSchema, value, '')).toEqual([])
+    expect(value).toMatchObject({
+      sources: ['semantic-scholar'],
+      total: 2,
+      perSource: [{ source: 'semantic-scholar', count: 2, total: 1234 }],
+      credits: { charged: 10, remaining: 990, sessionTotal: 10 },
+    })
+    expect(value.warning).toBeUndefined()
+  })
+
+  it('uses PubMed alone when explicitly selected for a biomedical query', async () => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/pubmed/v1/paper/search') return { json: PUBMED_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '990' } }
+      return { status: 404, text: 'unexpected platform request' }
+    })
+    const tool = mount().tools.get('search_papers')!
+    const value = await tool.execute({ query: 'GLP-1 cardiovascular outcomes', sources: ['pubmed'] }, ctxWithAgent()) as Record<string, unknown>
+    expect(stub.calls.map((call) => call.url.pathname)).toEqual(['/pubmed/v1/paper/search'])
+    expect(value).toMatchObject({ sources: ['pubmed'], credits: { charged: 10, remaining: 990, sessionTotal: 10 } })
+    expect(value.warning).toBeUndefined()
+  })
+
+  it('fans out to explicitly selected platforms, merges, sums credits, and renders', async () => {
     stub = stubFetch((url) => {
       if (url.pathname.startsWith('/graph/')) return { json: S2_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '990' } }
       if (url.pathname.startsWith('/pubmed/')) return { json: PUBMED_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '980' } }
@@ -95,7 +128,7 @@ describe('search_papers', () => {
     })
     const fake = mount()
     const tool = fake.tools.get('search_papers')!
-    const value = await tool.execute({ query: 'transformers', max_results_per_source: 2, year_from: 2016, year_to: 2024 }, ctxWithAgent()) as Record<string, unknown>
+    const value = await tool.execute({ query: 'transformers', sources: ['semantic-scholar', 'pubmed'], max_results_per_source: 2, year_from: 2016, year_to: 2024 }, ctxWithAgent()) as Record<string, unknown>
     expect(validateJsonSchemaValue(tool.output.schema as ObjectJsonSchema, value, '')).toEqual([])
     const paths = stub.calls.map((c) => c.url.pathname).sort()
     expect(paths).toEqual(['/graph/v1/paper/search', '/pubmed/v1/paper/search'])
@@ -147,6 +180,20 @@ describe('search_papers', () => {
     expect(stub.calls.find((c) => c.url.pathname.startsWith('/graph'))!.url.searchParams.get('year')).toBe('2022-')
     await tool.execute({ query: 'x', year_to: 2015 }, ctxWithAgent())
     expect(stub.calls.filter((c) => c.url.pathname.startsWith('/graph')).at(-1)!.url.searchParams.get('year')).toBe('-2015')
+  })
+
+  it('defaults to one enabled platform when Semantic Scholar is disabled', async () => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/pubmed/v1/paper/search') return { json: PUBMED_SEARCH_RESPONSE }
+      return { status: 404, text: 'unexpected platform request' }
+    })
+    const fake = mount({ semanticScholar: false })
+    const tool = fake.tools.get('search_papers')!
+    const value = await tool.execute({ query: 'biomedical research' }, ctxWithAgent()) as Record<string, unknown>
+    expect(stub.calls.map((call) => call.url.pathname)).toEqual(['/pubmed/v1/paper/search'])
+    expect(value.sources).toEqual(['pubmed'])
+    expect(tool.description).toContain('(default PubMed only;')
+    expect(fake.sections[0]?.text).not.toContain('Semantic Scholar')
   })
 
   it('offers only the enabled platforms and disappears when none is', () => {

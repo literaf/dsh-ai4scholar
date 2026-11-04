@@ -36,14 +36,16 @@ export function buildGuidance(enabled: EnabledFamilies): string | undefined {
       enabled.googleScholar ? 'search_google_scholar' : undefined,
     ].filter((name) => name !== undefined)
     const repeat = billed.length > 0
-      ? ` It already covers the platform tools, and re-running the same query through ${billed.join(' / ')} bills those credits a second time for the same papers.`
+      ? ` Re-running the same query through ${billed.join(' / ')} for a platform already searched repeats the charge.`
       : ''
-    lines.push(`- search_papers: one call queries several platforms (default Semantic Scholar + PubMed) and merges duplicates, ranking papers found on more than one platform first. For a plain topic search make this the ONLY search call.${repeat} Want more platforms in the sweep? Add them via sources in the same call. Reach for a platform search tool only for what search_papers lacks: its filters, sorting, paging, or a follow-up query.`)
+    const defaultSource = enabled.semanticScholar ? 'Semantic Scholar' : 'the first enabled platform listed in the tool'
+    const pubmedHint = enabled.pubmed ? ' For biomedical, clinical, or health topics, select sources ["pubmed"] when appropriate.' : ''
+    lines.push(`- search_papers: queries one platform by default (${defaultSource} only) to limit credit use; sources selects platforms and multiple sources merge duplicates.${pubmedHint} Use multiple sources only for an explicit cross-platform request or when a single source is insufficient; each additional billed source adds to the cost.${repeat} When extending a search, query only the additional sources. Reach for a platform search tool for its filters, sorting, paging, or a follow-up query.`)
   }
   // Full-text tools exist only under a family that ships PDFs.
   const fullText = enabled.fullText && (enabled.semanticScholar || enabled.arxiv || enabled.biorxiv || enabled.doi)
   if (enabled.semanticScholar) {
-    lines.push('- Semantic Scholar (all fields; costs credits): search_semantic is the default paper search; search_semantic_bulk for large sets; search_semantic_paper_match resolves a known title; search_semantic_snippets finds passages inside full texts; get_semantic_paper_detail / get_semantic_paper_batch fetch metadata and abstracts; get_semantic_citations / get_semantic_references walk the citation graph; search_semantic_authors / get_semantic_author_detail / get_semantic_author_papers / get_semantic_paper_authors / get_semantic_author_batch cover authors; get_semantic_recommendations(_for_paper) suggest similar papers.' + (fullText ? ' download_semantic / read_semantic_paper fetch open-access PDFs.' : ''))
+    lines.push('- Semantic Scholar (all fields; costs credits): search_semantic searches papers; search_semantic_bulk for large sets; search_semantic_paper_match resolves a known title; search_semantic_snippets finds passages inside full texts; get_semantic_paper_detail / get_semantic_paper_batch fetch metadata and abstracts; get_semantic_citations / get_semantic_references walk the citation graph; search_semantic_authors / get_semantic_author_detail / get_semantic_author_papers / get_semantic_paper_authors / get_semantic_author_batch cover authors; get_semantic_recommendations(_for_paper) suggest similar papers.' + (fullText ? ' download_semantic / read_semantic_paper fetch open-access PDFs.' : ''))
   }
   if (enabled.pubmed) {
     lines.push('- PubMed (biomedical, clinical; costs credits): search_pubmed, get_pubmed_paper_detail, get_pubmed_paper_batch, get_pubmed_citations, get_pubmed_related. Prefer it for medicine, biology, and health questions.')
@@ -80,6 +82,6 @@ export function buildGuidance(enabled: EnabledFamilies): string | undefined {
   return [
     'AI4Scholar literature tools are available:',
     ...lines,
-    'For literature questions, call the tools instead of guessing; combine platforms when coverage matters. Present findings in Markdown and cite each paper by title with its DOI or link. Never fabricate papers, authors, identifiers, or figures that a tool did not return.',
+    'For literature questions, call the tools instead of guessing; start with one relevant platform and expand only when needed. Present findings in Markdown and cite each paper by title with its DOI or link. Never fabricate papers, authors, identifiers, or figures that a tool did not return.',
   ].join('\n')
 }

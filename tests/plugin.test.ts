@@ -47,6 +47,10 @@ describe('plugin mount', () => {
     expect(fake.sections[0]?.order).toBe(150)
     const text = fake.sections[0]?.text
     expect(typeof text === 'string' && text.includes('search_pubmed') && text.includes('search_google_scholar')).toBe(true)
+    expect(text).toContain('one platform by default (Semantic Scholar only)')
+    expect(text).toContain('select sources ["pubmed"]')
+    expect(text).not.toContain('default Semantic Scholar + PubMed')
+    expect(fake.tools.get('search_papers')!.description).toContain('(default Semantic Scholar only;')
   })
 
   it('honors family toggles and the guidance switch', () => {

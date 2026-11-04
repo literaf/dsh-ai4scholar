@@ -2,6 +2,12 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.3.9] - 2026-11-04
+
+### Changed
+- `search_papers` now searches only Semantic Scholar by default, avoiding an automatic PubMed charge on every topic search. Explicit `sources` still supports single-platform selection and cross-platform merging; when Semantic Scholar is disabled, the default remains one enabled platform.
+- Tool descriptions and model guidance now favor one relevant source, suggest PubMed alone for biomedical or clinical topics, and reserve multiple sources for explicit coverage requests or insufficient results. Guidance also avoids repeating a query on platforms already searched.
+
 ## [0.3.8] - 2026-10-21
 
 ### Fixed
