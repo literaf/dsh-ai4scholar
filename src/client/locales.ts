@@ -48,6 +48,11 @@ export type Ai4ScholarLocaleKey =
   | 'keyConfiguredTitle'
   | 'keyMissingTitle'
   | 'keyPendingTitle'
+  | 'storedKey'
+  | 'keyHidden'
+  | 'showKey'
+  | 'hideKey'
+  | 'keyRevealFailed'
   | 'noteBilled'
   | 'noteFree'
   | 'unitResults'
@@ -149,9 +154,14 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   keyGroupTitle: 'API key',
   apiKeyPlaceholderReplace: 'Paste a new key to replace it',
   keyCheckTitle: 'Credit balance',
-  keyConfiguredTitle: 'API key is configured',
+  keyConfiguredTitle: 'Key configured',
   keyMissingTitle: 'No API key configured',
   keyPendingTitle: 'New key has not been saved',
+  storedKey: 'Saved API key',
+  keyHidden: 'Saved API key, hidden',
+  showKey: 'Show key',
+  hideKey: 'Hide key',
+  keyRevealFailed: 'Could not show the key. Please try again.',
   noteBilled: '1 credit / search · up to {max}',
   noteFree: 'Free · up to {max}',
   unitResults: 'results',
@@ -246,9 +256,14 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   keyGroupTitle: 'API Key',
   apiKeyPlaceholderReplace: '粘贴新 Key 以替换',
   keyCheckTitle: '积分余额',
-  keyConfiguredTitle: 'API Key 已配置',
+  keyConfiguredTitle: '密钥已配置',
   keyMissingTitle: '尚未配置 API Key',
   keyPendingTitle: '新 Key 尚未保存',
+  storedKey: '已保存的密钥',
+  keyHidden: '已保存的密钥，已隐藏',
+  showKey: '显示密钥',
+  hideKey: '隐藏密钥',
+  keyRevealFailed: '暂时无法显示密钥，请重试。',
   noteBilled: '1 积分 / 次 · 最多 {max} 条',
   noteFree: '免费 · 最多 {max} 条',
   unitResults: '条',

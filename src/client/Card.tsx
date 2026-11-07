@@ -4,12 +4,13 @@
  * collapsible key card instead.
  */
 
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { ApiKeyCardState, CardStore } from './controller.js'
 import { cls } from './styles.js'
+import { revealSavedKey } from './key-reveal.js'
 import type { InjectedFace, PluginConfigView } from './plugin-config.js'
 import type { SearchDraft, SearchSettingsState } from './search-controller.js'
 import { ABSTRACT_LIMIT, CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP, READ_MAX, READ_MIN, UNIFIED_SOURCES } from '../shared/search-settings.js'
@@ -118,19 +119,103 @@ function KeyStatus({ t, state }: PropsLocale<'ai4scholar'> & { state: ApiKeyCard
   return <span className={`${cls.badge}${tone}`}>{badge}</span>
 }
 
-/** Keep configuration state visible even though saved secrets never fill the input. */
+/** Saved key and configuration state; the secret exists only while this row reveals it. */
 function KeyConfigurationState({ t, state, id }: PropsLocale<'ai4scholar'> & { state: ApiKeyCardState; id?: string }) {
+  const [key, setKey] = useState<string>()
+  const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const request = useRef<AbortController>()
+  const valueId = useId()
+  const conceal = useCallback(() => {
+    request.current?.abort()
+    request.current = undefined
+    setKey(undefined)
+    setLoading(false)
+    setFailed(false)
+  }, [])
+  // Credential changes invalidate a reveal, including an in-flight response.
+  // Balance updates do not interrupt someone reading the saved key.
+  useEffect(() => { conceal() }, [state.revision, state.configured, state.busy, state.draft, conceal])
+  useEffect(() => {
+    const visibilityChanged = (): void => { if (document.visibilityState !== 'visible') conceal() }
+    window.addEventListener('blur', conceal)
+    document.addEventListener('visibilitychange', visibilityChanged)
+    return () => {
+      request.current?.abort()
+      window.removeEventListener('blur', conceal)
+      document.removeEventListener('visibilitychange', visibilityChanged)
+    }
+  }, [conceal])
+
+  const toggle = async (): Promise<void> => {
+    if (key !== undefined || loading) { conceal(); return }
+    const active = new AbortController()
+    request.current = active
+    setLoading(true)
+    setFailed(false)
+    try {
+      const value = await revealSavedKey(active.signal)
+      if (!active.signal.aborted) setKey(value)
+    } catch {
+      if (!active.signal.aborted) setFailed(true)
+    } finally {
+      if (!active.signal.aborted) {
+        request.current = undefined
+        setLoading(false)
+      }
+    }
+  }
   const pending = state.draft.trim().length > 0
-  const configured = state.loaded && state.configured && !pending
-  const title = !state.loaded ? 'checking' : pending ? 'keyPendingTitle' : configured ? 'keyConfiguredTitle' : 'keyMissingTitle'
+  const configured = state.loaded && state.configured
+  const title = !state.loaded ? 'checking' : configured ? 'keyConfiguredTitle' : pending ? 'keyPendingTitle' : 'keyMissingTitle'
   const sourceKey = state.source !== undefined && state.source in SOURCE_KEYS
     ? SOURCE_KEYS[state.source as keyof typeof SOURCE_KEYS]
     : undefined
   return (
-    <div id={id} className={`${cls.keyState}${configured ? ` ${cls.keyStateConfigured}` : ''}`} role="status" title={configured && sourceKey !== undefined ? t('configuredVia', { source: t(sourceKey) }) : undefined}>
-      {configured ? <CheckIcon className={cls.keyStateIcon} /> : null}
-      <strong className={cls.keyStateTitle}>{t(title)}</strong>
-    </div>
+    <>
+      <div className={`${cls.keyState}${configured ? ` ${cls.keyStateConfigured}` : ''}`} onKeyDown={(event) => { if (event.key === 'Escape') conceal() }}>
+        {configured ? (
+          <div className={cls.keyValue}>
+            <span id={valueId} className={cls.keySecret} aria-label={key === undefined ? t('keyHidden') : undefined} title={t('storedKey')}>{key ?? '••••••••••••••••'}</span>
+            <button
+              type="button"
+              className={cls.keyToggle}
+              aria-label={t(key !== undefined || loading ? 'hideKey' : 'showKey')}
+              title={t(key !== undefined || loading ? 'hideKey' : 'showKey')}
+              aria-pressed={key !== undefined || loading}
+              aria-controls={valueId}
+              aria-busy={loading}
+              disabled={state.busy}
+              onClick={() => { void toggle() }}
+            >
+              <EyeIcon hidden={key === undefined} />
+            </button>
+          </div>
+        ) : null}
+        <span id={id} className={cls.keyStateTitle} role="status" title={configured && sourceKey !== undefined ? t('configuredVia', { source: t(sourceKey) }) : undefined}>
+          {configured ? <CheckIcon className={cls.keyStateIcon} /> : null}
+          {t(title)}
+        </span>
+      </div>
+      {failed ? <p className={cls.hintError} role="alert">{t('keyRevealFailed')}</p> : null}
+    </>
+  )
+}
+
+function EyeIcon({ hidden }: { hidden: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {hidden ? (
+        <>
+          <path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.8 5.2A10 10 0 0 1 12 5c6 0 10 7 10 7a18 18 0 0 1-3 3.8M6.3 6.3C3.6 8.4 2 12 2 12s4 7 10 7a10 10 0 0 0 5.7-1.8" />
+        </>
+      ) : (
+        <>
+          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
   )
 }
 

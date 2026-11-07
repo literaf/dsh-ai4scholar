@@ -16,7 +16,7 @@
 
 ## 使用
 
-1. 打开 **设置 → AI4Scholar**，或在这个页面下方，粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点**保存**。输入框下方会常驻显示「API Key 已配置」。Key 存进 dsh 的凭据存储，不会发送给模型，下一次工具调用即生效。
+1. 打开 **设置 → AI4Scholar**，或在这个页面下方，粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点**保存**。输入框下方显示隐藏的密钥，点击眼睛可显示或隐藏，右侧标注「密钥已配置」。Key 存进 dsh 的凭据存储，不会发送给模型，下一次工具调用即生效。
 2. 在**检索设置**里可以调默认检索平台、每个平台单次返回的条数（所有来源均可继续翻页）、摘要长度、全文读取长度，以及 auto_cite 和 sci_draw 的默认选项。
 
-arXiv 和 bioRxiv/medRxiv 免费；Semantic Scholar、PubMed、Google Scholar、中文文献和生成类工具按次消耗积分，开启"在结果里显示积分"后每次检索都会附上消耗和余额。
+arXiv 和 bioRxiv/medRxiv 免费；Semantic Scholar、PubMed、Google Scholar、中文文献和生成类工具按次消耗积分，开启「显示积分消耗与余额」后每次检索都会附上消耗和余额。

@@ -39,7 +39,11 @@ interface LoadedBundle {
 function loadBundle(): LoadedBundle {
   const code = readFileSync(BUNDLE, 'utf8')
   let captured: { id: string; factory: (req: (id: string) => unknown) => unknown } | undefined
-  const win = { __ModuleLoader__: { load(entry: typeof captured) { captured = entry } } }
+  const win = {
+    __ModuleLoader__: { load(entry: typeof captured) { captured = entry } },
+    addEventListener: window.addEventListener.bind(window),
+    removeEventListener: window.removeEventListener.bind(window),
+  }
   // The bundle is a classic script referencing the global `window`.
   new Function('window', code)(win)
   if (captured === undefined) throw new Error('bundle did not register a factory')
@@ -318,7 +322,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-new-desktop' } })
     expect(input.value).toBe('')
-    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('API key is configured')
+    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('Key configured')
     // The page shows the balance as a number with its unit beside it.
     const balance = () => container!.querySelector('.ai4s-balance')?.textContent
     expect(balance()).toBe('125credits available')
@@ -330,6 +334,64 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(fake.api.calls).toContainEqual({ method: 'unset', payload: { ref: 'AI4SCHOLAR_API_KEY' } })
     expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('No API key configured')
     expect(balance()).toBeUndefined()
+  })
+
+  it('reveals a saved key only on click, keeps it local to the row, and clears it on hide, blur and credential changes', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ ok: true, key: 'sk-reveal-fixture' })))
+    vi.stubGlobal('fetch', fetcher)
+    const fake = fakeClientContext({ host: 'desktop', slots: 'modern', configured: true, source: 'file' })
+    loadBundle().exports.apply(fake.ctx)
+    await flush()
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
+    const entries = fake.registrations.filter((r) => ['settings.section', 'plugins.bundle.config'].includes(String(r.options.name)))
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(createElement('div', {}, ...entries.map((entry, key) => createElement(entry.component as never, { ...propsFor(entry, t), key, view: 'page' } as never))))
+    })
+    const rows = [...container.querySelectorAll('.ai4s-key-state')]
+    const toggle = rows[0]!.querySelector('button')!
+    const masked = () => expect(container!.textContent).not.toContain('sk-reveal-fixture')
+    masked()
+    expect(fetcher).not.toHaveBeenCalled()
+    await act(async () => { toggle.click() })
+    expect(rows[0]!.textContent).toContain('sk-reveal-fixture')
+    expect(rows[1]!.textContent).not.toContain('sk-reveal-fixture')
+    expect(fetcher).toHaveBeenLastCalledWith('/api/ai4scholar/key/reveal', expect.objectContaining({ method: 'POST', credentials: 'same-origin', cache: 'no-store' }))
+    await act(async () => { toggle.click() })
+    masked()
+    await act(async () => { toggle.click() })
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    await act(async () => { window.dispatchEvent(new Event('blur')) })
+    masked()
+    await act(async () => { toggle.click() })
+    await act(async () => { fake.remoteHandlers['credentials/reference-updated']!('AI4SCHOLAR_API_KEY') })
+    await flush()
+    masked()
+
+    let finish!: (response: Response) => void
+    const pending = new Promise<Response>((resolve) => { finish = resolve })
+    fetcher.mockImplementationOnce(() => pending)
+    await act(async () => { toggle.click() })
+    const call = (fetcher.mock.calls as unknown as Array<[string, RequestInit]>).at(-1)!
+    await act(async () => { toggle.click() })
+    expect(call[1].signal?.aborted).toBe(true)
+    await act(async () => { finish(new Response(JSON.stringify({ ok: true, key: 'sk-reveal-fixture' }))) })
+    masked()
+
+    fetcher.mockRejectedValueOnce(new Error('provider internals must stay hidden'))
+    await act(async () => { toggle.click() })
+    expect(container.textContent).toContain('Could not show the key')
+    expect(container.textContent).not.toContain('provider internals')
+    masked()
+
+    fetcher.mockImplementationOnce(() => new Promise<Response>(() => {}))
+    await act(async () => { toggle.click() })
+    const last = (fetcher.mock.calls as unknown as Array<[string, RequestInit]>).at(-1)!
+    await act(async () => { root!.unmount() })
+    root = undefined
+    expect(last[1].signal?.aborted).toBe(true)
   })
 
   it('shares credential state between the native page and settings, with distinct input labels', async () => {
@@ -348,8 +410,8 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(inputs).toHaveLength(2)
     expect(new Set(inputs.map((input) => input.id)).size).toBe(2)
     expect(inputs.every((input) => input.value === '')).toBe(true)
-    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.textContent?.includes('API key is configured'))).toBe(true)
-    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.getAttribute('title') === 'Configured via credentials file')).toBe(true)
+    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.textContent?.includes('Key configured'))).toBe(true)
+    expect([...container.querySelectorAll('.ai4s-key-state-title')].every((status) => status.getAttribute('title') === 'Configured via credentials file')).toBe(true)
     fake.api.state.configured = false
     delete fake.api.state.source
     await act(async () => { fake.remoteHandlers['credentials/reference-updated']!('AI4SCHOLAR_API_KEY') })

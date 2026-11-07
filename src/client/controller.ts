@@ -2,8 +2,8 @@
  * The API-key card's state and actions, framework-neutral so it is testable
  * without React. It talks to the Host only through the credentials domain of
  * the wire API — the same calls the Models page makes for provider keys — so
- * the key literal never rides a response: the card learns whether one is
- * configured, where it comes from, and whether it can be written from here.
+ * this shared state contains only configuration facts and the user's draft.
+ * Explicit saved-key reveal lives in the mounted row, outside this store.
  * @module dsh-ai4scholar/client/controller
  */
 
@@ -23,6 +23,8 @@ export interface ApiKeyCardState {
   writable: boolean
   /** Whether the first `describe` answered yet. */
   loaded: boolean
+  /** Invalidates a locally revealed value whenever credential state is re-read. */
+  revision: number
   /** The staged key text; starts blank on every load and after every save. */
   draft: string
   /** A write is in flight. */
@@ -107,6 +109,7 @@ export class ApiKeyCardController {
       configured: false,
       writable: true,
       loaded: false,
+      revision: 0,
       draft: '',
       busy: false,
     })
@@ -132,6 +135,7 @@ export class ApiKeyCardController {
    */
   async refresh(): Promise<void> {
     const generation = ++this.generation
+    this.patch({ revision: generation })
     const { ref } = this.state
     let view: CredentialView | undefined
     try {

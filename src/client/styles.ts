@@ -60,6 +60,9 @@ export const cls = {
   keyStateConfigured: `${P}-key-state-configured`,
   keyStateIcon: `${P}-key-state-icon`,
   keyStateTitle: `${P}-key-state-title`,
+  keyValue: `${P}-key-value`,
+  keySecret: `${P}-key-secret`,
+  keyToggle: `${P}-key-toggle`,
   linkIcon: `${P}-link-icon`,
   balance: `${P}-balance`,
   balanceNumber: `${P}-balance-number`,
@@ -147,10 +150,16 @@ export const CSS = `
 .${cls.input}:disabled { color: var(--dsw-alias-label-tertiary); cursor: default; }
 .${cls.hint} { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
 .${cls.hintError} { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-state-error-primary, var(--dsw-alias-label-error)); }
-.${cls.keyState} { display: flex; align-items: center; gap: 6px; color: var(--dsw-alias-label-secondary); }
-.${cls.keyStateConfigured} { color: var(--dsw-alias-state-success-primary, var(--dsw-alias-label-primary)); }
+.${cls.keyState} { display: flex; align-items: center; gap: 16px; min-width: 0; min-height: 28px; color: var(--dsw-alias-label-secondary); }
+.${cls.keyStateConfigured} .${cls.keyStateTitle} { color: var(--dsw-alias-state-success-primary, var(--dsw-alias-label-primary)); }
 .${cls.keyStateIcon} { flex: none; width: 16px; height: 16px; }
-.${cls.keyStateTitle} { font-size: 13px; font-weight: 500; line-height: 1.5; }
+.${cls.keyStateTitle} { display: inline-flex; align-items: center; gap: 4px; flex: none; margin-left: auto; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: nowrap; }
+.${cls.keyValue} { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.${cls.keySecret} { min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: thin; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; letter-spacing: .04em; }
+.${cls.keyToggle} { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--dsw-alias-label-tertiary); cursor: pointer; }
+.${cls.keyToggle}:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.${cls.keyToggle}:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
+.${cls.keyToggle}:disabled { opacity: .5; cursor: default; }
 .${cls.link} { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-link, var(--dsw-alias-brand-primary)); text-decoration: none; }
 .${cls.link}:hover { text-decoration: underline; }
 .${cls.linkIcon} { width: 12px; height: 12px; }

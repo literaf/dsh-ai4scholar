@@ -16,6 +16,7 @@ import type {} from '@deepseek-ai/dsh-credentials'
 import { Ai4ScholarClient } from './api-client.js'
 import { buildGuidance } from './prompt.js'
 import { CreditLedger, makeCreditsFolder, makeCredentialResolvers } from './runtime.js'
+import { applyKeyRevealRoute } from './key-reveal.js'
 import type { Runtime } from './runtime.js'
 import { applySemanticScholarTools } from './tools/semantic-scholar.js'
 import { applyPubmedTools } from './tools/pubmed.js'
@@ -293,6 +294,7 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.autoCite) applyAutoCiteTool(ctx, runtime)
   if (resolved.sciDraw) applySciDrawTool(ctx, runtime)
   if (resolved.creditsTool || resolved.command || resolved.balanceRoute) applyCreditsTools(ctx, runtime, resolved.command, resolved.creditsTool, resolved.balanceRoute)
+  applyKeyRevealRoute(ctx)
 
   if (resolved.promptGuidance) {
     const text = buildGuidance({

@@ -29,6 +29,7 @@ import { pluginConfigSlots } from './plugin-config.js'
 import { SearchSettingsController } from './search-controller.js'
 import type { ConfigFormPort } from './search-controller.js'
 import { ENTRY_ID } from '../shared/search-settings.js'
+import { API_KEY_REF } from '../shared/key-reveal.js'
 
 export { SearchSettingsController, readSettings } from './search-controller.js'
 export type { SearchSettingsState, SearchDraft, ConfigFormPort } from './search-controller.js'
@@ -46,7 +47,7 @@ export type { BalanceView } from './balance.js'
  * `apiKeyEnv`; a deployment overriding that field manages its key outside the
  * card (documented limitation).
  */
-export const API_KEY_REF = 'AI4SCHOLAR_API_KEY'
+export { API_KEY_REF } from '../shared/key-reveal.js'
 
 /** Services required before `apply` runs — all provided by the dsh web app composition. */
 export const inject = ['slots', 'locale', 'remote']

@@ -27,7 +27,11 @@ type Registry = {
 
 function loadClient(path: string, require: (id: string) => unknown): Record<string, unknown> {
   let factory: ((require: (id: string) => unknown) => Record<string, unknown>) | undefined
-  new Function('window', readFileSync(path, 'utf8'))({ __ModuleLoader__: { load(entry: { factory: typeof factory }) { factory = entry.factory } } })
+  new Function('window', readFileSync(path, 'utf8'))({
+    __ModuleLoader__: { load(entry: { factory: typeof factory }) { factory = entry.factory } },
+    addEventListener: window.addEventListener.bind(window),
+    removeEventListener: window.removeEventListener.bind(window),
+  })
   if (factory === undefined) throw new Error('No client factory')
   return factory(require)
 }
@@ -90,7 +94,7 @@ describe.skipIf(!compatRoot)('published current UI runtime', () => {
       })
       if (isScholar) {
         expect(container.querySelectorAll('input[type="password"]')).toHaveLength(3)
-        expect(container.textContent).toContain('API key is configured')
+        expect(container.textContent).toContain('Key configured')
       } else {
         expect(container.querySelectorAll('input')).toHaveLength(3)
         expect(container.textContent).toContain('Research plugins')

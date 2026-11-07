@@ -61,7 +61,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 然后在网页里配置一次：
 
 1. **设置 → 模型**：填 DeepSeek API Key（[platform.deepseek.com](https://platform.deepseek.com) 获取）。
-2. **插件 → 已安装 → dsh-ai4scholar**（也可以打开 **设置 → AI4Scholar**）：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。浏览器始终拿不到 Key——检测走的是插件在宿主上的 `GET /ai4scholar/balance` 路由。
+2. **插件 → 已安装 → dsh-ai4scholar**（也可以打开 **设置 → AI4Scholar**）：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。已保存的密钥默认隐藏，右侧显示「密钥已配置」；点击眼睛可显示或隐藏。收起、离开页面或切换到其他窗口后会清除已显示的明文。
 
 新版 DSH Desktop 在左侧 **插件 → 已安装** 中点击 **dsh-ai4scholar**，详情页就会直接显示 Key 表单。**设置 → 内置插件** 现在是宿主清单，不再承载这个表单。旧版 Harness 仍保留原来的 **设置 → 插件 → AI4Scholar** 卡片。已保存的 Key 继续有效，各入口使用同一个凭据引用。
 
@@ -148,7 +148,7 @@ API Key 通过 `ctx.credentials` **按调用**解析：新存入或轮换的 Key
 
 ## 与 dsh 的契合方式
 
-- 一个包、两个半侧：Node 半侧注册工具；浏览器半侧（`exports["./client"]`，由 `dsh.client` 声明）通过 `plugins.bundle.config` / `plugins.row.config` 贡献原生插件详情页，通过 `settings.section` 贡献独立设置页，并兼容旧版 `settings.plugin.item` 卡片，只经由凭据 wire API 与宿主通信——Key 明文不会出现在任何响应里，也不会到达模型。
+- 一个包、两个半侧：Node 半侧注册工具；浏览器半侧（`exports["./client"]`，由 `dsh.client` 声明）通过 `plugins.bundle.config` / `plugins.row.config` 贡献原生插件详情页，通过 `settings.section` 贡献独立设置页，并兼容旧版 `settings.plugin.item` 卡片，通过凭据 API 保存密钥。主动点击显示时，使用宿主认证且仅允许 owner 访问的 `POST /api/ai4scholar/key/reveal` 接口，响应禁止缓存；该接口不是模型工具，也不会把密钥加入模型上下文。没有这一受保护通道的旧宿主不支持显示已保存的密钥。
 - 工具通过 `defineTool` 注册到 `ctx.tools`：参数有类型且经 schema 校验；每次调用返回规范 JSON 值（`{ source, query, total, papers[], truncated, nextOffset? }`）；给模型看的是 Markdown 渲染；给 Web UI 的是 `web` 结果卡片（结构化来源）。
 - 一段 `tool:ai4scholar` system prompt 告诉模型何时用哪个平台、如何用 DOI/链接引用。
 - 一切皆 effect：卸载插件（或修改其配置触发 HMR）会同时撤销全部工具和提示词片段。
