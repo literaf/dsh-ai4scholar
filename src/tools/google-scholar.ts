@@ -7,6 +7,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import {
   PAPER_SEARCH_OUTPUT_SCHEMA,
@@ -24,6 +25,18 @@ import { boundResults, limitsFor, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 
 const SOURCE = 'google-scholar' as const
+
+/** Opaque platform identifiers must never pass through lossy number conversion. */
+export function scholarId(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim() || undefined
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return String(value)
+  return undefined
+}
+
+function clusterFromLink(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  try { return new URL(value, 'https://scholar.google.com').searchParams.get('cluster') || undefined } catch { return undefined }
+}
 
 /** Keep requests in the proxy's one-credit tier (1–10 results). */
 export const GS_PAGE_SIZE = 10
@@ -50,9 +63,13 @@ export function normalizeScholarResult(record: unknown): Paper | undefined {
     : undefined
   const year = int(record, 'year')
   const url = link ?? `https://scholar.google.com/scholar?q=${encodeURIComponent(title)}`
+  const nativeId = scholarId(record.id)
+  const inline = isRecord(record.inlineLinks) ? record.inlineLinks : {}
+  const cites = scholarId(inline.citedByCitesId)
+  const cluster = clusterFromLink(inline.versionsLink)
   return compact({
     source: SOURCE,
-    id: url,
+    id: nativeId ?? url,
     title,
     authors,
     year,
@@ -62,6 +79,12 @@ export function normalizeScholarResult(record: unknown): Paper | undefined {
     doi: str(record, 'doi'),
     url,
     pdfUrl: str(record, 'pdfUrl'),
+    externalIds: compact({ GoogleScholar: nativeId, GoogleScholarCites: cites, GoogleScholarCluster: cluster }),
+    extra: compact({
+      publicationInfo,
+      citedByLink: str(inline, 'citedByLink'), versionsLink: str(inline, 'versionsLink'),
+      relatedLink: str(inline, 'relatedLink'), versionsCount: str(inline, 'versionsCount'),
+    }),
   })
 }
 
@@ -74,6 +97,11 @@ export interface ScholarSearchParams {
   offset?: number | undefined
   yearFrom?: number | undefined
   yearTo?: number | undefined
+  language?: string | undefined
+  reviewOnly?: boolean | undefined
+  sortByDate?: boolean | undefined
+  cites?: string | undefined
+  cluster?: string | undefined
 }
 
 /**
@@ -102,6 +130,9 @@ export async function runScholarSearch(runtime: Runtime, params: ScholarSearchPa
   const body: Record<string, unknown> = { query, page, results: wanted }
   if (params.yearFrom !== undefined) body.yearFrom = params.yearFrom
   if (params.yearTo !== undefined) body.yearTo = params.yearTo
+  for (const name of ['language', 'reviewOnly', 'sortByDate', 'cites', 'cluster'] as const) {
+    if (params[name] !== undefined) body[name] = params[name]
+  }
   const res = await runtime.client.post<{ results?: unknown[]; resultsCount?: number }>('/google-scholar/v1/search', body, { apiKey, signal })
   // This response also covers outages and upstream limits. Do not present it
   // as proof that no papers exist or that the last page has been reached.
@@ -148,11 +179,16 @@ export function applyGoogleScholarTools(ctx: Context, runtime: Runtime): void {
       offset: { type: 'integer', description: 'Results to skip (default 0). Use the returned nextOffset and keep the same max_results while paging; offset must be a multiple of that count. Each request costs one credit.' },
       year_from: { type: 'integer', description: 'Earliest publication year, e.g. 2020.' },
       year_to: { type: 'integer', description: 'Latest publication year, e.g. 2025.' },
+      language: { type: 'string', description: 'Result language, e.g. en or zh-CN.' },
+      review_only: { type: 'boolean', description: 'Only review articles.' },
+      sort_by_date: { type: 'boolean', description: 'Sort by publication date.' },
+      cites: { type: 'string', description: 'Find papers citing this exact GoogleScholarCites identifier from a previous result; keep it a string.' },
+      cluster: { type: 'string', description: 'Find all versions using the exact GoogleScholarCluster identifier from a previous result; keep it a string.' },
     },
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -165,6 +201,8 @@ export function applyGoogleScholarTools(ctx: Context, runtime: Runtime): void {
         offset: args.offset,
         yearFrom: args.year_from,
         yearTo: args.year_to,
+        language: args.language, reviewOnly: args.review_only, sortByDate: args.sort_by_date,
+        cites: args.cites, cluster: args.cluster,
       }, exec.signal, exec.agent)
     },
   }))

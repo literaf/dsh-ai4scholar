@@ -4,6 +4,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import {
   PAPER_SEARCH_OUTPUT_SCHEMA,
@@ -172,7 +173,7 @@ export function applyArxivTools(ctx: Context, runtime: Runtime, fullText: boolea
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,

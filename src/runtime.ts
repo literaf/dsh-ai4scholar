@@ -88,6 +88,8 @@ export class CreditLedger {
 
 /** Everything a tool module needs from the plugin instance. */
 export interface Runtime {
+  /** Mounted tool names, filled after registration; used to offer only available result actions. */
+  enabledTools: ReadonlySet<string>
   /** Configured ai4scholar.net client. */
   client: Ai4ScholarClient
   /** Model-facing rendering knobs. */

@@ -451,7 +451,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     // 0.1.2-alpha, and only one of the two is forwarded on any given host.
     // Subscribing to a name a host never emits is inert.
     expect(Object.keys(fake.remoteHandlers)).toEqual(['credentials/updated', 'credentials/reference-updated'])
-    expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'settings.plugin.item', 'settings.section'])
+    expect(fake.registrations.map((r) => r.options.name).sort()).toEqual(['conversation.chat.commandview', 'conversation.chat.commandview', 'settings.plugin.item', 'settings.section'])
     expect(fake.registrations.find((r) => r.options.name === 'settings.plugin.item')!.options).toMatchObject({ id: 'ai4scholar', key: 'ai4scholar', order: 100, locale: 'ai4scholar' })
     // Both identity fields, deliberately: dsh ≤rc.6 declares the slot as a
     // list (register throws without `id`), rc.7 declares it keyed by the
@@ -594,7 +594,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     // The fake slot table must know the commandview declaration too.
     ;(fake as unknown as { declare(name: string): void }).declare?.('conversation.chat.commandview')
     bundle.exports.apply(fake.ctx)
-    const entry = fake.registrations.find((r) => r.options.name === 'conversation.chat.commandview')!
+    const entry = fake.registrations.find((r) => r.options.name === 'conversation.chat.commandview' && r.options.key === 'ai4scholar')!
     expect(entry).toBeDefined()
     expect(entry.options).toMatchObject({ key: 'ai4scholar', locale: 'ai4scholar' })
     const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')

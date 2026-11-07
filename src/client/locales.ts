@@ -5,6 +5,28 @@ export const NS = 'ai4scholar'
 
 /** Copy keys of the card. */
 export type Ai4ScholarLocaleKey =
+  | 'resultRemaining'
+  | 'actionCompare'
+  | 'actionDetails'
+  | 'actionRead'
+  | 'actionPdf'
+  | 'actionCitations'
+  | 'actionReferences'
+  | 'actionRelated'
+  | 'actionAuthors'
+  | 'actionCitation'
+  | 'actionVersions'
+  | 'actionProfile'
+  | 'actionPapers'
+  | 'resultDraftReady'
+  | 'resultDraftBusy'
+  | 'resultDraftUnavailable'
+  | 'resultError'
+  | 'resultCount'
+  | 'resultRunning'
+  | 'resultCharge'
+  | 'resultFullOutput'
+  | 'resultInspect'
   | 'title'
   | 'settingsTitle'
   | 'settingsIntro'
@@ -115,6 +137,28 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const en: Record<Ai4ScholarLocaleKey, string> = {
+  actionCompare: 'Compare these authors',
+  resultRemaining: '{count} remaining',
+  actionDetails: 'Details',
+  actionRead: 'Read full text',
+  actionPdf: 'PDF',
+  actionCitations: 'Cited by',
+  actionReferences: 'References',
+  actionRelated: 'Similar papers',
+  actionAuthors: 'Authors',
+  actionCitation: 'Citation formats',
+  actionVersions: 'Versions',
+  actionProfile: 'Profile',
+  actionPapers: 'Papers',
+  resultDraftReady: 'Added to the composer. You can edit it before sending.',
+  resultDraftBusy: 'The composer already has a draft or is sending. Send or clear it first.',
+  resultDraftUnavailable: 'Open this conversation to prepare a follow-up.',
+  resultError: 'Request failed',
+  resultCount: '{count} results',
+  resultRunning: 'Working…',
+  resultCharge: '{count} credits',
+  resultFullOutput: 'Full result and credit details',
+  resultInspect: 'Inspect call',
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API key',
   settingsIntro: 'Every search and full-text tool uses this key.',
@@ -218,6 +262,28 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   sizeHint: 'Higher resolutions take longer.',
 }
 export const zh: Record<Ai4ScholarLocaleKey, string> = {
+  actionCompare: '比较这些作者',
+  resultRemaining: '剩余 {count}',
+  actionDetails: '查看详情',
+  actionRead: '读全文',
+  actionPdf: 'PDF',
+  actionCitations: '谁引用了它',
+  actionReferences: '参考文献',
+  actionRelated: '相似论文',
+  actionAuthors: '查看作者',
+  actionCitation: '引用格式',
+  actionVersions: '全部版本',
+  actionProfile: '学者资料',
+  actionPapers: '论文列表',
+  resultDraftReady: '已填入输入框，可以修改后发送。',
+  resultDraftBusy: '输入框已有草稿或正在发送，请先发送或清空。',
+  resultDraftUnavailable: '请打开这段对话后继续操作。',
+  resultError: '请求失败',
+  resultCount: '{count} 条结果',
+  resultRunning: '处理中…',
+  resultCharge: '{count} 积分',
+  resultFullOutput: '完整结果与积分明细',
+  resultInspect: '查看调用',
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API Key',
   settingsIntro: '所有检索和全文工具都通过这个 Key 调用。',

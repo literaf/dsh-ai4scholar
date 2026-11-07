@@ -1,6 +1,7 @@
 /** Chinese literature search, shared by the standalone and unified tools. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import {
   PAPER_SEARCH_OUTPUT_SCHEMA, compact, int, isRecord, paperSearchMeta,
@@ -124,7 +125,7 @@ export function applyChineseTools(ctx: Context, runtime: Runtime): void {
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, runtime.render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: runtime.timeouts.tool,
     isConcurrencySafe: () => true,

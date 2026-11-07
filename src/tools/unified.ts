@@ -8,6 +8,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { InferValue } from '@deepseek-ai/dsh-tools'
 import {
@@ -295,7 +296,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
     output: {
       schema: OUTPUT_SCHEMA,
       render: (_args, value) => [{ type: 'text', text: formatUnified(value, render.abstractMaxChars) }],
-      presentationMeta: (_args, value) => paperListMeta(value.papers, value.truncated, value.credits),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperListMeta(value.papers, value.truncated, value.credits)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,

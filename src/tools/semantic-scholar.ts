@@ -7,6 +7,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { InferValue } from '@deepseek-ai/dsh-tools'
@@ -35,6 +36,7 @@ import type { CreditsValue, Paper, PaperSearchValue } from '../paper.js'
 import { READ_OUTPUT_SCHEMA, extractPdfText, fetchPdf, presentReadCall, renderRead, sliceText, withCredits } from '../pdf.js'
 import { boundResults, limitsFor, requireIds, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
+import { BulkPageCache } from '../bulk-pages.js'
 
 const SOURCE = 'semantic-scholar' as const
 
@@ -375,6 +377,7 @@ export async function runSemanticSearch(runtime: Runtime, params: SemanticSearch
  */
 export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullText: boolean): void {
   const { client, limits, render, timeouts } = runtime
+  const bulkPages = new BulkPageCache<Paper>()
   const graphSearchCap = Math.min(limits.maxResultsCap, S2_SEARCH_PAGE_CAP)
   const searchLimits = limitsFor(limits, runtime.resultsPerSource, 'semantic-scholar')
   const listCap = Math.min(limits.maxResultsCap, S2_EDGE_CAP)
@@ -392,7 +395,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -410,7 +413,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
 
   ctx.tools.register(defineTool({
     name: 'search_semantic_bulk',
-    description: 'Bulk paper search on Semantic Scholar for large result sets: pages of up to 1000 matches with a continuation token, sortable by citation count, date, or paper id. Only the first max_results papers of the page are returned to keep context small; pass the returned nextToken to continue. Use search_semantic for ordinary relevance-ranked queries.',
+    description: 'Bulk paper search on Semantic Scholar for large result sets, sortable by citation count, date, or paper id. Returns max_results papers at a time; pass the returned nextToken unchanged with the original query and filters. Unshown rows of a fetched page are kept for 15 minutes and returned before requesting the next paid page. Use search_semantic for ordinary relevance-ranked queries.',
     parameters: {
       query: { type: 'string', required: true, description: 'Search query; supports the bulk query syntax (boolean operators, quotes, prefix*).' },
       max_results: { type: 'integer', description: `Papers to return from this page (default ${limits.defaultMaxResults}, max ${limits.maxResultsCap}).` },
@@ -421,7 +424,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -432,6 +435,13 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
       const keep = boundResults(args.max_results, limits)
       const year = args.year?.trim()
       if (year !== undefined && year.length > 0 && !YEAR_FILTER.test(year)) throw new Error('year must look like "2019", "2016-2020", "2010-", or "-2015"')
+      const queryKey = JSON.stringify([query, year || '', args.sort?.trim() || ''])
+      exec.signal.throwIfAborted()
+      const cached = bulkPages.read(args.token?.trim(), queryKey, exec.agent, keep)
+      if (cached !== undefined) return {
+        source: SOURCE, query, ...cached,
+        warning: 'Continued the previously fetched bulk page. This slice made no additional API request and incurred no additional credits.',
+      }
       const apiKey = await runtime.requireApiKey()
       const res = await client.get<{ data?: unknown[]; total?: number; token?: string }>('/graph/v1/paper/search/bulk', {
         apiKey,
@@ -440,17 +450,13 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
       })
       if (!res.ok) throw new Error(`Semantic Scholar bulk search failed: ${res.error}`)
       const page = (res.data.data ?? []).map((p) => normalizeS2Paper(p)).filter((p): p is Paper => p !== undefined)
-      const papers = page.slice(0, keep)
       const total = typeof res.data.total === 'number' ? res.data.total : page.length
       const nextToken = typeof res.data.token === 'string' && res.data.token.length > 0 ? res.data.token : undefined
       return compact({
         source: SOURCE,
         query,
-        total,
-        papers,
-        truncated: nextToken !== undefined || page.length > papers.length,
-        nextToken,
-        warning: page.length > papers.length ? `This bulk page held ${page.length} papers; only the first ${papers.length} are shown (raise max_results up to ${limits.maxResultsCap}, or continue with nextToken).` : undefined,
+        ...bulkPages.first(page, total, nextToken, queryKey, exec.agent, keep),
+        warning: page.length > keep ? `This API page contains ${page.length} papers. Follow nextToken within 15 minutes to read its remaining rows before advancing to another API page.` : undefined,
         credits: runtime.creditsOf(res, exec.agent),
       })
     },
@@ -466,7 +472,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: SNIPPET_OUTPUT_SCHEMA,
       render: (_args, value) => [{ type: 'text', text: formatSnippets(value, render.abstractMaxChars) }],
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -491,7 +497,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     },
     output: {
       schema: MATCH_OUTPUT_SCHEMA,
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
       render: (_args, value) => {
         const credits = formatCredits(value.credits)
         const head = value.found && value.paper !== undefined
@@ -531,7 +537,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_DETAIL_SCHEMA,
       render: (_args, value) => renderPaperDetail(value.paper, value.credits),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -557,7 +563,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -603,7 +609,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
       output: {
         schema: PAPER_SEARCH_OUTPUT_SCHEMA,
         render: (_args, value) => renderPaperSearch(value, render),
-        presentationMeta: (_args, value) => paperSearchMeta(value),
+        presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
       },
       timeoutMs: timeouts.tool,
       isConcurrencySafe: () => true,
@@ -637,7 +643,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: AUTHOR_LIST_SCHEMA,
       render: (_args, value) => renderAuthorList(value, `Authors of ${value.query}`),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -672,7 +678,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: AUTHOR_LIST_SCHEMA,
       render: (_args, value) => renderAuthorList(value, `Semantic Scholar authors matching "${value.query}"`),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -703,7 +709,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     },
     output: {
       schema: { type: 'object', additionalProperties: false, properties: { author: AUTHOR_SCHEMA, credits: CREDITS_SCHEMA } },
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
       render: (_args, value) => {
         const parts: string[] = []
         if (value.author !== undefined) parts.push(formatAuthor(value.author, 1).replace(/^1\. /, ''))
@@ -736,7 +742,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: AUTHOR_LIST_SCHEMA,
       render: (_args, value) => renderAuthorList(value, value.query),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -763,7 +769,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -797,7 +803,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -828,7 +834,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -857,7 +863,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     },
     output: {
       schema: DOWNLOAD_SCHEMA,
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
       render: (_args, value) => {
         const lines = [
           value.title !== undefined ? `${value.title} (${value.id})` : value.id,
@@ -896,7 +902,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     output: {
       schema: READ_OUTPUT_SCHEMA,
       render: (_args, value) => renderRead(value),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.pdf + timeouts.tool,
     isConcurrencySafe: () => true,

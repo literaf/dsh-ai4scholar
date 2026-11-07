@@ -99,12 +99,12 @@ describe('credits accounting', () => {
     const result = await command.handler(invocation())
     expect(result.kind).toBe('success')
     expect(result.text).toContain('Credits available: 5,000')
-    expect(result.text?.endsWith('API key: configured (…-key)')).toBe(true)
+    expect(result.text).toContain('API key: configured (…-key)')
     const nokey = mount({}, { apiKey: undefined }).commands.get('ai4scholar')!
     const missing = await nokey.handler(invocation())
     expect(missing.kind).toBe('error')
-    expect(missing.text).toContain('Plugins → Installed → dsh-ai4scholar')
-    expect(missing.text).toContain('Settings → AI4Scholar')
+    expect(missing.text).toContain('插件设置')
+    expect(missing.text).toContain('https://ai4scholar.net?src=dsh')
   })
 
   it('GET /ai4scholar/balance answers ok / missing key / API failure as 200 JSON', async () => {
@@ -163,7 +163,7 @@ describe('credits accounting', () => {
     const detail = fake.tools.get('get_semantic_paper_detail')!
     const paper = await detail.execute({ paper_id: 'x' }, ctxWithAgent())
     const detailMeta = detail.output.presentationMeta!({ paper_id: 'x' }, paper as never)
-    expect(detailMeta).toEqual({ credits: { charged: 1, remaining: 4989, sessionTotal: 11 } })
+    expect(detailMeta).toMatchObject({ credits: { charged: 1, remaining: 4989, sessionTotal: 11 } })
     expect(detail.presentResult!({ paper_id: 'x' }, { content: [], isError: false, meta: detailMeta })).toEqual({ card: 'generic', title: 'Semantic Scholar paper: x · 1 credit · 4,989 left' })
     expect(detail.presentResult!({ paper_id: 'x' }, { content: [], isError: true, meta: detailMeta })).toBeUndefined()
     // Free tools carry no suffix.
@@ -480,10 +480,10 @@ describe('Semantic Scholar graph tools', () => {
     assertOutput(bulk.output.schema, page)
     expect(stub.calls[0]?.url.pathname).toBe('/graph/v1/paper/search/bulk')
     expect(stub.calls[0]?.url.searchParams.get('sort')).toBe('citationCount:desc')
-    expect(page).toMatchObject({ total: 5000, truncated: true, nextToken: 'NEXT' })
+    expect(page).toMatchObject({ total: 5000, truncated: true, nextToken: expect.stringMatching(/^ai4s-bulk:/) })
     expect((page.papers as unknown[]).length).toBe(2)
-    expect(page.warning).toMatch(/only the first 2 are shown/)
-    expect(textOf(bulk.output.render({ query: 'transformer' }, page as never))).toContain('call again with the returned nextToken')
+    expect(page.warning).toMatch(/within 15 minutes/)
+    expect(textOf(bulk.output.render({ query: 'transformer' }, page as never))).toContain(`token=${page.nextToken}`)
     await bulk.execute({ query: 'transformer', token: 'NEXT' }, ctxWithAgent())
     expect(stub.calls[1]?.url.searchParams.get('token')).toBe('NEXT')
 

@@ -23,6 +23,7 @@ export interface FakeContext {
   dispose: () => void
   /** Fire a Loader event the plugin subscribed to (`loader/volatile-update`). */
   emit: (name: string, ...args: unknown[]) => void
+  dispatch: (name: string, ...args: unknown[]) => Promise<unknown[]>
   /** Times the plugin asked its fiber to restart. */
   restarts: () => number
   /** Settings page policies the plugin registered (`settings.configure`). */
@@ -53,6 +54,7 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
     }
   const ctx = {
     tools: {
+      get(name: string) { return tools.get(name) },
       register(definition: ToolDefinition) {
         if (tools.has(definition.name)) throw new Error(`duplicate tool ${definition.name}`)
         tools.set(definition.name, definition)
@@ -123,7 +125,12 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
   const emit = (name: string, ...args: unknown[]): void => {
     for (const listener of listeners.get(name) ?? []) listener(...args)
   }
-  return { ctx, tools, sections, commands, routes, settingsNamespaces, dispose, emit, restarts: () => restartCount, policies }
+  const dispatch = async (name: string, ...args: unknown[]): Promise<unknown[]> => {
+    const result: unknown[] = []
+    for (const listener of listeners.get(name) ?? []) result.push(await listener(...args))
+    return result
+  }
+  return { ctx, tools, sections, commands, routes, settingsNamespaces, dispose, emit, dispatch, restarts: () => restartCount, policies }
 }
 
 /** Mount the plugin with schemastery defaults applied over `overrides`. */

@@ -9,7 +9,41 @@
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：39 个原生 agent 工具。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
+为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：43 个原生 agent 工具。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
+
+## 斜杠命令：后面接自然语言
+
+用斜杠选择能力，再直接说明条件，无需记忆参数名。未指定的来源和条数沿用插件设置。
+
+| 命令 | 用途 |
+|---|---|
+| `/ai4s` | 密钥状态、余额、默认来源和条数、功能索引 |
+| `/ai4s-search` | 统一论文检索，可用自然语言临时指定多个来源并去重 |
+| `/ai4s-google` | Google Scholar 论文检索 |
+| `/ai4s-semantic` | Semantic Scholar 检索、批量收集和全文片段 |
+| `/ai4s-pubmed` | PubMed 生物医学论文 |
+| `/ai4s-arxiv` | arXiv 预印本 |
+| `/ai4s-chinese` | 中文期刊、学位论文和会议文献 |
+| `/ai4s-biorxiv`、`/ai4s-medrxiv` | 按分类、时间浏览预印本 |
+| `/ai4s-patents` | Google Patents 专利检索 |
+| `/ai4s-author` | 找学者、看资料、论文列表和作者比较 |
+| `/ai4s-paper` | 论文详情、标题匹配、批量详情、全文、PDF、被引、参考文献、相关推荐和引用格式 |
+| `/ai4s-cite` | 为一段文字补充真实引用 |
+| `/ai4s-draw` | 科研绘图、编辑、风格、合成、迭代、点评、SVG 和矢量化 |
+
+```text
+/ai4s-google 固态电池，2022 年以来的 10 篇
+/ai4s-search 同时用 Google Scholar 和 Semantic Scholar 查固态电池，合并去重
+/ai4s-author 查 Geoffrey Hinton 在 Google Scholar 上的资料和代表论文
+/ai4s-paper 读刚才第三篇论文，重点解释研究方法
+/ai4s-patents 找宁德时代近五年在中国申请的固态电池专利
+```
+
+空命令显示用法，不调用检索接口。研究命令作为当前对话的新请求排队，由已配置的模型理解自然语言并调用工具；结果进入对话历史，可以继续追问。执行前模型会简要说明理解出的来源和条件，遇到来源冲突或作者重名才澄清。来源命令在执行时校验来源，不修改全局设置。旧 `/ai4scholar` 与 `/ai4s` 都可查看状态。
+
+当前 Harness 的论文、作者和专利结果卡片提供适用的后续操作。点击按钮会把带有准确标识的自然语言请求填入输入框，修改后发送即可；已有草稿会保留。PDF 和来源链接直接打开。旧版 Harness 没有对应卡片插槽时仍显示普通工具结果。
+
+Google Scholar 论文保留原始论文 ID、被引和版本 ID；引用格式接口只接受原始论文 ID，不接受 DOI、URL 或作者页面的 citationId。作者查询默认 Semantic Scholar，明确指定 Google Scholar 时使用其作者接口；Google 返回的是可用论文列表，不能据此声称是全部成果，也不提供 h-index。bioRxiv/medRxiv 按分类与时间浏览，不是关键词全文检索。专利结果独立于论文统一检索。
 
 | 家族 | 工具 | 计费 |
 |---|---|---|
@@ -17,7 +51,8 @@
 | **Semantic Scholar**（2 亿+ 论文，全学科） | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
 | **PubMed**（生物医学） | `search_pubmed`、`get_pubmed_paper_detail`、`get_pubmed_paper_batch`、`get_pubmed_citations`、`get_pubmed_related` | 积分 |
 | **中文文献**（期刊、学位论文、会议论文；题录与可用摘要） | `search_chinese` | 积分 |
-| **Google Scholar**（覆盖面最广，含被引数） | `search_google_scholar` | 积分 |
+| **Google Scholar**（论文、学者与引用格式） | `search_google_scholar`、`search_google_scholar_profiles`、`get_google_scholar_author`、`get_google_scholar_citation` | 积分 |
+| **Google Patents**（专利） | `search_google_patents` | 积分 |
 | **arXiv** | `search_arxiv`、`download_arxiv`、`read_arxiv_paper` | 免费 |
 | **bioRxiv / medRxiv** | `search_biorxiv`、`search_medrxiv`、`download_biorxiv`、`download_medrxiv`、`read_biorxiv_paper`、`read_medrxiv_paper` | 免费 |
 | **任意 DOI** | `download_by_doi`、`read_by_doi`（开放获取随处可用；付费期刊需校园网/机构权限） | 免费 |
@@ -106,6 +141,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     semanticScholar: true
     pubmed: true
     googleScholar: true
+    googlePatents: true              # search_google_patents
     chineseLiterature: true          # search_chinese
     arxiv: true
     biorxiv: true                    # bioRxiv + medRxiv
@@ -114,7 +150,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     autoCite: true
     sciDraw: true
     creditsTool: true                # get_ai4scholar_credits
-    command: true                    # /ai4scholar 斜杠命令
+    command: true                    # /ai4s、/ai4scholar 和 /ai4s-* 命令
     balanceRoute: true               # 设置卡片测试 Key 用的 GET /ai4scholar/balance 路由
     showCredits: true                # 计费结果末尾的积分行（插件页面可改）
     promptGuidance: true             # 注入一小段 system prompt 说明何时用哪个工具

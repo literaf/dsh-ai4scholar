@@ -30,6 +30,7 @@ import { SearchSettingsController } from './search-controller.js'
 import type { ConfigFormPort } from './search-controller.js'
 import { ENTRY_ID } from '../shared/search-settings.js'
 import { API_KEY_REF } from '../shared/key-reveal.js'
+import { applyResearchCards } from './ResearchCard.js'
 
 export { SearchSettingsController, readSettings } from './search-controller.js'
 export type { SearchSettingsState, SearchDraft, ConfigFormPort } from './search-controller.js'
@@ -61,6 +62,7 @@ export const inject = ['slots', 'locale', 'remote']
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ai4scholar: copy dictionaries')
   ctx.effect(() => installStyles(), 'ai4scholar: settings card styles')
+  applyResearchCards(ctx)
 
   // Resolved per call, not captured here: dsh 0.1.2-alpha removed
   // `connection.api` and moved credentials to a `remote.credentials` service, so
@@ -170,9 +172,9 @@ export function apply(ctx: ClientContext): void {
   // The `/ai4scholar` command row: a balance card instead of the generic
   // monospace command card. Keyed by command name; the generic card stays the
   // fallback for every other command.
-  configSlots.inject('conversation.chat.commandview', () => configSlots.register({
+  for (const name of ['ai4s', 'ai4scholar']) configSlots.inject('conversation.chat.commandview', () => configSlots.register({
     name: 'conversation.chat.commandview',
-    key: 'ai4scholar',
+    key: name,
     locale: NS,
     inject: (): Ai4ScholarCommandFace => ({ topUpUrl: 'https://ai4scholar.net?src=dsh' }),
   }, Ai4ScholarCommandCard))

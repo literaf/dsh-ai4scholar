@@ -131,7 +131,7 @@ export async function answerBalanceRoute(runtime: Runtime, signal: AbortSignal |
  * @param tool - whether to register the model-facing balance tool.
  * @param route - whether to register `GET /ai4scholar/balance` (needs `ctx.webServer`).
  */
-export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boolean, tool: boolean, route: boolean): void {
+export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boolean, tool: boolean, route: boolean, status = ''): void {
   if (route) {
     // `webServer` exists only in the web composition; headless never activates this child.
     ctx.inject(['webServer'], (webCtx) => {
@@ -184,19 +184,20 @@ export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boole
   if (!command) return
   // `commands` is optional: the child fiber activates when the service exists.
   ctx.inject(['commands'], (commandCtx) => {
-    commandCtx.commands.register({
-      name: 'ai4scholar',
-      description: 'AI4Scholar: show API key status, credit balance, and credits spent in this session',
+    for (const name of ['ai4s', 'ai4scholar']) commandCtx.commands.register({
+      name,
+      description: 'AI4Scholar · 密钥、余额、默认来源、条数与功能索引',
       handler: async (invocation) => {
+        if (invocation.rawInput?.trim() && !/^(help|帮助|用法|\?)$/i.test(invocation.rawInput.trim())) return { kind: 'success', text: status }
         const key = await runtime.apiKey()
         if (key === undefined) {
-          return { kind: 'error', text: 'AI4Scholar API key is not configured. Open Plugins → Installed → dsh-ai4scholar (or Settings → AI4Scholar) to store one (or set AI4SCHOLAR_API_KEY). Get a key at https://ai4scholar.net' }
+          return { kind: 'error', text: `AI4Scholar API key is not configured. 请在插件设置中配置密钥：https://ai4scholar.net?src=dsh\n\n${status}` }
         }
         try {
           const balance = await fetchBalance(runtime, invocation.signal, invocation.agent)
-          return { kind: 'success', text: `${formatBalance(balance)}\nAPI key: configured (…${key.slice(-4)})` }
+          return { kind: 'success', text: `${formatBalance(balance)}\nAPI key: configured (…${key.slice(-4)})\n\n${status}` }
         } catch (error) {
-          return { kind: 'error', text: error instanceof Error ? error.message : String(error) }
+          return { kind: 'error', text: `${error instanceof Error ? error.message : String(error)}\n\n${status}` }
         }
       },
     })

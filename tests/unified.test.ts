@@ -193,7 +193,7 @@ describe('search_papers', () => {
     expect(stub.calls.map((call) => call.url.pathname)).toEqual(['/pubmed/v1/paper/search'])
     expect(value.sources).toEqual(['pubmed'])
     expect(tool.description).toContain('(default PubMed only;')
-    expect(fake.sections[0]?.text).not.toContain('Semantic Scholar')
+    expect(fake.sections.find((s) => s.name === 'tool:ai4scholar')?.text).not.toContain('Semantic Scholar')
   })
 
   it('queries the configured default platforms together and says so to the model', async () => {
@@ -210,7 +210,7 @@ describe('search_papers', () => {
     expect(stub.calls.map((call) => call.url.pathname).sort()).toEqual(['/google-scholar/v1/search', '/graph/v1/paper/search'])
     expect(tool.description).toContain('by default it queries Semantic Scholar + Google Scholar together')
     expect(tool.description).not.toContain('one platform by default')
-    expect(fake.sections[0]?.text).toContain('queries Semantic Scholar + Google Scholar together by default')
+    expect(fake.sections.find((s) => s.name === 'tool:ai4scholar')?.text).toContain('queries Semantic Scholar + Google Scholar together by default')
     // An explicit sources list still wins for one call.
     await tool.execute({ query: 'x', sources: ['semantic-scholar'] }, ctxWithAgent())
     expect(stub.calls.at(-1)!.url.pathname).toBe('/graph/v1/paper/search')
@@ -219,7 +219,7 @@ describe('search_papers', () => {
   it('uses a single configured platform and ignores ones the composition did not mount', async () => {
     const only = mount({ searchSources: ['google-scholar'] })
     expect(only.tools.get('search_papers')!.description).toContain('(default Google Scholar only;')
-    expect(only.sections[0]?.text).toContain('(Google Scholar only)')
+    expect(only.sections.find((s) => s.name === 'tool:ai4scholar')?.text).toContain('(Google Scholar only)')
     // Google Scholar unmounted: the configured default falls back to the first mounted platform.
     const fallback = mount({ searchSources: ['google-scholar'], googleScholar: false })
     expect(fallback.tools.get('search_papers')!.description).toContain('(default Semantic Scholar only;')

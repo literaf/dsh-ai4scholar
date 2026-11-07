@@ -5,6 +5,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { researchMeta } from '../research-meta.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import {
   PAPER_SEARCH_OUTPUT_SCHEMA,
@@ -162,7 +163,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -189,7 +190,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     output: {
       schema: PAPER_DETAIL_SCHEMA,
       render: (_args, value) => renderPaperDetail(value.paper, value.credits),
-      presentationMeta: (_args, value) => creditsMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, creditsMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -217,7 +218,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     output: {
       schema: PAPER_SEARCH_OUTPUT_SCHEMA,
       render: (_args, value) => renderPaperSearch(value, render),
-      presentationMeta: (_args, value) => paperSearchMeta(value),
+      presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
     },
     timeoutMs: timeouts.tool,
     isConcurrencySafe: () => true,
@@ -258,7 +259,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
       output: {
         schema: PAPER_SEARCH_OUTPUT_SCHEMA,
         render: (_args, value) => renderPaperSearch(value, render),
-        presentationMeta: (_args, value) => paperSearchMeta(value),
+        presentationMeta: (_args, value) => researchMeta(value, runtime.enabledTools, paperSearchMeta(value)),
       },
       timeoutMs: timeouts.tool,
       isConcurrencySafe: () => true,

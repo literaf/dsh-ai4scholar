@@ -9,7 +9,41 @@ English | [中文](README_CN.md)
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
-Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 39 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
+Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 43 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
+
+## Slash commands with natural-language requests
+
+Choose a capability with a slash command, then describe the request normally. Unspecified criteria inherit the plugin settings.
+
+| Command | Purpose |
+|---|---|
+| `/ai4s` | Key status, balance, default sources/counts, and command index |
+| `/ai4s-search` | Unified paper search; request multiple sources and deduplication in plain language |
+| `/ai4s-google` | Google Scholar papers |
+| `/ai4s-semantic` | Semantic Scholar search, bulk collection, and full-text snippets |
+| `/ai4s-pubmed` | PubMed biomedical literature |
+| `/ai4s-arxiv` | arXiv preprints |
+| `/ai4s-chinese` | Chinese journals, theses, and conference literature |
+| `/ai4s-biorxiv`, `/ai4s-medrxiv` | Browse preprints by category and time window |
+| `/ai4s-patents` | Google Patents search |
+| `/ai4s-author` | Author discovery, profiles, publications, and comparisons |
+| `/ai4s-paper` | Details, title matching, batches, full text, PDF links, citations, references, recommendations, and citation formats |
+| `/ai4s-cite` | Add real references to prose |
+| `/ai4s-draw` | Generate, edit, style, compose, iterate, critique, SVG, and vectorize scientific figures |
+
+```text
+/ai4s-google 10 solid-state battery papers published since 2022
+/ai4s-search Search Google Scholar and Semantic Scholar for solid-state batteries and merge duplicates
+/ai4s-author Find Geoffrey Hinton’s Google Scholar profile and representative papers
+/ai4s-paper Read the third paper above, focusing on its methodology
+/ai4s-patents Find CATL’s solid-state battery patent applications in China from the last five years
+```
+
+An empty command shows an example without searching. Research commands queue a normal model turn in the current conversation: your configured model interprets the request, briefly states the source and material criteria, then calls tools. Results remain available for follow-ups. Conflicting sources and ambiguous authors require clarification; source-specific commands enforce the selected source at execution and leave global defaults unchanged. `/ai4scholar` remains an alias for the status command.
+
+On current Harness, paper, author, and patent result cards offer applicable actions. Buttons prepare an editable natural-language follow-up containing the exact identifiers; they preserve existing composer drafts. PDF/source links open directly. Older clients without the tool-view slot retain ordinary tool results.
+
+Google Scholar results retain native paper, cited-by, and version identifiers. Citation-format lookup requires the native paper ID, not a DOI, URL, or author-page citationId. Author search defaults to Semantic Scholar; explicitly requesting Google Scholar selects its author tools. Google’s available article list is not guaranteed complete and supplies no h-index. bioRxiv/medRxiv browse by category and time, not free-text keywords. Patents stay separate from unified paper search.
 
 | Family | Tools | Cost |
 |---|---|---|
@@ -17,7 +51,8 @@ Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/
 | **Semantic Scholar** (200M+ papers, all fields) | `search_semantic`, `search_semantic_bulk`, `search_semantic_snippets` (full-text excerpts), `search_semantic_paper_match` (title → paper), `get_semantic_paper_detail`, `get_semantic_paper_batch`, `get_semantic_citations`, `get_semantic_references`, `get_semantic_paper_authors`, `search_semantic_authors`, `get_semantic_author_detail`, `get_semantic_author_batch`, `get_semantic_author_papers`, `get_semantic_recommendations`, `get_semantic_recommendations_for_paper`, `download_semantic`, `read_semantic_paper` | credits |
 | **PubMed** (biomedical & life sciences) | `search_pubmed`, `get_pubmed_paper_detail`, `get_pubmed_paper_batch`, `get_pubmed_citations`, `get_pubmed_related` | credits |
 | **Chinese literature** (journals, theses, conferences; metadata and available abstracts) | `search_chinese` | credits |
-| **Google Scholar** (broadest coverage, cited-by counts) | `search_google_scholar` | credits |
+| **Google Scholar** (papers, authors, reference formats) | `search_google_scholar`, `search_google_scholar_profiles`, `get_google_scholar_author`, `get_google_scholar_citation` | credits |
+| **Google Patents** | `search_google_patents` | credits |
 | **arXiv** | `search_arxiv`, `download_arxiv`, `read_arxiv_paper` | free |
 | **bioRxiv / medRxiv** | `search_biorxiv`, `search_medrxiv`, `download_biorxiv`, `download_medrxiv`, `read_biorxiv_paper`, `read_medrxiv_paper` | free |
 | **Any DOI** | `download_by_doi`, `read_by_doi` (open access anywhere; paywalled publishers on institutional networks) | free |
@@ -106,6 +141,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     semanticScholar: true
     pubmed: true
     googleScholar: true
+    googlePatents: true              # search_google_patents
     chineseLiterature: true
     arxiv: true
     biorxiv: true                    # bioRxiv + medRxiv

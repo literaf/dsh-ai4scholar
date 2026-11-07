@@ -28,7 +28,7 @@ function assertOutput(schema: unknown, value: unknown): void {
 export const ALL_TOOLS = [
   'auto_cite',
   'download_arxiv', 'download_biorxiv', 'download_by_doi', 'download_medrxiv', 'download_semantic',
-  'get_ai4scholar_credits',
+  'get_ai4scholar_credits', 'get_google_scholar_author', 'get_google_scholar_citation', 'search_google_scholar_profiles', 'search_google_patents',
   'get_pubmed_citations', 'get_pubmed_paper_batch', 'get_pubmed_paper_detail', 'get_pubmed_related',
   'get_semantic_author_batch', 'get_semantic_author_detail', 'get_semantic_author_papers', 'get_semantic_citations',
   'get_semantic_paper_authors', 'get_semantic_paper_batch', 'get_semantic_paper_detail',
@@ -40,15 +40,17 @@ export const ALL_TOOLS = [
 ].sort()
 
 describe('plugin mount', () => {
-  it('registers all 39 tools, the /ai4scholar command, and the guidance section with defaults', () => {
+  it('registers all 43 tools, the /ai4scholar command, and the guidance section with defaults', () => {
     const fake = mount()
     expect([...fake.tools.keys()].sort()).toEqual(ALL_TOOLS)
-    expect(ALL_TOOLS).toHaveLength(39)
-    expect([...fake.commands.keys()]).toEqual(['ai4scholar'])
+    expect(ALL_TOOLS).toHaveLength(43)
+    expect(fake.commands.size).toBe(15)
+    expect(fake.commands.has('ai4s')).toBe(true)
+    expect(fake.commands.has('ai4scholar')).toBe(true)
     expect(fake.sections).toHaveLength(1)
-    expect(fake.sections[0]?.name).toBe('tool:ai4scholar')
-    expect(fake.sections[0]?.order).toBe(150)
-    const text = fake.sections[0]?.text
+    expect(fake.sections.find((s) => s.name === 'tool:ai4scholar')?.name).toBe('tool:ai4scholar')
+    expect(fake.sections.find((s) => s.name === 'tool:ai4scholar')?.order).toBe(150)
+    const text = fake.sections.find((s) => s.name === 'tool:ai4scholar')?.text
     expect(typeof text === 'string' && text.includes('search_pubmed') && text.includes('search_google_scholar')).toBe(true)
     expect(text).toContain('one platform by default (Semantic Scholar only)')
     expect(text).toContain('select sources ["pubmed"]')
@@ -57,7 +59,7 @@ describe('plugin mount', () => {
   })
 
   it('honors family toggles and the guidance switch', () => {
-    const fake = mount({ pubmed: false, googleScholar: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false, fullText: false, promptGuidance: false, unifiedSearch: false })
+    const fake = mount({ pubmed: false, googleScholar: false, googlePatents: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false, fullText: false, promptGuidance: false, unifiedSearch: false })
     expect([...fake.tools.keys()].sort()).toEqual([
       'download_semantic',
       'get_semantic_author_batch', 'get_semantic_author_detail', 'get_semantic_author_papers', 'get_semantic_citations',
@@ -70,14 +72,14 @@ describe('plugin mount', () => {
   })
 
   it('registers no guidance when every family is off', () => {
-    const fake = mount({ semanticScholar: false, pubmed: false, googleScholar: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false })
+    const fake = mount({ semanticScholar: false, pubmed: false, googleScholar: false, googlePatents: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false })
     expect(fake.tools.size).toBe(0) // search_papers registers nothing when no platform is enabled
     expect(fake.sections).toHaveLength(0)
   })
 
   it('still mounts when the commands service is absent', () => {
     const fake = mount({}, { apiKey: 'k', commands: false })
-    expect(fake.tools.size).toBe(39)
+    expect(fake.tools.size).toBe(43)
     expect(fake.commands.size).toBe(0)
   })
 
@@ -378,7 +380,7 @@ describe('search_google_scholar', () => {
     const papers = value.papers as Array<Record<string, unknown>>
     expect(papers).toHaveLength(10)
     expect(value).toMatchObject({ source: 'google-scholar', total: 10, truncated: true, nextOffset: 10, credits: { charged: 1, remaining: 99 } })
-    expect(papers[0]).toEqual({
+    expect(papers[0]).toMatchObject({
       source: 'google-scholar',
       id: 'https://example.org/paper-1',
       title: 'Scholar paper 1',
@@ -444,7 +446,7 @@ describe('settings namespace (rc.7 keyed card pairing)', () => {
   it('loads all tools on modern hosts whose settings service has no register method', () => {
     const fake = mount({}, { apiKey: 'test-key', settings: 'configForms' })
     expect(fake.settingsNamespaces.size).toBe(0)
-    expect(fake.tools.size).toBe(39)
+    expect(fake.tools.size).toBe(43)
   })
 
   it('registers the ai4scholar namespace when the settings service is composed', () => {

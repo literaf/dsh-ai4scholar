@@ -2,6 +2,22 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.0] - 2026-11-08
+
+### Added
+- Four native tools: Google Patents search, Google Scholar author search, author profiles/articles, and reference-format exports. Default tool count is now 43. Patents have an independent `googlePatents` feature toggle and remain outside unified paper search.
+- Fourteen main slash commands: `/ai4s` for status/help and thirteen `/ai4s-*` research entries. Users describe criteria in natural language; research commands queue a normal model turn, retain attachments for drawing, and preserve tool results for follow-ups. Empty commands show examples without searching. Disabled capabilities are absent from discovery; `/ai4scholar` remains compatible.
+- Source checks at tool execution for source-specific commands, activated only when the queued request enters a model step and released for ordinary follow-ups or idle agents. Invocation IDs prevent duplicate queueing.
+- Replayable paper, author and patent result cards on current Harness, with applicable actions, exact identifiers and credit totals. Follow-up buttons fill an editable composer draft without overwriting existing text; PDF/source links open directly. Older hosts retain readable standard results.
+- `/ai4s` and `/ai4scholar` report default search sources, per-source counts and available command help alongside key status and credits.
+
+### Changed
+- Google Scholar retains native paper, cited-by and version IDs as strings and supports review/language/date-sort/cites/cluster filters. Author profiles keep their source-specific identity and available article list; missing metrics and identifiers are not invented.
+- Guides and plugin-page examples use natural-language requests after the slash command. Citation formats for a known paper are distinct from adding references to prose.
+
+### Fixed
+- Semantic Scholar bulk search now returns the unshown rows of the current API page before advancing upstream. Conversation/query-scoped cursors expire after 15 minutes, can be replayed without a new charge, and are included in the model-facing result. The cache is bounded and is not a persistent paper library.
+
 ## [0.3.10] - 2026-11-07
 
 ### Added

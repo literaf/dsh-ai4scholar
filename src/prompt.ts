@@ -9,6 +9,7 @@ export interface EnabledFamilies {
   semanticScholar: boolean
   pubmed: boolean
   googleScholar: boolean
+  googlePatents?: boolean
   chineseLiterature: boolean
   arxiv: boolean
   biorxiv: boolean
@@ -70,8 +71,9 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
     lines.push('- PubMed (biomedical, clinical; costs credits): search_pubmed, get_pubmed_paper_detail, get_pubmed_paper_batch, get_pubmed_citations, get_pubmed_related. Prefer it for medicine, biology, and health questions.')
   }
   if (enabled.googleScholar) {
-    lines.push('- search_google_scholar (broadest coverage, cited-by counts; costs credits, slower): use when other tools miss or Google Scholar counts are wanted.')
+    lines.push('- search_google_scholar (broad coverage; costs credits, slower): supports years, reviews, date sorting and cites/cluster queries. Preserve externalIds.GoogleScholar / GoogleScholarCites / GoogleScholarCluster as opaque strings. get_google_scholar_citation exports reference formats for a returned GoogleScholar ID, not a URL, DOI or author-page citationId. search_google_scholar_profiles finds author candidates; get_google_scholar_author gets a profile and available articles (not a complete oeuvre; no h-index). Disambiguate authors by affiliation, and keep their platform-specific IDs and metrics separate.')
   }
+  if (enabled.googlePatents) lines.push('- search_google_patents searches patents separately from papers: assignee, inventor, country, status, filing/publication/priority dates and pagination. Show publication numbers, parties, relevant dates and returned detail/PDF links.')
   if (enabled.chineseLiterature) {
     lines.push('- search_chinese (Chinese-language journals, theses, conferences; costs credits): use Chinese keywords, publication-year or document-type filters, sorting, and offset pagination. Results are metadata and available abstracts, not full text or a download service.'
       + (enabled.unified ? ' It is also sources ["chinese"] in search_papers; when combining Chinese and international literature, supply Chinese keywords in chinese_query and use query for the other sources. Results merge by shared identifiers or matching normalized titles; translated titles without shared identifiers may remain separate.' : ''))
@@ -97,7 +99,7 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
   if (enabled.credits) {
     lines.push('- get_ai4scholar_credits (free) reports the credit balance and what this session has spent; results of billed tools already show credits charged/remaining.')
   }
-  const anyBilled = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.chineseLiterature || enabled.autoCite || enabled.sciDraw
+  const anyBilled = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.googlePatents || enabled.chineseLiterature || enabled.autoCite || enabled.sciDraw
   if (anyBilled) {
     lines.push('- After a turn in which billed AI4Scholar tools ran, end your reply with one short line stating the credits those calls cost and the remaining balance (both appear at the end of each billed tool result), in the user\'s language.')
   }
@@ -105,6 +107,7 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
   return [
     'AI4Scholar literature tools are available:',
     ...lines,
+    'Users may select a capability with /ai4s-* and express all criteria in natural language; do not ask them to write command-line flags. Show the understood source and material filters briefly, then execute. Offer applicable next actions beside results and preserve result numbering/IDs for followups such as “read the third paper”. Download tools return PDF links; do not claim to have saved a local file.',
     'For literature questions, call the tools instead of guessing; start with one relevant platform and expand only when needed. Present findings in Markdown and cite each paper by title with its DOI or link. Never fabricate papers, authors, identifiers, or figures that a tool did not return.',
   ].join('\n')
 }

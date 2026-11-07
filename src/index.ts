@@ -21,6 +21,9 @@ import type { Runtime } from './runtime.js'
 import { applySemanticScholarTools } from './tools/semantic-scholar.js'
 import { applyPubmedTools } from './tools/pubmed.js'
 import { applyGoogleScholarTools } from './tools/google-scholar.js'
+import { applyGoogleExtraTools, applyGooglePatentsTool } from './tools/google-extras.js'
+import { applyResearchCommands } from './commands.js'
+import { RESEARCH_TOOL_NAMES } from './shared/commands.js'
 import { applyChineseTools } from './tools/chinese.js'
 import { applyArxivTools } from './tools/arxiv.js'
 import { applyRxivTools } from './tools/rxiv.js'
@@ -72,6 +75,8 @@ export interface Config {
   pubmed?: boolean
   /** Register the Google Scholar tool. */
   googleScholar?: boolean
+  /** Register Google Patents search independently of academic paper search. */
+  googlePatents?: boolean
   /** Register the Chinese literature search tool. */
   chineseLiterature?: boolean
   /** Register the arXiv tools. */
@@ -161,6 +166,7 @@ export const Config: Schema<Config> = Schema.object({
   semanticScholar: Schema.boolean().default(true).description('Register the Semantic Scholar tools.'),
   pubmed: Schema.boolean().default(true).description('Register the PubMed tools.'),
   googleScholar: Schema.boolean().default(true).description('Register the Google Scholar tool.'),
+  googlePatents: Schema.boolean().default(true).description('Register Google Patents search.'),
   chineseLiterature: Schema.boolean().default(true).description('Register search_chinese (Chinese literature metadata and abstracts).'),
   arxiv: Schema.boolean().default(true).description('Register the arXiv tools.'),
   biorxiv: Schema.boolean().default(true).description('Register the bioRxiv/medRxiv tools.'),
@@ -176,7 +182,7 @@ export const Config: Schema<Config> = Schema.object({
   drawModel: live(Schema.union([...DRAW_MODELS]).default('flash31').description('sci_draw model when the model names none.')),
   drawImageSize: live(Schema.union([...DRAW_SIZES]).default('2K').description('sci_draw resolution when the model names none.')),
   creditsTool: Schema.boolean().default(true).description('Register get_ai4scholar_credits.'),
-  command: Schema.boolean().default(true).description('Register the /ai4scholar command.'),
+  command: Schema.boolean().default(true).description('Register /ai4s, /ai4scholar and the natural-language /ai4s-* commands.'),
   balanceRoute: Schema.boolean().default(true).description('Register GET /ai4scholar/balance for the settings card.'),
   showCredits: live(Schema.boolean().default(true).description('Attach credit accounting to billed results.')),
   promptGuidance: Schema.boolean().default(true).description('Register the system-prompt guidance section.'),
@@ -257,7 +263,9 @@ export function apply(ctx: Context, config: Config): void {
     userAgent: `dsh-ai4scholar/${VERSION}`,
   })
   const ledger = new CreditLedger()
+  const enabledTools = new Set<string>()
   const runtime: Runtime = {
+    enabledTools,
     client,
     render: { abstractMaxChars: resolved.abstractMaxChars },
     limits: { defaultMaxResults: resolved.defaultMaxResults, maxResultsCap: resolved.maxResultsCap },
@@ -278,7 +286,11 @@ export function apply(ctx: Context, config: Config): void {
 
   if (resolved.semanticScholar) applySemanticScholarTools(ctx, runtime, resolved.fullText)
   if (resolved.pubmed) applyPubmedTools(ctx, runtime)
-  if (resolved.googleScholar) applyGoogleScholarTools(ctx, runtime)
+  if (resolved.googleScholar) {
+    applyGoogleScholarTools(ctx, runtime)
+    applyGoogleExtraTools(ctx, runtime)
+  }
+  if (resolved.googlePatents) applyGooglePatentsTool(ctx, runtime)
   if (resolved.chineseLiterature) applyChineseTools(ctx, runtime)
   if (resolved.arxiv) applyArxivTools(ctx, runtime, resolved.fullText)
   if (resolved.biorxiv) applyRxivTools(ctx, runtime, resolved.fullText)
@@ -293,7 +305,15 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.unifiedSearch) applyUnifiedSearchTool(ctx, runtime, platforms, resolved.searchSources)
   if (resolved.autoCite) applyAutoCiteTool(ctx, runtime)
   if (resolved.sciDraw) applySciDrawTool(ctx, runtime)
-  if (resolved.creditsTool || resolved.command || resolved.balanceRoute) applyCreditsTools(ctx, runtime, resolved.command, resolved.creditsTool, resolved.balanceRoute)
+  if (resolved.command) for (const name of RESEARCH_TOOL_NAMES) if (ctx.tools.get(name)) enabledTools.add(name)
+  const help = resolved.command ? applyResearchCommands(ctx, enabledTools) : ''
+  const defaults = defaultSourcesFor(resolved.searchSources, platforms)
+  const status = [
+    `默认检索来源：${defaults.length ? defaults.join('、') : '未启用论文检索来源'}`,
+    `默认条数：${defaults.map((s) => `${s} ${Math.min(resolved.resultsPerSource[s] ?? resolved.defaultMaxResults, resolved.maxResultsCap, PLATFORM_CAP[s])} 篇`).join('；') || '—'}`,
+    help,
+  ].join('\n')
+  if (resolved.creditsTool || resolved.command || resolved.balanceRoute) applyCreditsTools(ctx, runtime, resolved.command, resolved.creditsTool, resolved.balanceRoute, status)
   applyKeyRevealRoute(ctx)
 
   if (resolved.promptGuidance) {
@@ -301,6 +321,7 @@ export function apply(ctx: Context, config: Config): void {
       semanticScholar: resolved.semanticScholar,
       pubmed: resolved.pubmed,
       googleScholar: resolved.googleScholar,
+      googlePatents: resolved.googlePatents,
       chineseLiterature: resolved.chineseLiterature,
       arxiv: resolved.arxiv,
       biorxiv: resolved.biorxiv,

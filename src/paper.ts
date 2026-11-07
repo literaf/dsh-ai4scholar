@@ -60,7 +60,7 @@ export const PAPER_SCHEMA = {
   additionalProperties: false,
   properties: {
     source: { type: 'string', required: true, enum: PAPER_SOURCES },
-    id: { type: 'string', required: true, description: 'Platform-native identifier: Semantic Scholar paperId, PubMed PMID, arXiv id, bioRxiv/medRxiv DOI, Chinese literature document id, or a Google Scholar result URL.' },
+    id: { type: 'string', required: true, description: 'Platform-native identifier. Google Scholar uses its native result ID when available, otherwise a URL; only externalIds.GoogleScholar is valid for its citation-format tool.' },
     title: { type: 'string', required: true },
     authors: { type: 'array', required: true, items: { type: 'string' } },
     year: { type: 'integer' },
@@ -193,6 +193,10 @@ export function formatPaper(paper: Paper, index: number, options: RenderOptions)
   const pmid = paper.externalIds?.PubMed
   if (typeof pmid === 'string' && paper.source !== 'pubmed') ids.push(`PMID: ${pmid}`)
   if (paper.pdfUrl !== undefined) ids.push(`PDF: ${paper.pdfUrl}`)
+  for (const key of ['GoogleScholar', 'GoogleScholarCites', 'GoogleScholarCluster']) {
+    const value = paper.externalIds?.[key]
+    if (typeof value === 'string') ids.push(`${key}: ${value}`)
+  }
   lines.push(`   ${ids.join(' · ')}`)
   if (paper.categories !== undefined && paper.categories.length > 0) lines.push(`   Categories: ${paper.categories.slice(0, 6).join(', ')}`)
   const contexts = paper.extra?.contexts
@@ -210,7 +214,7 @@ function idLabel(source: PaperSource): string {
   switch (source) {
     case 'semantic-scholar': return 'S2 id'
     case 'pubmed': return 'PMID'
-    case 'google-scholar': return 'link'
+    case 'google-scholar': return 'Google Scholar result'
     case 'chinese': return 'Document id'
     case 'arxiv': return 'arXiv'
     case 'biorxiv':
@@ -226,7 +230,8 @@ export function formatPaperSearch(value: PaperSearchValue, options: RenderOption
   const label = SOURCE_LABEL[value.source]
   if (value.papers.length === 0) {
     const credits = formatCredits(value.credits)
-    return `No ${label} results for "${value.query}".${value.warning !== undefined ? `\n\nNote: ${value.warning}` : ''}${credits !== undefined ? `\n\n${credits}` : ''}`
+    const cursor = value.nextToken !== undefined ? `Continue with the original query and token=${value.nextToken}.` : value.nextOffset !== undefined ? `Continue with offset=${value.nextOffset}.` : ''
+    return [`No ${label} results${value.truncated ? ' on this page' : ''} for "${value.query}".`, value.warning !== undefined ? `Note: ${value.warning}` : '', cursor, credits].filter(Boolean).join('\n\n')
   }
   const parts: string[] = []
   const totalNote = value.total > value.papers.length ? ` of ${value.total}` : ''
@@ -237,7 +242,7 @@ export function formatPaperSearch(value: PaperSearchValue, options: RenderOption
     parts.push(value.nextOffset !== undefined
       ? `More results are available; call again with offset=${value.nextOffset} to continue.`
       : value.nextToken !== undefined
-        ? 'More results are available; call again with the returned nextToken to continue.'
+        ? `More results are available; keep the original query and filters and pass token=${value.nextToken} to continue.`
         : 'More results are available; narrow the query or raise max_results to see them.')
   }
   parts.push('Cite papers by title with their DOI or platform link.')

@@ -11,6 +11,9 @@ const P = 'ai4s'
 
 /** Class names used by the card component. */
 export const cls = {
+  research: `${P}-research`, researchHead: `${P}-research-head`, researchBody: `${P}-research-body`,
+  researchList: `${P}-research-list`, researchItem: `${P}-research-item`, researchTitle: `${P}-research-title`,
+  researchFacts: `${P}-research-facts`, researchActions: `${P}-research-actions`, researchNotice: `${P}-research-notice`, researchRaw: `${P}-research-raw`,
   card: `${P}-card`,
   page: `${P}-page`,
   pageHead: `${P}-page-head`,
@@ -114,6 +117,25 @@ export const cls = {
 } as const
 
 export const CSS = `
+.${cls.research} { margin: 6px 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-3); }
+.${cls.researchHead} { padding: 10px 14px; cursor: pointer; font-size: 13px; line-height: 1.5; }
+.${cls.researchHead} > span { margin-right: 10px; }
+.${cls.researchBody} { padding: 0 14px 12px; }
+.${cls.researchList} { margin: 0; padding-left: 22px; max-height: 580px; overflow: auto; }
+.${cls.researchItem} { padding: 12px 0; border-bottom: 1px solid var(--dsw-alias-border-l2); }
+.${cls.researchItem}:last-child { border-bottom: 0; }
+.${cls.researchTitle} { font-size: 14px; line-height: 1.5; font-weight: 550; overflow-wrap: anywhere; }
+.${cls.researchTitle} a { color: inherit; text-decoration: none; }
+.${cls.researchTitle} a:hover { text-decoration: underline; }
+.${cls.researchFacts} { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); overflow-wrap: anywhere; }
+.${cls.researchActions} { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.${cls.researchActions} button, .${cls.researchActions} a { appearance: none; border: 1px solid var(--dsw-alias-border-l3); background: transparent; border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12px; color: var(--dsw-alias-label-secondary); text-decoration: none; cursor: pointer; }
+.${cls.researchActions} button:hover, .${cls.researchActions} a:hover { background: var(--dsw-alias-interactive-bg-hover-solid); }
+.${cls.researchActions} button:focus-visible, .${cls.researchActions} a:focus-visible, .${cls.researchHead}:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
+.${cls.researchNotice} { margin: 10px 0; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.${cls.researchRaw} { margin: 8px 0; font-size: 12px; }
+.${cls.researchRaw} summary { cursor: pointer; color: var(--dsw-alias-label-tertiary); margin-bottom: 6px; }
+.${cls.researchRaw} pre { max-height: 300px; overflow: auto; overflow-wrap: anywhere; }
 .${cls.cmd} { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-3); max-width: 560px; }
 .${cls.cmdError} { border-color: var(--dsw-alias-label-error); }
 .${cls.cmdHead} { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
