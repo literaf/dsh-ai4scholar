@@ -63,6 +63,7 @@ export const cls = {
   keyValue: `${P}-key-value`,
   keySecret: `${P}-key-secret`,
   keyToggle: `${P}-key-toggle`,
+  keyAccess: `${P}-key-access`,
   linkIcon: `${P}-link-icon`,
   balance: `${P}-balance`,
   balanceNumber: `${P}-balance-number`,
@@ -160,6 +161,8 @@ export const CSS = `
 .${cls.keyToggle}:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .${cls.keyToggle}:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
 .${cls.keyToggle}:disabled { opacity: .5; cursor: default; }
+.${cls.keyAccess} { display: flex; align-items: baseline; justify-content: flex-end; flex-wrap: wrap; gap: 4px 10px; }
+.${cls.keyAccess} > * { white-space: nowrap; }
 .${cls.link} { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-link, var(--dsw-alias-brand-primary)); text-decoration: none; }
 .${cls.link}:hover { text-decoration: underline; }
 .${cls.linkIcon} { width: 12px; height: 12px; }
@@ -279,6 +282,7 @@ export const CSS = `
 .${cls.segment}:focus-visible { outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, var(--dsw-alias-brand-primary))); outline-offset: 1px; }
 
 @media (max-width: 560px) {
+  .${cls.groupHead} { flex-wrap: wrap; }
   .${cls.rowInline} { flex-direction: column; align-items: stretch; }
   .${cls.numberBox}, .${cls.selectBox} { width: 100%; }
   .${cls.inputRow} { flex-wrap: wrap; }

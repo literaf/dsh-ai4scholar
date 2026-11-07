@@ -281,6 +281,18 @@ function ExternalIcon(props: { className: string }) {
   )
 }
 
+function KeyAccessLink({ t }: PropsLocale<'ai4scholar'>) {
+  return (
+    <div className={cls.keyAccess}>
+      <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">
+        {t('getKey')}
+        <ExternalIcon className={cls.linkIcon} />
+      </a>
+      <span className={cls.hint}>{t('keyOffer')}</span>
+    </div>
+  )
+}
+
 /** Group heading in the host's section-title style, with an optional status on the right. */
 function GroupHead(props: { title: string; intro?: string; status?: ReactNode }) {
   return (
@@ -307,12 +319,7 @@ function KeyGroup(props: Ai4ScholarSettingsProps) {
 
   return (
     <div className={cls.group}>
-      <GroupHead title={t('keyGroupTitle')} status={(
-        <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">
-          {t('getKey')}
-          <ExternalIcon className={cls.linkIcon} />
-        </a>
-      )} />
+      <GroupHead title={t('keyGroupTitle')} status={<KeyAccessLink t={t} />} />
       <div className={cls.panel}>
         <div className={cls.row}>
           {!state.writable ? <p className={cls.readOnly} role="status">{t('readOnly')}</p> : null}
@@ -647,7 +654,7 @@ function KeyForm(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState }) {
       <div className={cls.field}>
         <div className={cls.fieldHead}>
           <label className={cls.label} htmlFor={inputId}>{t('apiKeyLabel')}</label>
-          <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">{t('getKey')}</a>
+          <KeyAccessLink t={t} />
         </div>
         <input
           id={inputId}

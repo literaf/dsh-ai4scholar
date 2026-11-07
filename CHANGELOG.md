@@ -15,6 +15,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 - Localized package title and description (`locale/en.json`, `locale/zh.json`), so the plugin list and the plugin page show Chinese text in the Chinese UI.
 
 ### Changed
+- Clarified the API-key heading and the Ai4Scholar link, with a short invitation to claim 100 credits on the official site.
 - Simplified settings copy: one persistent key status, compact pricing notes, and expandable search details for pagination and billing. Removed repeated helper text across the settings page.
 - `search_google_scholar` now returns one page of up to 10 results per call (one credit) and reports `nextOffset`; it takes an `offset` parameter so the model pages for more on request, rather than the tool fanning out across pages on its own. This makes its per-call cap consistent with the other platforms (each "max N" is what one billed request returns). A 503 `UPSTREAM_UNAVAILABLE` response (not billed) carries a warning: it can mean an empty page or a temporary upstream outage. Configured counts and explicit `max_results` both apply to the request; pagination keeps that page size and rejects misaligned offsets. `PLATFORM_CAP['google-scholar']` is now 10.
 - Redesigned the plugin page to match the host's own settings pages: an API key group (persistent status, one row with the input and its buttons, the balance below) and a search group (platform tiles with their cost, number fields with units, a switch for the credit line), each in one bordered panel.

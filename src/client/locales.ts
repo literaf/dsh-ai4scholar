@@ -12,6 +12,7 @@ export type Ai4ScholarLocaleKey =
   | 'apiKeyLabel'
   | 'apiKeyPlaceholder'
   | 'getKey'
+  | 'keyOffer'
   | 'configured'
   | 'configuredVia'
   | 'notConfigured'
@@ -120,7 +121,8 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, and Chinese literature, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
   apiKeyLabel: 'API key',
   apiKeyPlaceholder: 'sk-user-…',
-  getKey: 'Get a key',
+  getKey: 'Ai4Scholar',
+  keyOffer: 'Claim 100 credits on the official site',
   configured: 'Configured',
   configuredVia: 'Configured via {source}',
   notConfigured: 'Not configured',
@@ -220,9 +222,10 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   settingsTitle: 'AI4Scholar API Key',
   settingsIntro: '所有检索和全文工具都通过这个 Key 调用。',
   description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv、bioRxiv/medRxiv 及中文文献 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
-  apiKeyLabel: 'API Key',
+  apiKeyLabel: '密钥（API Key）',
   apiKeyPlaceholder: 'sk-user-…',
-  getKey: '获取 Key',
+  getKey: 'Ai4Scholar',
+  keyOffer: '官网领取100积分',
   configured: '已配置',
   configuredVia: '已配置（来源：{source}）',
   notConfigured: '未配置',
@@ -253,7 +256,7 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   keyValid: '✓ Key 有效 · 可用积分 {credits}',
   keySpent: '此 Key 累计消耗 {credits}',
   keyInvalid: '✗ Key 检测失败：{message}',
-  keyGroupTitle: 'API Key',
+  keyGroupTitle: '密钥（API Key）',
   apiKeyPlaceholderReplace: '粘贴新 Key 以替换',
   keyCheckTitle: '积分余额',
   keyConfiguredTitle: '密钥已配置',
