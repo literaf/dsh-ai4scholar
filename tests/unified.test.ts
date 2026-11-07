@@ -135,7 +135,7 @@ describe('search_papers', () => {
     expect(stub.calls.find((c) => c.url.pathname.startsWith('/graph'))!.url.searchParams.get('year')).toBe('2016-2024')
     expect(stub.calls.find((c) => c.url.pathname.startsWith('/pubmed'))!.body).toMatchObject({ minDate: '2016', maxDate: '2024', limit: 2 })
     expect(value).toMatchObject({ query: 'transformers', sources: ['semantic-scholar', 'pubmed'], total: 4, truncated: true, credits: { charged: 20, remaining: 980, sessionTotal: 20 } })
-    expect(value.perSource).toEqual([{ source: 'semantic-scholar', count: 2, total: 1234 }, { source: 'pubmed', count: 2, total: 42 }])
+    expect(value.perSource).toEqual([{ source: 'semantic-scholar', count: 2, total: 1234, nextOffset: 2 }, { source: 'pubmed', count: 2, total: 42, nextOffset: 2 }])
     const text = textOf(tool.output.render({ query: 'transformers' }, value as never))
     expect(text).toContain('Papers for "transformers" across Semantic Scholar, PubMed — 4 unique after de-duplication (Semantic Scholar 2 of 1234, PubMed 2 of 42):')
     expect(text).toContain('AI4Scholar credits — this call: 20 · this session: 20 · remaining: 980')
@@ -155,8 +155,8 @@ describe('search_papers', () => {
     const value = await tool.execute({ query: 'x', sources: ['semantic-scholar', 'pubmed', 'arxiv'] }, ctxWithAgent()) as Record<string, unknown>
     expect(value.perSource).toEqual([
       { source: 'semantic-scholar', count: 0, error: expect.stringContaining('HTTP 500') },
-      { source: 'pubmed', count: 2, total: 42 },
-      { source: 'arxiv', count: 2, total: 1234 },
+      { source: 'pubmed', count: 2, total: 42, nextOffset: 2 },
+      { source: 'arxiv', count: 2, total: 1234, nextOffset: 2 },
     ])
     expect(value.warning).toMatch(/Semantic Scholar: Semantic Scholar search failed: HTTP 500/)
     expect((value.papers as unknown[]).length).toBe(4)
@@ -262,10 +262,10 @@ describe('search_papers', () => {
   })
 
   it('offers only the enabled platforms and disappears when none is', () => {
-    const only = mount({ semanticScholar: false, googleScholar: false, arxiv: false })
+    const only = mount({ semanticScholar: false, googleScholar: false, chineseLiterature: false, arxiv: false })
     const tool = only.tools.get('search_papers')!
     expect(tool.description).toContain('Available platforms: PubMed (default PubMed')
-    expect(mount({ semanticScholar: false, pubmed: false, googleScholar: false, arxiv: false }).tools.has('search_papers')).toBe(false)
+    expect(mount({ semanticScholar: false, pubmed: false, googleScholar: false, chineseLiterature: false, arxiv: false }).tools.has('search_papers')).toBe(false)
     expect(mount({ unifiedSearch: false }).tools.has('search_papers')).toBe(false)
   })
 })

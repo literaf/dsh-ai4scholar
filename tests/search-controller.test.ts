@@ -6,10 +6,10 @@ describe('readSettings', () => {
   it('falls back field by field, keeps platforms in merge order, and caps counts per platform', () => {
     const plain = readSettings(undefined)
     expect(plain).toMatchObject({ searchSources: ['semantic-scholar'], abstractMaxChars: 600, showCredits: true, readMaxChars: 60_000, citeStyle: 'ieee', drawModel: 'flash31', drawImageSize: '2K' })
-    expect(plain.resultsPerSource).toEqual({ 'semantic-scholar': 10, 'pubmed': 10, 'arxiv': 10, 'google-scholar': 10 })
+    expect(plain.resultsPerSource).toEqual({ 'semantic-scholar': 10, 'pubmed': 10, 'arxiv': 10, 'google-scholar': 10, 'chinese': 10 })
     expect(readSettings({ searchSources: ['google-scholar', 'bing', 'semantic-scholar'] }).searchSources).toEqual(['semantic-scholar', 'google-scholar'])
     // A platform without its own count follows the file-only shared default.
-    expect(readSettings({ defaultMaxResults: 20, resultsPerSource: { 'semantic-scholar': 100 } }).resultsPerSource).toEqual({ 'semantic-scholar': 100, 'pubmed': 20, 'arxiv': 20, 'google-scholar': 10 })
+    expect(readSettings({ defaultMaxResults: 20, resultsPerSource: { 'semantic-scholar': 100 } }).resultsPerSource).toEqual({ 'semantic-scholar': 100, 'pubmed': 20, 'arxiv': 20, 'google-scholar': 10, 'chinese': 20 })
     expect(readSettings({ citeStyle: 'bogus', drawImageSize: '8K' })).toMatchObject({ citeStyle: 'ieee', drawImageSize: '2K' })
   })
 })
@@ -56,7 +56,7 @@ describe('SearchSettingsController', () => {
     controller.editCount('google-scholar', '120')
     controller.edit('readMaxChars', '500')
     const { invalid } = controller.store.getSnapshot()
-    expect(invalid.resultsPerSource).toEqual({ 'semantic-scholar': false, 'pubmed': false, 'arxiv': false, 'google-scholar': true })
+    expect(invalid.resultsPerSource).toEqual({ 'semantic-scholar': false, 'pubmed': false, 'arxiv': false, 'google-scholar': true, 'chinese': false })
     expect(invalid.readMaxChars).toBe(true)
     expect(controller.canSave()).toBe(false)
     await controller.save()

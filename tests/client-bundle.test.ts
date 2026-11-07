@@ -261,7 +261,8 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => { root!.render(createElement(entry.component as never, { ...propsFor(entry, t), view: 'page' } as never)) })
-    expect(container.querySelectorAll('[role="checkbox"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[role="checkbox"]')).toHaveLength(5)
+    expect(container.querySelector('input[aria-label="Results from Chinese literature"]')).not.toBeNull()
     const buttons = () => [...container!.querySelectorAll('button')]
     const save = () => buttons().filter((b) => b.textContent === 'Save').at(-1)!
     const count = container.querySelector('input[aria-label="Results from Google Scholar"]') as HTMLInputElement
@@ -311,11 +312,14 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
       setter.call(input, 'sk-new-desktop')
       input.dispatchEvent(new Event('input', { bubbles: true }))
     })
+    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('New key has not been saved')
     const button = (text: string) => [...container!.querySelectorAll('button')].find((b) => b.textContent === text)!
     await act(async () => { button('Save').click() })
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-new-desktop' } })
     expect(input.value).toBe('')
+    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('API key is configured')
+    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('No need to paste it again')
     // The page shows the balance as a number with its unit beside it.
     const balance = () => container!.querySelector('.ai4s-balance')?.textContent
     expect(balance()).toBe('125credits available')
@@ -326,6 +330,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'unset', payload: { ref: 'AI4SCHOLAR_API_KEY' } })
     expect(container.textContent).toContain('Not configured')
+    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('No API key configured')
     expect(balance()).toBeUndefined()
   })
 
@@ -345,6 +350,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(inputs).toHaveLength(2)
     expect(new Set(inputs.map((input) => input.id)).size).toBe(2)
     expect(inputs.every((input) => input.value === '')).toBe(true)
+    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.textContent?.includes('API key is configured'))).toBe(true)
     expect([...container.querySelectorAll('section')].every((section) => section.textContent?.includes('Configured via credentials file'))).toBe(true)
     fake.api.state.configured = false
     delete fake.api.state.source

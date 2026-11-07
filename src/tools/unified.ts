@@ -27,6 +27,7 @@ import { runSemanticSearch } from './semantic-scholar.js'
 import { runPubmedSearch } from './pubmed.js'
 import { runScholarSearch } from './google-scholar.js'
 import { runArxivSearch } from './arxiv.js'
+import { runChineseSearch } from './chinese.js'
 
 import { DEFAULT_SOURCES, PLATFORM_CAP, UNIFIED_SOURCES } from '../shared/search-settings.js'
 import type { UnifiedSource } from '../shared/search-settings.js'
@@ -65,6 +66,8 @@ const OUTPUT_SCHEMA = {
           source: { type: 'string', required: true },
           count: { type: 'integer', required: true, description: 'Records this platform returned before merging.' },
           total: { type: 'integer', description: 'Total matches the platform reported, when known.' },
+          query: { type: 'string', description: 'Source-specific query when it differs from the main query.' },
+          nextOffset: { type: 'integer', description: 'Continue with this source’s standalone search tool, keeping the query, filters and requested page size unchanged.' },
           error: { type: 'string', description: 'Set when this platform failed; the others still count.' },
         },
       },
@@ -103,22 +106,33 @@ export function titleKey(title: string): string {
  * learning" are real titles that different papers share, and a wrong merge
  * hides a paper, which is worse than showing a duplicate. Counted in code
  * points, so a CJK title is measured in characters — which does mean a short
- * Chinese title dedups by identifier only. That is the conservative side of
- * the same trade.
+ * Chinese title needs a shared identifier or the same year and first author.
  */
 const MIN_TITLE_KEY = 12
+
+function doiKey(paper: Paper): string | undefined {
+  const doi = paper.doi ?? (typeof paper.externalIds?.DOI === 'string' ? paper.externalIds.DOI : undefined)
+  return doi?.trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/^doi:\s*/, '') || undefined
+}
 
 /** Every identity key of one paper: DOI, arXiv id, PMID, and the normalized title. */
 export function identityKeys(paper: Paper): string[] {
   const keys: string[] = []
-  const doi = paper.doi ?? (typeof paper.externalIds?.DOI === 'string' ? paper.externalIds.DOI : undefined)
-  if (doi !== undefined) keys.push(`doi:${doi.toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '')}`)
+  const doi = doiKey(paper)
+  if (doi !== undefined) keys.push(`doi:${doi}`)
   const arxiv = paper.source === 'arxiv' ? paper.id : typeof paper.externalIds?.ArXiv === 'string' ? paper.externalIds.ArXiv : undefined
   if (arxiv !== undefined) keys.push(`arxiv:${arxiv.toLowerCase().replace(/v\d+$/, '')}`)
   const pmid = paper.source === 'pubmed' ? paper.id : typeof paper.externalIds?.PubMed === 'string' ? paper.externalIds.PubMed : undefined
   if (pmid !== undefined) keys.push(`pmid:${pmid}`)
+  const chineseId = paper.source === 'chinese' ? paper.id : paper.externalIds?.ChineseLiterature
+  if (typeof chineseId === 'string' && chineseId.trim()) keys.push(`chinese:${chineseId.trim()}`)
   const t = titleKey(paper.title)
   if (Array.from(t).length >= MIN_TITLE_KEY) keys.push(`title:${t}`)
+  // Short Chinese titles need corroboration rather than matching by title alone.
+  else if (/\p{Script=Han}/u.test(t) && Array.from(t).length >= 4 && paper.year !== undefined && paper.authors[0]) {
+    const author = titleKey(paper.authors[0])
+    if (author) keys.push(`title-author:${t}:${paper.year}:${author}`)
+  }
   return keys
 }
 
@@ -137,6 +151,7 @@ function mergeInto(base: Paper, other: Paper): Paper {
     abstract: base.abstract !== undefined && base.abstract.length >= (other.abstract?.length ?? 0) ? base.abstract : other.abstract ?? base.abstract,
     citationCount: base.citationCount !== undefined || other.citationCount !== undefined ? Math.max(base.citationCount ?? 0, other.citationCount ?? 0) : undefined,
     doi: base.doi ?? other.doi,
+    url: base.url || other.url,
     pdfUrl: base.pdfUrl ?? other.pdfUrl,
     externalIds: Object.keys(externalIds).length > 0 ? externalIds : undefined,
     categories: base.categories ?? other.categories,
@@ -153,20 +168,36 @@ function mergeInto(base: Paper, other: Paper): Paper {
 export function mergePaperLists(lists: readonly (readonly Paper[])[]): Paper[] {
   const merged: Paper[] = []
   const bestRank: number[] = []
-  const index = new Map<string, number>()
+  const index = new Map<string, Set<number>>()
+  const remember = (keys: readonly string[], position: number): void => {
+    for (const key of keys) {
+      if (!index.has(key)) index.set(key, new Set())
+      index.get(key)!.add(position)
+    }
+  }
   for (const list of lists) {
     list.forEach((paper, rank) => {
       const keys = identityKeys(paper)
-      const hit = keys.map((k) => index.get(k)).find((i): i is number => i !== undefined)
+      let hit: number | undefined
+      for (const key of keys) {
+        const candidates = [...(index.get(key) ?? [])].filter((position) => {
+          if (!key.startsWith('title')) return true
+          const a = doiKey(merged[position]!), b = doiKey(paper)
+          return a === undefined || b === undefined || a === b
+        })
+        // Identical titles with distinct DOIs remain separate. A title-only
+        // record cannot safely choose between several such publications.
+        if (candidates.length === 1) { hit = candidates[0]; break }
+      }
       if (hit !== undefined) {
         merged[hit] = mergeInto(merged[hit]!, paper)
         bestRank[hit] = Math.min(bestRank[hit]!, rank)
-        for (const k of keys) index.set(k, hit)
+        remember(keys, hit)
       } else {
         const stamped: Paper = compact({ ...paper, extra: compact({ ...(paper.extra ?? {}), foundIn: [paper.source] }) })
         merged.push(stamped)
         bestRank.push(rank)
-        for (const k of keys) index.set(k, merged.length - 1)
+        remember(keys, merged.length - 1)
       }
     })
   }
@@ -211,7 +242,14 @@ function formatUnified(value: UnifiedValue, abstractMaxChars: number): string {
       const line = formatPaper(paper, i + 1, { abstractMaxChars })
       return found.length > 1 ? line.replace('\n', ` (found on ${found.map((f) => SOURCE_LABEL[f as PaperSource] ?? f).join(' + ')})\n`) : line
     }).join('\n\n'))
-    if (value.truncated) parts.push('At least one platform had more matches than requested; raise max_results_per_source or use the platform tools (search_semantic / search_pubmed / …) with offset to page.')
+    if (value.truncated) {
+      const tools: Record<string, string> = { 'semantic-scholar': 'search_semantic', pubmed: 'search_pubmed', arxiv: 'search_arxiv', 'google-scholar': 'search_google_scholar', chinese: 'search_chinese' }
+      const next = value.perSource.filter((p) => p.nextOffset !== undefined).map((p) =>
+        `${tools[p.source] ?? p.source}(query=${JSON.stringify(p.query ?? value.query)}, offset=${p.nextOffset})`)
+      parts.push(next.length > 0
+        ? `More results: continue with ${next.join('; ')}. Keep the same year filters and max_results as the original request for each source; each billed request adds to the cost.`
+        : 'At least one platform has more matches; refine the query or increase the requested count within its single-call limit.')
+    }
     parts.push('Cite papers by title with their DOI or platform link.')
   }
   if (value.warning !== undefined) parts.push(`Note: ${value.warning}`)
@@ -236,6 +274,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
   const capFor = (s: UnifiedSource): number => Math.min(limits.maxResultsCap, PLATFORM_CAP[s])
   const countFor = (s: UnifiedSource): number => Math.min(limitsFor(limits, runtime.resultsPerSource, s).defaultMaxResults, capFor(s))
   const pubmedHint = enabled.pubmed ? ' For biomedical, clinical, or health topics, select sources ["pubmed"] when appropriate.' : ''
+  const chineseHint = enabled.chinese ? ' For Chinese-language literature, select sources ["chinese"]. When combining it with international sources, use chinese_query for Chinese keywords while query serves the other sources.' : ''
   // A user who picked several default platforms asked for them together; the
   // description must not tell the model to stay on one.
   const lead = several
@@ -244,9 +283,10 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
 
   ctx.tools.register(defineTool({
     name: 'search_papers',
-    description: `${lead} Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first; charges add up across billed API requests. Do not repeat the same query on already searched platforms via their individual tools, as that repeats the charge. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}${several ? '' : ' only'}; arXiv is free, the others cost credits, Google Scholar is slowest and bills per page).`,
+    description: `${lead}${chineseHint} Multiple sources are merged by DOI / arXiv id / PMID / document id / normalized title, with multi-platform hits ranked first. Short Chinese titles also need the same year and first author; differently translated titles without shared identifiers may remain separate. Charges add up across billed API requests. Do not repeat the same query on already searched platforms via their individual tools, as that repeats the charge. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}${several ? '' : ' only'}; arXiv is free, the others cost credits, Google Scholar is slowest and bills per page).`,
     parameters: {
-      query: { type: 'string', required: true, description: 'Topic or keywords; sent to every selected platform as-is.' },
+      query: { type: 'string', required: true, description: 'Topic or keywords; sent as-is to each selected platform unless chinese_query overrides the Chinese source.' },
+      chinese_query: { type: 'string', description: 'Optional Chinese keywords for sources ["chinese"], useful when query is English. If omitted, that source also uses query. Use up to 300 characters and 20 concepts; spaces mean all concepts must match.' },
       sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}).${several ? '' : ' Prefer one source; select multiple only when broader coverage is requested or needed.'} Each billed source adds to the cost.` },
       max_results_per_source: { type: 'integer', description: `Results requested from each platform; omit it to use each platform's configured default (${offered.map((s) => `${SOURCE_LABEL[s]} ${countFor(s)}`).join(', ')}). Each platform caps it at its own maximum (${offered.map((s) => `${SOURCE_LABEL[s]} ${capFor(s)}`).join(', ')}).` },
       year_from: { type: 'integer', description: 'Earliest publication year.' },
@@ -279,6 +319,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
           return args.year_to !== undefined ? { ...page, papers: page.papers.filter((p) => p.year === undefined || p.year <= args.year_to!) } : page
         },
         'google-scholar': () => runScholarSearch(runtime, { query, wanted: per('google-scholar'), yearFrom: args.year_from, yearTo: args.year_to }, exec.signal, exec.agent),
+        'chinese': () => runChineseSearch(runtime, { query: args.chinese_query ?? query, limit: per('chinese'), yearFrom: args.year_from, yearTo: args.year_to }, exec.signal, exec.agent),
       }
       const settled = await Promise.allSettled(sources.map((s) => runners[s]()))
       const lists: Paper[][] = []
@@ -290,7 +331,12 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
         const source = sources[i]!
         if (outcome.status === 'fulfilled') {
           lists.push(outcome.value.papers)
-          perSource.push(compact({ source, count: outcome.value.papers.length, total: outcome.value.total > outcome.value.papers.length ? outcome.value.total : undefined }))
+          perSource.push(compact({
+            source, count: outcome.value.papers.length,
+            total: outcome.value.total > outcome.value.papers.length ? outcome.value.total : undefined,
+            query: outcome.value.query !== query ? outcome.value.query : undefined,
+            nextOffset: outcome.value.nextOffset,
+          }))
           truncated = truncated || outcome.value.truncated
           creditParts.push(outcome.value.credits)
           if (outcome.value.warning !== undefined) failures.push(`${SOURCE_LABEL[source]}: ${outcome.value.warning}`)

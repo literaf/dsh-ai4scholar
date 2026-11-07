@@ -118,6 +118,26 @@ function KeyStatus({ t, state }: PropsLocale<'ai4scholar'> & { state: ApiKeyCard
   return <span className={`${cls.badge}${tone}`}>{badge}</span>
 }
 
+/** Keep configuration state visible even though saved secrets never fill the input. */
+function KeyConfigurationState({ t, state }: PropsLocale<'ai4scholar'> & { state: ApiKeyCardState }) {
+  if (!state.loaded) return null
+  const pending = state.draft.trim().length > 0
+  const configured = state.configured && !pending
+  const title = pending ? 'keyPendingTitle' : configured ? 'keyConfiguredTitle' : 'keyMissingTitle'
+  const hint = pending
+    ? state.configured ? 'keyReplacePendingHint' : 'keyPendingHint'
+    : configured ? 'keyConfiguredHint' : 'keyMissingHint'
+  return (
+    <div className={`${cls.keyState}${configured ? ` ${cls.keyStateConfigured}` : ''}`} role="status">
+      {configured ? <CheckIcon className={cls.keyStateIcon} /> : null}
+      <div>
+        <strong className={cls.keyStateTitle}>{t(title)}</strong>
+        <p className={cls.hint}>{t(hint)}</p>
+      </div>
+    </div>
+  )
+}
+
 /**
  * The Settings → AI4Scholar page. The host draws no heading for a settings
  * section, so the page carries its own; the plugin page below already has the
@@ -152,6 +172,7 @@ const SOURCE_LABEL_KEYS = {
   'pubmed': 'sourcePubmed',
   'arxiv': 'sourceArxiv',
   'google-scholar': 'sourceGoogle',
+  'chinese': 'sourceChinese',
 } as const satisfies Record<UnifiedSource, string>
 
 /** What each platform costs, shown under its name. */
@@ -159,7 +180,8 @@ const SOURCE_NOTE_KEYS = {
   'semantic-scholar': 'noteBilled',
   'pubmed': 'noteBilled',
   'arxiv': 'noteFree',
-  'google-scholar': 'notePerPage',
+  'google-scholar': 'noteBilled',
+  'chinese': 'noteBilled',
 } as const satisfies Record<UnifiedSource, string>
 
 function CheckIcon(props: { className: string }) {
@@ -232,6 +254,7 @@ function KeyGroup(props: Ai4ScholarSettingsProps) {
               {t(state.busy ? 'saving' : 'save')}
             </button>
           </div>
+          <KeyConfigurationState t={t} state={state} />
           <p id={hintId} className={state.notice?.kind === 'error' ? cls.hintError : cls.hint} role={state.notice !== undefined ? 'status' : undefined}>
             {state.notice === undefined
               ? (
@@ -556,7 +579,7 @@ function KeyForm(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState }) {
           type="password"
           autoComplete="off"
           spellCheck={false}
-          placeholder={t('apiKeyPlaceholder')}
+          placeholder={t(state.configured ? 'apiKeyPlaceholderReplace' : 'apiKeyPlaceholder')}
           value={state.draft}
           disabled={!state.writable || state.busy}
           onChange={(event) => { props.edit(event.target.value) }}
@@ -567,6 +590,7 @@ function KeyForm(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState }) {
             }
           }}
         />
+        <KeyConfigurationState t={t} state={state} />
         <p className={cls.hint}>{t('apiKeyHint')}</p>
         {state.loaded && state.configured
           ? (

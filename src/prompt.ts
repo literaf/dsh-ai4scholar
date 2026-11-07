@@ -9,6 +9,7 @@ export interface EnabledFamilies {
   semanticScholar: boolean
   pubmed: boolean
   googleScholar: boolean
+  chineseLiterature: boolean
   arxiv: boolean
   biorxiv: boolean
   doi: boolean
@@ -24,6 +25,7 @@ const PLATFORM_NAME: Record<string, string> = {
   'pubmed': 'PubMed',
   'arxiv': 'arXiv',
   'google-scholar': 'Google Scholar',
+  'chinese': 'Chinese literature',
 }
 
 /**
@@ -35,7 +37,7 @@ const PLATFORM_NAME: Record<string, string> = {
  */
 export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly string[]): string | undefined {
   const lines: string[] = []
-  const anySearch = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.arxiv
+  const anySearch = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.arxiv || enabled.chineseLiterature
   if (enabled.unified && anySearch) {
     // Name only the billed search tools that are actually mounted: this line
     // must never tell the model about a tool the composition disabled.
@@ -43,6 +45,7 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
       enabled.semanticScholar ? 'search_semantic' : undefined,
       enabled.pubmed ? 'search_pubmed' : undefined,
       enabled.googleScholar ? 'search_google_scholar' : undefined,
+      enabled.chineseLiterature ? 'search_chinese' : undefined,
     ].filter((name) => name !== undefined)
     const repeat = billed.length > 0
       ? ` Re-running the same query through ${billed.join(' / ')} for a platform already searched repeats the charge.`
@@ -69,6 +72,10 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
   if (enabled.googleScholar) {
     lines.push('- search_google_scholar (broadest coverage, cited-by counts; costs credits, slower): use when other tools miss or Google Scholar counts are wanted.')
   }
+  if (enabled.chineseLiterature) {
+    lines.push('- search_chinese (Chinese-language journals, theses, conferences; costs credits): use Chinese keywords, publication-year or document-type filters, sorting, and offset pagination. Results are metadata and available abstracts, not full text or a download service.'
+      + (enabled.unified ? ' It is also sources ["chinese"] in search_papers; when combining Chinese and international literature, supply Chinese keywords in chinese_query and use query for the other sources. Results merge by shared identifiers or matching normalized titles; translated titles without shared identifiers may remain separate.' : ''))
+  }
   if (enabled.arxiv) {
     lines.push('- arXiv (free): search_arxiv for preprints in physics, math, CS, stats, q-bio; download_arxiv gives the PDF link' + (fullText ? '; read_arxiv_paper returns the full text.' : '.'))
   }
@@ -90,7 +97,7 @@ export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly stri
   if (enabled.credits) {
     lines.push('- get_ai4scholar_credits (free) reports the credit balance and what this session has spent; results of billed tools already show credits charged/remaining.')
   }
-  const anyBilled = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.autoCite || enabled.sciDraw
+  const anyBilled = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.chineseLiterature || enabled.autoCite || enabled.sciDraw
   if (anyBilled) {
     lines.push('- After a turn in which billed AI4Scholar tools ran, end your reply with one short line stating the credits those calls cost and the remaining balance (both appear at the end of each billed tool result), in the user\'s language.')
   }

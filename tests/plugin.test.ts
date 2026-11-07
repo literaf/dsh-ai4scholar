@@ -35,15 +35,15 @@ export const ALL_TOOLS = [
   'get_semantic_recommendations', 'get_semantic_recommendations_for_paper', 'get_semantic_references',
   'read_arxiv_paper', 'read_biorxiv_paper', 'read_by_doi', 'read_medrxiv_paper', 'read_semantic_paper',
   'sci_draw',
-  'search_arxiv', 'search_biorxiv', 'search_google_scholar', 'search_medrxiv', 'search_papers', 'search_pubmed',
+  'search_arxiv', 'search_biorxiv', 'search_chinese', 'search_google_scholar', 'search_medrxiv', 'search_papers', 'search_pubmed',
   'search_semantic', 'search_semantic_authors', 'search_semantic_bulk', 'search_semantic_paper_match', 'search_semantic_snippets',
 ].sort()
 
 describe('plugin mount', () => {
-  it('registers all 38 tools, the /ai4scholar command, and the guidance section with defaults', () => {
+  it('registers all 39 tools, the /ai4scholar command, and the guidance section with defaults', () => {
     const fake = mount()
     expect([...fake.tools.keys()].sort()).toEqual(ALL_TOOLS)
-    expect(ALL_TOOLS).toHaveLength(38)
+    expect(ALL_TOOLS).toHaveLength(39)
     expect([...fake.commands.keys()]).toEqual(['ai4scholar'])
     expect(fake.sections).toHaveLength(1)
     expect(fake.sections[0]?.name).toBe('tool:ai4scholar')
@@ -57,7 +57,7 @@ describe('plugin mount', () => {
   })
 
   it('honors family toggles and the guidance switch', () => {
-    const fake = mount({ pubmed: false, googleScholar: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false, fullText: false, promptGuidance: false, unifiedSearch: false })
+    const fake = mount({ pubmed: false, googleScholar: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false, fullText: false, promptGuidance: false, unifiedSearch: false })
     expect([...fake.tools.keys()].sort()).toEqual([
       'download_semantic',
       'get_semantic_author_batch', 'get_semantic_author_detail', 'get_semantic_author_papers', 'get_semantic_citations',
@@ -70,14 +70,14 @@ describe('plugin mount', () => {
   })
 
   it('registers no guidance when every family is off', () => {
-    const fake = mount({ semanticScholar: false, pubmed: false, googleScholar: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false })
+    const fake = mount({ semanticScholar: false, pubmed: false, googleScholar: false, chineseLiterature: false, arxiv: false, biorxiv: false, doi: false, autoCite: false, sciDraw: false, creditsTool: false, command: false })
     expect(fake.tools.size).toBe(0) // search_papers registers nothing when no platform is enabled
     expect(fake.sections).toHaveLength(0)
   })
 
   it('still mounts when the commands service is absent', () => {
     const fake = mount({}, { apiKey: 'k', commands: false })
-    expect(fake.tools.size).toBe(38)
+    expect(fake.tools.size).toBe(39)
     expect(fake.commands.size).toBe(0)
   })
 
@@ -444,7 +444,7 @@ describe('settings namespace (rc.7 keyed card pairing)', () => {
   it('loads all tools on modern hosts whose settings service has no register method', () => {
     const fake = mount({}, { apiKey: 'test-key', settings: 'configForms' })
     expect(fake.settingsNamespaces.size).toBe(0)
-    expect(fake.tools.size).toBe(38)
+    expect(fake.tools.size).toBe(39)
   })
 
   it('registers the ai4scholar namespace when the settings service is composed', () => {

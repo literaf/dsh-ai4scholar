@@ -9,13 +9,14 @@ English | [中文](README_CN.md)
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
-Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 38 native agent tools — the same coverage as the AI4Scholar plugins for OpenClaw, Codex, and Hermes. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
+Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 39 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
 
 | Family | Tools | Cost |
 |---|---|---|
-| **Paper search** | `search_papers` — Semantic Scholar only by default; select PubMed, arXiv, or Google Scholar via `sources` as needed. Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first | per selected platform |
+| **Paper search** | `search_papers` — Semantic Scholar only by default; select PubMed, arXiv, Google Scholar, or Chinese literature via `sources` as needed. Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first | per selected platform |
 | **Semantic Scholar** (200M+ papers, all fields) | `search_semantic`, `search_semantic_bulk`, `search_semantic_snippets` (full-text excerpts), `search_semantic_paper_match` (title → paper), `get_semantic_paper_detail`, `get_semantic_paper_batch`, `get_semantic_citations`, `get_semantic_references`, `get_semantic_paper_authors`, `search_semantic_authors`, `get_semantic_author_detail`, `get_semantic_author_batch`, `get_semantic_author_papers`, `get_semantic_recommendations`, `get_semantic_recommendations_for_paper`, `download_semantic`, `read_semantic_paper` | credits |
 | **PubMed** (biomedical & life sciences) | `search_pubmed`, `get_pubmed_paper_detail`, `get_pubmed_paper_batch`, `get_pubmed_citations`, `get_pubmed_related` | credits |
+| **Chinese literature** (journals, theses, conferences; metadata and available abstracts) | `search_chinese` | credits |
 | **Google Scholar** (broadest coverage, cited-by counts) | `search_google_scholar` | credits |
 | **arXiv** | `search_arxiv`, `download_arxiv`, `read_arxiv_paper` | free |
 | **bioRxiv / medRxiv** | `search_biorxiv`, `search_medrxiv`, `download_biorxiv`, `download_medrxiv`, `read_biorxiv_paper`, `read_medrxiv_paper` | free |
@@ -23,11 +24,13 @@ Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/
 | **Writing & figures** | `auto_cite` (insert real citations + reference list + BibTeX), `sci_draw` (generate / edit / style / compose / critique / SVG / vectorize scientific figures) | credits |
 | **Account** | `get_ai4scholar_credits`, plus the `/ai4scholar` slash command | free |
 
-**Start with one source.** With the shipped settings, omitting `sources` (or passing `[]`) queries only Semantic Scholar. If you choose other default platforms on the plugin page, the same call searches those platforms together. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If none of the configured default platforms is enabled, the default is the first enabled platform in this order: Semantic Scholar, PubMed, arXiv, Google Scholar.
+**Start with one source.** With the shipped settings, omitting `sources` (or passing `[]`) queries only Semantic Scholar. If you choose other default platforms on the plugin page, the same call searches those platforms together. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If none of the configured default platforms is enabled, the default is the first enabled platform in this order: Semantic Scholar, PubMed, arXiv, Google Scholar, Chinese literature.
 
 Every paper-list tool returns one normalized record shape — title, authors, year, venue, citation count, DOI/PMID/arXiv ids, URL, open-access PDF, abstract — so the model (and Code Mode programs) can chain calls across platforms without special cases. Results render as citation cards in the dsh Web UI; full-text tools return the PDF text in slices (`offset` / `max_chars`) so a 40-page paper never floods the context.
 
 **Credits are visible.** Every billed tool card in the chat carries the charge in its title (`Semantic Scholar: protein folding · 10 credits · 4,990 left`), the model-facing result ends with `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960` (from the API's `X-Credits-*` headers) and the model is asked to close a billed turn with a one-line credit note; `/ai4scholar` renders a balance card (available credits, breakdown, membership, key status, session spend) and `get_ai4scholar_credits` gives the model the same numbers. Free platforms (arXiv, bioRxiv/medRxiv, DOI) carry no credit line.
+
+**Chinese literature.** Use `search_chinese` for Chinese keywords, document types (`journal`, `thesis`, `conference`), year filters, sorting, and pagination. It is also `sources: ["chinese"]` in `search_papers`, and stays unchecked in the shipped defaults. For a bilingual search, pass e.g. `query: "bird migration"`, `chinese_query: "鸟类迁徙"`, and `sources: ["semantic-scholar", "chinese"]`. Results share DOI and normalized-title de-duplication; short Chinese titles need the same year and first author, and conflicting DOIs stay separate. Translated titles without a shared identifier may remain separate. Chinese results provide metadata and available abstracts, not full-text downloads.
 
 ## Screenshots
 
@@ -84,7 +87,7 @@ Then just ask:
 
 Open **Plugins → AI4Scholar** (or **Settings → AI4Scholar**; both edit the same values). Under the API key:
 
-- **Search**: tick the platforms `search_papers` queries when the model names none (Semantic Scholar only by default), and set each platform's result count. Semantic Scholar and PubMed return up to 100 per search, billed once each; arXiv returns up to 100 for free. Google Scholar returns 1–10 per call (one credit); the model follows nextOffset with the same result count for more. The count is also the default for that platform's own search tool.
+- **Search**: tick the platforms `search_papers` queries when the model names none (Semantic Scholar only by default), and set each platform's result count. Semantic Scholar, PubMed, and Chinese literature return up to 100 per search, billed once each; arXiv returns up to 100 for free. Google Scholar returns 1–10 per call (one credit); the model follows nextOffset with the same result count for more. All sources support pagination through their standalone tools; every additional billed request costs credits. The count is also the default for that platform's own search tool.
 - **Results**: abstract length shown to the model (0–5000 characters, default 600), full-text slice per `read_*` call (2,000–200,000, default 60,000), and whether results carry the credit line.
 - **Citations and figures**: `auto_cite` reference style (IEEE by default) and whether to leave out preprints; `sci_draw` model (Flash 3.1 by default) and resolution (2K by default).
 
@@ -92,7 +95,7 @@ The model can still pass its own values for a single call. **Save** writes the c
 
 ### In the profile file
 
-The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from your profile's `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key you keep). For DeepSeek Harness Desktop the file is `~/Library/Application Support/dsh-desktop/harness/profiles/web/cordis.patch.yml` on macOS; for the CLI it is `$DSH_HOME/profiles/<profile>/cordis.patch.yml`:
+The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from your profile's `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key you keep). For DeepSeek Harness Desktop the file is `~/.dsh/profiles/desktop/cordis.patch.yml` on macOS; for the CLI it is `$DSH_HOME/profiles/<profile>/cordis.patch.yml`:
 
 ```yaml
 - id: ai4scholar
@@ -103,6 +106,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     semanticScholar: true
     pubmed: true
     googleScholar: true
+    chineseLiterature: true
     arxiv: true
     biorxiv: true                    # bioRxiv + medRxiv
     doi: true
@@ -116,7 +120,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     promptGuidance: true             # short system-prompt section describing the tools
     promptOrder: 150
     # search_papers default platforms (plugin page); any of
-    # semantic-scholar, pubmed, arxiv, google-scholar
+    # semantic-scholar, pubmed, arxiv, google-scholar, chinese
     searchSources: [semantic-scholar]
     # per-platform result count (plugin page); a missing one uses defaultMaxResults
     resultsPerSource: {}             # e.g. { semantic-scholar: 100, google-scholar: 10 }

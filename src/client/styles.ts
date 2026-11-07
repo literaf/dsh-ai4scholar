@@ -55,6 +55,10 @@ export const cls = {
   rowInline: `${P}-row-inline`,
   rowText: `${P}-row-text`,
   inputRow: `${P}-input-row`,
+  keyState: `${P}-key-state`,
+  keyStateConfigured: `${P}-key-state-configured`,
+  keyStateIcon: `${P}-key-state-icon`,
+  keyStateTitle: `${P}-key-state-title`,
   linkIcon: `${P}-link-icon`,
   balance: `${P}-balance`,
   balanceNumber: `${P}-balance-number`,
@@ -142,6 +146,10 @@ export const CSS = `
 .${cls.input}:disabled { color: var(--dsw-alias-label-tertiary); cursor: default; }
 .${cls.hint} { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
 .${cls.hintError} { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-state-error-primary, var(--dsw-alias-label-error)); }
+.${cls.keyState} { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.${cls.keyStateConfigured} { color: var(--dsw-alias-state-success-primary, var(--dsw-alias-label-primary)); background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #22a06b) 8%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #22a06b) 25%, transparent); }
+.${cls.keyStateIcon} { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.${cls.keyStateTitle} { display: block; font-size: 13px; font-weight: 600; line-height: 1.5; margin-bottom: 2px; }
 .${cls.link} { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-link, var(--dsw-alias-brand-primary)); text-decoration: none; }
 .${cls.link}:hover { text-decoration: underline; }
 .${cls.linkIcon} { width: 12px; height: 12px; }

@@ -13,10 +13,10 @@ import type { GenericCallView, GenericResultView, InferValue, ToolResult, WebSea
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 /** Which platform produced a record. */
-export type PaperSource = 'semantic-scholar' | 'pubmed' | 'google-scholar' | 'arxiv' | 'biorxiv' | 'medrxiv'
+export type PaperSource = 'semantic-scholar' | 'pubmed' | 'google-scholar' | 'arxiv' | 'biorxiv' | 'medrxiv' | 'chinese'
 
 /** Every platform value, for schema enums. */
-export const PAPER_SOURCES = ['semantic-scholar', 'pubmed', 'google-scholar', 'arxiv', 'biorxiv', 'medrxiv'] as const
+export const PAPER_SOURCES = ['semantic-scholar', 'pubmed', 'google-scholar', 'arxiv', 'biorxiv', 'medrxiv', 'chinese'] as const
 
 /** Human-readable platform label for headings and card titles. */
 export const SOURCE_LABEL: Record<PaperSource, string> = {
@@ -26,6 +26,7 @@ export const SOURCE_LABEL: Record<PaperSource, string> = {
   'arxiv': 'arXiv',
   'biorxiv': 'bioRxiv',
   'medrxiv': 'medRxiv',
+  'chinese': 'Chinese literature',
 }
 
 /** Credit accounting attached to billed results (absent on free platforms). */
@@ -59,7 +60,7 @@ export const PAPER_SCHEMA = {
   additionalProperties: false,
   properties: {
     source: { type: 'string', required: true, enum: PAPER_SOURCES },
-    id: { type: 'string', required: true, description: 'Platform-native identifier: Semantic Scholar paperId, PubMed PMID, arXiv id, bioRxiv/medRxiv DOI, or a Google Scholar result URL.' },
+    id: { type: 'string', required: true, description: 'Platform-native identifier: Semantic Scholar paperId, PubMed PMID, arXiv id, bioRxiv/medRxiv DOI, Chinese literature document id, or a Google Scholar result URL.' },
     title: { type: 'string', required: true },
     authors: { type: 'array', required: true, items: { type: 'string' } },
     year: { type: 'integer' },
@@ -68,7 +69,7 @@ export const PAPER_SCHEMA = {
     abstract: { type: 'string', description: 'Abstract, or the platform snippet when no abstract is available.' },
     citationCount: { type: 'integer' },
     doi: { type: 'string' },
-    url: { type: 'string', required: true },
+    url: { type: 'string', required: true, description: 'Public article URL when available; empty when the source provides no link.' },
     pdfUrl: { type: 'string', description: 'Open-access PDF URL when the platform reports one.' },
     externalIds: {
       type: 'object',
@@ -210,6 +211,7 @@ function idLabel(source: PaperSource): string {
     case 'semantic-scholar': return 'S2 id'
     case 'pubmed': return 'PMID'
     case 'google-scholar': return 'link'
+    case 'chinese': return 'Document id'
     case 'arxiv': return 'arXiv'
     case 'biorxiv':
     case 'medrxiv': return 'DOI'
@@ -224,7 +226,7 @@ export function formatPaperSearch(value: PaperSearchValue, options: RenderOption
   const label = SOURCE_LABEL[value.source]
   if (value.papers.length === 0) {
     const credits = formatCredits(value.credits)
-    return `No ${label} results for "${value.query}".${credits !== undefined ? `\n\n${credits}` : ''}`
+    return `No ${label} results for "${value.query}".${value.warning !== undefined ? `\n\nNote: ${value.warning}` : ''}${credits !== undefined ? `\n\n${credits}` : ''}`
   }
   const parts: string[] = []
   const totalNote = value.total > value.papers.length ? ` of ${value.total}` : ''
@@ -343,7 +345,7 @@ export function presentGenericWithCredits(title: string, result: ToolResult): Ge
 function toWebSource(value: unknown): WebSource | undefined {
   if (!isRecord(value)) return undefined
   const { url, title, snippet, publishedAt } = value
-  if (typeof url !== 'string') return undefined
+  if (typeof url !== 'string' || url.length === 0) return undefined
   if (title !== undefined && typeof title !== 'string') return undefined
   if (snippet !== undefined && typeof snippet !== 'string') return undefined
   if (publishedAt !== undefined && typeof publishedAt !== 'string') return undefined

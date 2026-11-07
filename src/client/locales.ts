@@ -47,9 +47,15 @@ export type Ai4ScholarLocaleKey =
   | 'apiKeyPlaceholderReplace'
   | 'keyCheckTitle'
   | 'keyCheckHint'
+  | 'keyConfiguredTitle'
+  | 'keyConfiguredHint'
+  | 'keyMissingTitle'
+  | 'keyMissingHint'
+  | 'keyPendingTitle'
+  | 'keyPendingHint'
+  | 'keyReplacePendingHint'
   | 'noteBilled'
   | 'noteFree'
-  | 'notePerPage'
   | 'unitResults'
   | 'unitChars'
   | 'searchIntro'
@@ -63,6 +69,7 @@ export type Ai4ScholarLocaleKey =
   | 'sourcePubmed'
   | 'sourceArxiv'
   | 'sourceGoogle'
+  | 'sourceChinese'
   | 'countLabel'
   | 'countHint'
   | 'countInvalid'
@@ -112,7 +119,7 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API key',
   settingsIntro: 'Every search and full-text tool uses this key.',
-  description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, and bioRxiv/medRxiv, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
+  description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, and Chinese literature, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
   apiKeyLabel: 'API key',
   apiKeyPlaceholder: 'sk-user-…',
   apiKeyHint: 'Kept in the dsh credentials store. It is never shown again or sent to the model, and the next tool call uses it.',
@@ -151,9 +158,15 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   apiKeyPlaceholderReplace: 'Saved. Paste a new key to replace it',
   keyCheckTitle: 'Credit balance',
   keyCheckHint: 'Check that the key works and how many credits it has left.',
+  keyConfiguredTitle: 'API key is configured',
+  keyConfiguredHint: 'The saved key is hidden for your privacy. No need to paste it again; check the balance to verify it works.',
+  keyMissingTitle: 'No API key configured',
+  keyMissingHint: 'Paste your AI4Scholar key above and click Save.',
+  keyPendingTitle: 'New key has not been saved',
+  keyPendingHint: 'Click Save to finish configuring your key.',
+  keyReplacePendingHint: 'Click Save to replace the current key. Until then, the existing key is used.',
   noteBilled: 'One credit per search, up to {max} per call',
   noteFree: 'Free, up to {max} per call',
-  notePerPage: 'One credit per {max} results; page for more',
   unitResults: 'results',
   unitChars: 'chars',
   searchIntro: 'Defaults the model uses when it does not specify them.',
@@ -161,12 +174,13 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   searchUnsupported: 'This version of DeepSeek Harness cannot edit these settings here. Set searchSources, defaultMaxResults, abstractMaxChars, and showCredits on the ai4scholar entry in your profile’s cordis.patch.yml.',
   searchReadOnly: 'This profile’s configuration is read-only here.',
   sourcesLabel: 'Platforms',
-  sourcesHint: 'Ticked platforms are what search_papers queries when the model names none. The count is each platform’s default for its own search tool as well.',
+  sourcesHint: 'Ticked platforms are what search_papers queries when the model names none. Counts apply per call, including individual search tools. Every source supports paging for more; each additional request to a billed source costs credits.',
   sourcesEmpty: 'Pick at least one platform.',
   sourceSemantic: 'Semantic Scholar',
   sourcePubmed: 'PubMed',
   sourceArxiv: 'arXiv',
   sourceGoogle: 'Google Scholar',
+  sourceChinese: 'Chinese literature',
   countLabel: 'Results per search',
   countHint: '1 to {max}.',
   countInvalid: 'Enter 1 to {max}.',
@@ -209,7 +223,7 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API Key',
   settingsIntro: '所有检索和全文工具都通过这个 Key 调用。',
-  description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv 和 bioRxiv/medRxiv 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
+  description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv、bioRxiv/medRxiv 及中文文献 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
   apiKeyLabel: 'API Key',
   apiKeyPlaceholder: 'sk-user-…',
   apiKeyHint: '保存在 dsh 凭据存储里，不会再显示，也不会发送给模型，下一次工具调用即生效。',
@@ -248,9 +262,15 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   apiKeyPlaceholderReplace: '已保存，粘贴新的 Key 可替换',
   keyCheckTitle: '积分余额',
   keyCheckHint: '检查 Key 是否可用，以及还剩多少积分。',
+  keyConfiguredTitle: 'API Key 已配置',
+  keyConfiguredHint: '为保护密钥，输入框不会回显已保存的 Key，无需重复填写。可查询余额验证是否可用。',
+  keyMissingTitle: '尚未配置 API Key',
+  keyMissingHint: '在上方粘贴 AI4Scholar 的 Key，然后点击「保存」。',
+  keyPendingTitle: '新 Key 尚未保存',
+  keyPendingHint: '点击「保存」后才能完成配置。',
+  keyReplacePendingHint: '点击「保存」后将替换当前 Key；保存前仍使用原来的 Key。',
   noteBilled: '每次检索 1 积分，单次最多 {max} 条',
   noteFree: '免费，单次最多 {max} 条',
-  notePerPage: '每 {max} 条 1 积分；要更多可翻页',
   unitResults: '条',
   unitChars: '字符',
   searchIntro: '模型没有指定时使用的默认值。',
@@ -258,12 +278,13 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   searchUnsupported: '当前版本的 DeepSeek Harness 不支持在这里修改这些设置。请在 profile 的 cordis.patch.yml 里，给 ai4scholar 这一行设置 searchSources、defaultMaxResults、abstractMaxChars 和 showCredits。',
   searchReadOnly: '当前 profile 的配置在这里是只读的。',
   sourcesLabel: '检索平台',
-  sourcesHint: '勾选的平台是模型没指定时 search_papers 会查的平台。条数同时也是该平台单独检索时的默认条数。',
+  sourcesHint: '勾选的平台是 search_papers 默认查询的来源。这里的条数是单次返回条数，也用于各来源的独立检索工具。所有来源均可继续翻页；收费来源每多请求一页都会计费。',
   sourcesEmpty: '至少选择一个平台。',
   sourceSemantic: 'Semantic Scholar',
   sourcePubmed: 'PubMed',
   sourceArxiv: 'arXiv',
   sourceGoogle: 'Google Scholar',
+  sourceChinese: '中文文献',
   countLabel: '每次检索条数',
   countHint: '1 到 {max}。',
   countInvalid: '请输入 1 到 {max}。',

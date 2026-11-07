@@ -5,7 +5,7 @@
  */
 
 /** Platforms `search_papers` can fan out to, in merge priority order (richest metadata first). */
-export const UNIFIED_SOURCES = ['semantic-scholar', 'pubmed', 'arxiv', 'google-scholar'] as const
+export const UNIFIED_SOURCES = ['semantic-scholar', 'pubmed', 'arxiv', 'google-scholar', 'chinese'] as const
 export type UnifiedSource = (typeof UNIFIED_SOURCES)[number]
 
 /** Platforms queried when neither the model nor the user picked any. */
@@ -16,7 +16,7 @@ export const ENTRY_ID = 'ai4scholar'
 
 /**
  * Most results one search may ask a platform for in a single billed request.
- * Semantic Scholar, PubMed, and arXiv return up to 100 in one request;
+ * Semantic Scholar, PubMed, arXiv, and Chinese literature return up to 100 in one request;
  * Google Scholar returns one page of 10 and is billed per page, so one call
  * is capped at 10 (the model pages with offset for more).
  */
@@ -25,6 +25,7 @@ export const PLATFORM_CAP: Record<UnifiedSource, number> = {
   'pubmed': 100,
   'arxiv': 100,
   'google-scholar': 10,
+  'chinese': 100,
 }
 
 /** Default results per platform, when neither the user nor the model sets one. */

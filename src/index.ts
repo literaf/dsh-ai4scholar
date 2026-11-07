@@ -20,6 +20,7 @@ import type { Runtime } from './runtime.js'
 import { applySemanticScholarTools } from './tools/semantic-scholar.js'
 import { applyPubmedTools } from './tools/pubmed.js'
 import { applyGoogleScholarTools } from './tools/google-scholar.js'
+import { applyChineseTools } from './tools/chinese.js'
 import { applyArxivTools } from './tools/arxiv.js'
 import { applyRxivTools } from './tools/rxiv.js'
 import { applyDoiTools } from './tools/doi.js'
@@ -38,6 +39,7 @@ export type { Paper, PaperSearchValue, PaperSource, CreditsValue } from './paper
 export { normalizeS2Paper, normalizeS2Author, AUTHOR_SCHEMA } from './tools/semantic-scholar.js'
 export { normalizePubmedPaper } from './tools/pubmed.js'
 export { normalizeScholarResult } from './tools/google-scholar.js'
+export { normalizeChinesePaper } from './tools/chinese.js'
 export { parseArxivFeed, normalizeArxivId } from './tools/arxiv.js'
 export { normalizeRxivPaper, normalizeRxivDoi } from './tools/rxiv.js'
 export { normalizeDoi } from './tools/doi.js'
@@ -69,6 +71,8 @@ export interface Config {
   pubmed?: boolean
   /** Register the Google Scholar tool. */
   googleScholar?: boolean
+  /** Register the Chinese literature search tool. */
+  chineseLiterature?: boolean
   /** Register the arXiv tools. */
   arxiv?: boolean
   /** Register the bioRxiv and medRxiv tools. */
@@ -156,6 +160,7 @@ export const Config: Schema<Config> = Schema.object({
   semanticScholar: Schema.boolean().default(true).description('Register the Semantic Scholar tools.'),
   pubmed: Schema.boolean().default(true).description('Register the PubMed tools.'),
   googleScholar: Schema.boolean().default(true).description('Register the Google Scholar tool.'),
+  chineseLiterature: Schema.boolean().default(true).description('Register search_chinese (Chinese literature metadata and abstracts).'),
   arxiv: Schema.boolean().default(true).description('Register the arXiv tools.'),
   biorxiv: Schema.boolean().default(true).description('Register the bioRxiv/medRxiv tools.'),
   doi: Schema.boolean().default(true).description('Register the DOI tools.'),
@@ -273,6 +278,7 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.semanticScholar) applySemanticScholarTools(ctx, runtime, resolved.fullText)
   if (resolved.pubmed) applyPubmedTools(ctx, runtime)
   if (resolved.googleScholar) applyGoogleScholarTools(ctx, runtime)
+  if (resolved.chineseLiterature) applyChineseTools(ctx, runtime)
   if (resolved.arxiv) applyArxivTools(ctx, runtime, resolved.fullText)
   if (resolved.biorxiv) applyRxivTools(ctx, runtime, resolved.fullText)
   if (resolved.doi) applyDoiTools(ctx, runtime, resolved.fullText)
@@ -281,6 +287,7 @@ export function apply(ctx: Context, config: Config): void {
     'pubmed': resolved.pubmed,
     'arxiv': resolved.arxiv,
     'google-scholar': resolved.googleScholar,
+    'chinese': resolved.chineseLiterature,
   }
   if (resolved.unifiedSearch) applyUnifiedSearchTool(ctx, runtime, platforms, resolved.searchSources)
   if (resolved.autoCite) applyAutoCiteTool(ctx, runtime)
@@ -292,6 +299,7 @@ export function apply(ctx: Context, config: Config): void {
       semanticScholar: resolved.semanticScholar,
       pubmed: resolved.pubmed,
       googleScholar: resolved.googleScholar,
+      chineseLiterature: resolved.chineseLiterature,
       arxiv: resolved.arxiv,
       biorxiv: resolved.biorxiv,
       doi: resolved.doi,

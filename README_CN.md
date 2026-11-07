@@ -9,13 +9,14 @@
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：38 个原生 agent 工具，覆盖面与 AI4Scholar 的 OpenClaw / Codex / Hermes 插件一致。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
+为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：39 个原生 agent 工具。由 [ai4scholar.net](https://ai4scholar.net?src=dsh) 提供数据服务。
 
 | 家族 | 工具 | 计费 |
 |---|---|---|
-| **论文检索** | `search_papers`——默认只查 Semantic Scholar；通过 `sources` 按需选择 PubMed、arXiv、Google Scholar。多平台结果按 DOI / arXiv id / PMID / 标题去重合并，同时命中的排前面 | 按所选平台计 |
+| **论文检索** | `search_papers`——默认只查 Semantic Scholar；通过 `sources` 按需选择 PubMed、arXiv、Google Scholar、中文文献。多平台结果按 DOI / arXiv id / PMID / 标题去重合并，同时命中的排前面 | 按所选平台计 |
 | **Semantic Scholar**（2 亿+ 论文，全学科） | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
 | **PubMed**（生物医学） | `search_pubmed`、`get_pubmed_paper_detail`、`get_pubmed_paper_batch`、`get_pubmed_citations`、`get_pubmed_related` | 积分 |
+| **中文文献**（期刊、学位论文、会议论文；题录与可用摘要） | `search_chinese` | 积分 |
 | **Google Scholar**（覆盖面最广，含被引数） | `search_google_scholar` | 积分 |
 | **arXiv** | `search_arxiv`、`download_arxiv`、`read_arxiv_paper` | 免费 |
 | **bioRxiv / medRxiv** | `search_biorxiv`、`search_medrxiv`、`download_biorxiv`、`download_medrxiv`、`read_biorxiv_paper`、`read_medrxiv_paper` | 免费 |
@@ -23,11 +24,13 @@
 | **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / 点评 / SVG / 矢量化科研图） | 积分 |
 | **账户** | `get_ai4scholar_credits`，以及斜杠命令 `/ai4scholar` | 免费 |
 
-**优先单平台检索。** 出厂设置下，不传 `sources`（或传 `[]`）时只查 Semantic Scholar；在插件页面修改默认平台后，同样的调用会按你的设置同时查询所选平台。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果配置的默认平台全部被关闭，则按 Semantic Scholar、PubMed、arXiv、Google Scholar 的顺序，选择第一个已开启的平台。
+**优先单平台检索。** 出厂设置下，不传 `sources`（或传 `[]`）时只查 Semantic Scholar；在插件页面修改默认平台后，同样的调用会按你的设置同时查询所选平台。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果配置的默认平台全部被关闭，则按 Semantic Scholar、PubMed、arXiv、Google Scholar、中文文献的顺序，选择第一个已开启的平台。
 
 所有论文列表类工具返回统一的结构——标题、作者、年份、期刊/会议、被引数、DOI/PMID/arXiv 等标识、链接、开放获取 PDF、摘要——模型（以及 Code Mode 程序）可以跨平台链式调用而无需特判。结果在 dsh Web UI 中渲染为引用卡片；全文类工具按片段返回（`offset` / `max_chars`），40 页的论文不会一次冲爆上下文。
 
 **积分看得见。** 对话里每张计费工具卡片的标题都带本次消耗（`Semantic Scholar: protein folding · 10 credits · 4,990 left`）；模型看到的结果末尾有 `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960`（来自 API 的 `X-Credits-*` 响应头），并且提示词要求模型在用了计费工具的回合结尾用一句话汇报本轮消耗与余额；`/ai4scholar` 渲染成余额卡片（可用积分、明细、会员、Key 状态、本会话消耗），`get_ai4scholar_credits` 给模型同样的数字。免费源（arXiv、bioRxiv/medRxiv、DOI）不带积分行。
+
+**中文文献。** `search_chinese` 支持中文关键词、文献类型（期刊／学位论文／会议论文）、年份筛选、排序和分页，也可以在 `search_papers` 中通过 `sources: ["chinese"]` 使用；出厂默认不勾选。中英文联合检索可传入 `query: "bird migration"`、`chinese_query: "鸟类迁徙"`、`sources: ["semantic-scholar", "chinese"]`。各来源按共同 DOI 和规范化标题去重；较短的中文标题还需年份和第一作者相同，DOI 不同的记录不会仅凭标题合并。中英文标题不同又没有共同标识时，可能仍保留两条。中文文献目前返回题录和可用摘要，不提供全文下载。
 
 ## 截图
 
@@ -84,7 +87,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 打开 **插件 → dsh-ai4scholar**（或 **设置 → AI4Scholar**，两处改的是同一份配置），API Key 下面可以改：
 
-- **检索设置**：勾选模型没指定时 search_papers 查的平台（默认只查 Semantic Scholar），并给每个平台设返回条数。Semantic Scholar、PubMed 每次最多 100 条、各计费一次；arXiv 每次最多 100 条且免费。Google Scholar 每次返回 1–10 条、计 1 积分，模型需要更多时保持相同条数并用 nextOffset 翻页。这个条数也是该平台单独检索工具的默认条数。
+- **检索设置**：勾选模型没指定时 search_papers 查的平台（默认只查 Semantic Scholar），并给每个平台设返回条数。Semantic Scholar、PubMed、中文文献每次最多 100 条、各计费一次；arXiv 每次最多 100 条且免费。Google Scholar 每次返回 1–10 条、计 1 积分，模型需要更多时保持相同条数并用 nextOffset 翻页。所有来源都能通过独立检索工具继续翻页；收费来源每多请求一页都会计费。这里的条数也是独立检索工具的默认条数。
 - **结果内容**：提供给模型的摘要长度（0–5000 字符，默认 600）、read_* 每次读取的全文长度（2,000–200,000，默认 60,000）、是否在结果里显示积分。
 - **引用与配图**：auto_cite 的参考文献格式（默认 IEEE）和是否排除预印本；sci_draw 的配图模型（默认 Flash 3.1）和分辨率（默认 2K）。
 
@@ -92,7 +95,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 ### 在 profile 配置文件里改
 
-组合包只插入一行（`id: ai4scholar`），默认值如下。在你 profile 的 `cordis.patch.yml` 中覆盖（patch 会整体替换 `config`，请把要保留的键一起写上）。DeepSeek Harness 桌面版在 macOS 上的文件是 `~/Library/Application Support/dsh-desktop/harness/profiles/web/cordis.patch.yml`；命令行版是 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`：
+组合包只插入一行（`id: ai4scholar`），默认值如下。在你 profile 的 `cordis.patch.yml` 中覆盖（patch 会整体替换 `config`，请把要保留的键一起写上）。DeepSeek Harness 桌面版在 macOS 上的文件是 `~/.dsh/profiles/desktop/cordis.patch.yml`；命令行版是 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`：
 
 ```yaml
 - id: ai4scholar
@@ -103,6 +106,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     semanticScholar: true
     pubmed: true
     googleScholar: true
+    chineseLiterature: true          # search_chinese
     arxiv: true
     biorxiv: true                    # bioRxiv + medRxiv
     doi: true
@@ -116,7 +120,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     promptGuidance: true             # 注入一小段 system prompt 说明何时用哪个工具
     promptOrder: 150
     # search_papers 默认检索的平台（插件页面可改），可选
-    # semantic-scholar、pubmed、arxiv、google-scholar
+    # semantic-scholar、pubmed、arxiv、google-scholar、chinese
     searchSources: [semantic-scholar]
     # 每个平台的返回条数（插件页面可改），没设的平台用 defaultMaxResults
     resultsPerSource: {}             # 例如 { semantic-scholar: 100, google-scholar: 10 }
