@@ -343,6 +343,38 @@ describe('DOI', () => {
     assertOutput(read.output.schema, text)
     expect(text).toMatchObject({ id: '10.1000/ok', pdfUrl: 'https://x.example/p.pdf', truncated: true })
   })
+
+  it.each([
+    ['10.3285/eg.14.1.07', 'https://egqsj.copernicus.org/articles/14/85/1963/', 'egqsj-14-85-1963.pdf'],
+    ['10.5194/acp-10-1585-2010', 'https://acp.copernicus.org/articles/10/1585/2010/', 'acp-10-1585-2010.pdf'],
+  ])('resolves the publisher metadata for directory-shaped landing pages (%s)', async (doi, landing, filename) => {
+    const pdf = `${landing}${filename}?download=1&source=article`
+    stub = stubFetch((url) => url.hostname === 'doi.org'
+      ? { text: `<html><head><META content='${filename}?download=1&amp;source=article' NAME="citation_pdf_url"></head></html>`, contentType: 'text/html', url: landing }
+      : url.href === pdf ? { bytes: FAKE_PDF, url: pdf } : { status: 404 })
+    const tool = mount({}, { apiKey: undefined }).tools.get('download_by_doi')!
+    const value = await tool.execute({ doi }, runContext())
+    expect(value).toMatchObject({ landingUrl: landing, pdfUrl: pdf })
+    expect(stub.calls.map((c) => c.url.href)).toEqual([`https://doi.org/${doi}`, pdf])
+    expect(pdfCandidatesFor(landing)).toEqual([])
+  })
+
+  it('falls back after a broken metadata link and distinguishes missing links from access failures', async () => {
+    const tool = mount({}, { apiKey: undefined }).tools.get('download_by_doi')!
+    stub = stubFetch((url) => {
+      if (url.hostname === 'doi.org') return {
+        text: '<meta name="citation_pdf_url" content="javascript:bad"><meta name="citation_pdf_url" content="/broken.pdf">',
+        contentType: 'text/html', url: 'https://www.mdpi.com/1234/htm',
+      }
+      return url.pathname === '/1234/pdf' ? { bytes: FAKE_PDF, url: url.href } : { status: 404 }
+    })
+    expect(await tool.execute({ doi: '10.3390/x' }, runContext())).toMatchObject({ pdfUrl: 'https://www.mdpi.com/1234/pdf' })
+    expect(stub.calls.map((c) => c.url.pathname)).toEqual(['/10.3390/x', '/broken.pdf', '/1234/pdf'])
+    stub.restore()
+    stub = stubFetch(() => ({ text: '<html>No PDF metadata</html>', contentType: 'text/html', url: 'https://publisher.example/articles/42/' }))
+    await expect(tool.execute({ doi: '10.1000/no-link' }, runContext())).rejects.toThrow(/could not find a PDF link/)
+    expect(stub.calls).toHaveLength(1)
+  })
 })
 
 describe('Semantic Scholar graph tools', () => {
@@ -568,6 +600,28 @@ describe('sci_draw', () => {
   })
 })
 
+describe('configured generation defaults', () => {
+  it('fill auto_cite and sci_draw fields the model leaves out, and the model can still override them', async () => {
+    const sse = 'event: result\ndata: {"annotatedText":"x","references":[]}\n\n'
+    stub = stubFetch((url) => url.pathname.endsWith('auto-cite')
+      ? { text: sse, contentType: 'text/event-stream' }
+      : { json: { success: true, imageUrl: 'https://cdn.example/f.png' } })
+    const fake = mount({ citeStyle: 'nature', citeExcludePreprints: true, drawModel: 'pro', drawImageSize: '4K' })
+    const cite = fake.tools.get('auto_cite')!
+    const draw = fake.tools.get('sci_draw')!
+    expect(JSON.stringify(cite.parameters)).toContain('default nature, as the user configured')
+    expect(JSON.stringify(draw.parameters)).toContain('Default pro, as the user configured')
+    await cite.execute({ text: 'x'.repeat(120) }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ citationStyle: 'nature', excludePreprints: true })
+    await cite.execute({ text: 'x'.repeat(120), citation_style: 'apa', exclude_preprints: false }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ citationStyle: 'apa', excludePreprints: false })
+    await draw.execute({ action: 'generate', prompt: 'cell' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'pro', imageSize: '4K' })
+    await draw.execute({ action: 'generate', prompt: 'cell', model: 'flash' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'flash', imageSize: '4K' })
+  })
+})
+
 describe('PubMed entity decoding', () => {
   it('decodes hex, decimal, and named entities in titles and abstracts', async () => {
     const { normalizePubmedPaper } = await import('../src/tools/pubmed.js')
@@ -588,12 +642,12 @@ describe('sliceText', () => {
 })
 
 describe('google scholar credits', () => {
-  it('sums charges across pages and keeps the last balance', async () => {
-    let n = 0
-    stub = stubFetch(() => ({ json: GS_PAGE_2, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': String(100 - ++n) } }))
+  it('charges one credit for the one page it returns', async () => {
+    stub = stubFetch(() => ({ json: GS_PAGE_2, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': '99' } }))
     const tool = mount().tools.get('search_google_scholar')!
     const value = await tool.execute({ query: 'x', max_results: 3 }, ctxWithAgent()) as Record<string, unknown>
     assertOutput(tool.output.schema, value)
+    expect(stub.calls).toHaveLength(1)
     expect(value.credits).toEqual({ charged: 1, remaining: 99, sessionTotal: 1 })
   })
 })

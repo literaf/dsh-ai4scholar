@@ -15,6 +15,8 @@ import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ConfigFormPort } from '../src/client/search-controller.js'
+import { fakeForm } from './settings-fixture.js'
 
 // jsdom rewrites import.meta.url to the page origin, so anchor on the project root instead.
 // React's act() checks this flag; without it every act() call logs a warning.
@@ -66,7 +68,7 @@ interface FakeClientContext {
 
 const clients: FakeClientContext[] = []
 
-function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean; host?: 'stable' | 'desktop'; slots?: 'legacy' | 'modern' | 'late' } = {}): FakeClientContext {
+function fakeClientContext(initial: { configured?: boolean; source?: string; writable?: boolean; host?: 'stable' | 'desktop'; slots?: 'legacy' | 'modern' | 'late'; form?: ConfigFormPort } = {}): FakeClientContext {
   const effects: Array<() => void> = []
   const registrations: FakeClientContext['registrations'] = []
   const locales: FakeClientContext['locales'] = {}
@@ -140,6 +142,7 @@ function fakeClientContext(initial: { configured?: boolean; source?: string; wri
       // a property of `remote` is what the real host does; see the throwing
       // proxy below for the other half of that shape.
       if (name === 'remote.credentials' && host === 'desktop') return remoteCredentials
+      if (name === 'configForms' && initial.form !== undefined) return { get: () => initial.form }
       return undefined
     },
     locale: {
@@ -247,6 +250,41 @@ afterEach(() => {
 })
 
 describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emulation', () => {
+  it('saves the rendered search controls, rejects an invalid count, and restores defaults', async () => {
+    const host = fakeForm()
+    const fake = fakeClientContext({ host: 'desktop', slots: 'modern', form: host.form })
+    loadBundle().exports.apply(fake.ctx)
+    await flush()
+    const entry = fake.registrations.find((r) => r.options.name === 'plugins.bundle.config')!
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => { root!.render(createElement(entry.component as never, { ...propsFor(entry, t), view: 'page' } as never)) })
+    expect(container.querySelectorAll('[role="checkbox"]')).toHaveLength(4)
+    const buttons = () => [...container!.querySelectorAll('button')]
+    const save = () => buttons().filter((b) => b.textContent === 'Save').at(-1)!
+    const count = container.querySelector('input[aria-label="Results from Google Scholar"]') as HTMLInputElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    const edit = async (value: string) => act(async () => {
+      setter.call(count, value)
+      count.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await edit('11')
+    expect(count.getAttribute('aria-invalid')).toBe('true')
+    expect(save().disabled).toBe(true)
+    await edit('5')
+    await act(async () => { buttons().find((b) => b.getAttribute('role') === 'checkbox' && b.textContent?.includes('PubMed'))!.click() })
+    await act(async () => { save().click() })
+    expect(host.user()).toEqual({ searchSources: ['semantic-scholar', 'pubmed'], resultsPerSource: { 'google-scholar': 5 } })
+    expect(container.textContent).toContain('Saved. New conversations')
+    expect(save().disabled).toBe(true)
+    await act(async () => { buttons().find((b) => b.textContent === 'Restore defaults')!.click() })
+    expect(host.user()).toEqual({})
+    expect(count.value).toBe('10')
+    expect(container.textContent).toContain('Defaults restored.')
+  })
+
   it.each([
     ['plugins.bundle.config', 'dsh-ai4scholar'],
     ['plugins.row.config', 'dsh-ai4scholar#ai4scholar'],
@@ -278,14 +316,17 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-new-desktop' } })
     expect(input.value).toBe('')
-    expect(container.textContent).toContain('125 credits available')
+    // The page shows the balance as a number with its unit beside it.
+    const balance = () => container!.querySelector('.ai4s-balance')?.textContent
+    expect(balance()).toBe('125credits available')
+    expect(container.textContent).toContain('Credit balance')
     await act(async () => { button('Refresh').click() })
     expect(fetch).toHaveBeenCalledTimes(2)
     await act(async () => { button('Remove').click() })
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'unset', payload: { ref: 'AI4SCHOLAR_API_KEY' } })
     expect(container.textContent).toContain('Not configured')
-    expect(container.textContent).not.toContain('125 credits available')
+    expect(balance()).toBeUndefined()
   })
 
   it('shares credential state between the native page and settings, with distinct input labels', async () => {

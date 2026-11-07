@@ -4,10 +4,11 @@
  * shows the available credits large, the breakdown small, and the key status.
  */
 
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { parseBalance } from './balance.js'
 import { cls } from './styles.js'
+import type { CommandView } from './plugin-config.js'
 
 /** Registration-side face of the command card (nothing injected today; kept for symmetry). */
 export interface Ai4ScholarCommandFace {
@@ -17,9 +18,9 @@ export interface Ai4ScholarCommandFace {
 
 /** Props the renderer binds for the command row. */
 export type Ai4ScholarCommandCardProps =
-  PropsRuntime<'conversation.chat.commandview'>
+  CommandView
   & PropsLocale<'ai4scholar'>
-  & InjectFace<Ai4ScholarCommandFace>
+  & Ai4ScholarCommandFace
 
 /**
  * Render the `/ai4scholar` row.

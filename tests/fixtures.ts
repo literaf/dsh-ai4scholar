@@ -61,6 +61,7 @@ export const PUBMED_SEARCH_RESPONSE = {
   ],
 }
 
+/** A full proxy page: ten results, the size the tool asks for. */
 export const GS_PAGE_1 = {
   resultsCount: 10,
   results: Array.from({ length: 10 }, (_, i) => ({

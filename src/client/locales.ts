@@ -43,6 +43,63 @@ export type Ai4ScholarLocaleKey =
   | 'keyValid'
   | 'keySpent'
   | 'keyInvalid'
+  | 'keyGroupTitle'
+  | 'apiKeyPlaceholderReplace'
+  | 'keyCheckTitle'
+  | 'keyCheckHint'
+  | 'noteBilled'
+  | 'noteFree'
+  | 'notePerPage'
+  | 'unitResults'
+  | 'unitChars'
+  | 'searchIntro'
+  | 'searchTitle'
+  | 'searchUnsupported'
+  | 'searchReadOnly'
+  | 'sourcesLabel'
+  | 'sourcesHint'
+  | 'sourcesEmpty'
+  | 'sourceSemantic'
+  | 'sourcePubmed'
+  | 'sourceArxiv'
+  | 'sourceGoogle'
+  | 'countLabel'
+  | 'countHint'
+  | 'countInvalid'
+  | 'abstractLabel'
+  | 'abstractHint'
+  | 'abstractInvalid'
+  | 'creditsLabel'
+  | 'creditsHint'
+  | 'restoreDefaults'
+  | 'discard'
+  | 'searchSaved'
+  | 'searchReset'
+  | 'searchFailed'
+  | 'countLabelFor'
+  | 'resultsTitle'
+  | 'readLabel'
+  | 'readHint'
+  | 'readInvalid'
+  | 'generationTitle'
+  | 'generationIntro'
+  | 'styleLabel'
+  | 'styleHint'
+  | 'styleIeee'
+  | 'styleApa'
+  | 'styleVancouver'
+  | 'styleNature'
+  | 'styleNumbered'
+  | 'preprintsLabel'
+  | 'preprintsHint'
+  | 'modelLabel'
+  | 'modelHint'
+  | 'modelFlash'
+  | 'modelFlash31'
+  | 'modelPro'
+  | 'modelGptImage'
+  | 'sizeLabel'
+  | 'sizeHint'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -54,12 +111,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export const en: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API key',
-  settingsIntro: 'Save your key to enable academic search. Check its status and credit balance here.',
-  description: 'Academic search tools: Semantic Scholar, PubMed, Google Scholar',
+  settingsIntro: 'Every search and full-text tool uses this key.',
+  description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, and bioRxiv/medRxiv, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
   apiKeyLabel: 'API key',
   apiKeyPlaceholder: 'sk-user-…',
-  apiKeyHint: 'Stored in the dsh credentials store (never shown again, never sent to the model). Takes effect on the next tool call.',
-  getKey: 'Get a key at ai4scholar.net',
+  apiKeyHint: 'Kept in the dsh credentials store. It is never shown again or sent to the model, and the next tool call uses it.',
+  getKey: 'Get a key',
   configured: 'Configured',
   configuredVia: 'Configured via {source}',
   notConfigured: 'Not configured',
@@ -85,22 +142,78 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   statKeyCap: 'Key cap',
   topUp: 'Top up at ai4scholar.net ↗',
   cmdFailed: 'could not read the balance',
-  testKey: 'Test key & show balance',
+  testKey: 'Check balance',
   recheckKey: 'Refresh',
   keyValid: '✓ Key works · {credits} credits available',
   keySpent: '{credits} spent by this key',
   keyInvalid: '✗ Key check failed: {message}',
+  keyGroupTitle: 'API key',
+  apiKeyPlaceholderReplace: 'Saved. Paste a new key to replace it',
+  keyCheckTitle: 'Credit balance',
+  keyCheckHint: 'Check that the key works and how many credits it has left.',
+  noteBilled: 'One credit per search, up to {max} per call',
+  noteFree: 'Free, up to {max} per call',
+  notePerPage: 'One credit per {max} results; page for more',
+  unitResults: 'results',
+  unitChars: 'chars',
+  searchIntro: 'Defaults the model uses when it does not specify them.',
+  searchTitle: 'Search',
+  searchUnsupported: 'This version of DeepSeek Harness cannot edit these settings here. Set searchSources, defaultMaxResults, abstractMaxChars, and showCredits on the ai4scholar entry in your profile’s cordis.patch.yml.',
+  searchReadOnly: 'This profile’s configuration is read-only here.',
+  sourcesLabel: 'Platforms',
+  sourcesHint: 'Ticked platforms are what search_papers queries when the model names none. The count is each platform’s default for its own search tool as well.',
+  sourcesEmpty: 'Pick at least one platform.',
+  sourceSemantic: 'Semantic Scholar',
+  sourcePubmed: 'PubMed',
+  sourceArxiv: 'arXiv',
+  sourceGoogle: 'Google Scholar',
+  countLabel: 'Results per search',
+  countHint: '1 to {max}.',
+  countInvalid: 'Enter 1 to {max}.',
+  abstractLabel: 'Abstract length',
+  abstractHint: '0 leaves abstracts out, at most {max}. Longer abstracts use more context.',
+  abstractInvalid: 'Enter a whole number from 0 to {max}.',
+  creditsLabel: 'Show credits in results',
+  creditsHint: 'Adds what each search cost and the remaining balance.',
+  restoreDefaults: 'Restore defaults',
+  discard: 'Discard',
+  searchSaved: 'Saved. New conversations and the next tool call use it.',
+  searchReset: 'Defaults restored.',
+  searchFailed: 'Not saved. The host refused the change; check the values and try again.',
+  countLabelFor: 'Results from {name}',
+  resultsTitle: 'Results',
+  readLabel: 'Full-text slice',
+  readHint: 'How much of a paper read_* returns per call, {min} to {max} characters. The model asks for the rest as needed.',
+  readInvalid: 'Enter {min} to {max}.',
+  generationTitle: 'Citations and figures',
+  generationIntro: 'Defaults for auto_cite and sci_draw; the model can still choose otherwise.',
+  styleLabel: 'Reference style',
+  styleHint: 'Format of the reference list auto_cite returns.',
+  styleIeee: 'IEEE',
+  styleApa: 'APA',
+  styleVancouver: 'Vancouver',
+  styleNature: 'Nature',
+  styleNumbered: 'Numbered',
+  preprintsLabel: 'Leave out preprints',
+  preprintsHint: 'auto_cite cites peer-reviewed papers only.',
+  modelLabel: 'Figure model',
+  modelHint: 'Faster models cost fewer credits.',
+  modelFlash: 'Flash (fastest)',
+  modelFlash31: 'Flash 3.1 (balanced)',
+  modelPro: 'Pro (best quality)',
+  modelGptImage: 'GPT Image (illustrations)',
+  sizeLabel: 'Figure resolution',
+  sizeHint: 'Higher resolutions take longer.',
 }
-
 export const zh: Record<Ai4ScholarLocaleKey, string> = {
   title: 'AI4Scholar',
   settingsTitle: 'AI4Scholar API Key',
-  settingsIntro: '填写 Key 即可使用学术检索，也可以在这里查看配置状态与积分余额。',
-  description: '学术检索工具：Semantic Scholar、PubMed、Google Scholar',
+  settingsIntro: '所有检索和全文工具都通过这个 Key 调用。',
+  description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv 和 bioRxiv/medRxiv 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
   apiKeyLabel: 'API Key',
   apiKeyPlaceholder: 'sk-user-…',
-  apiKeyHint: '保存到 dsh 凭据存储（不会回显，也不会发送给模型），下一次工具调用即生效。',
-  getKey: '前往 ai4scholar.net 获取 Key',
+  apiKeyHint: '保存在 dsh 凭据存储里，不会再显示，也不会发送给模型，下一次工具调用即生效。',
+  getKey: '获取 Key',
   configured: '已配置',
   configuredVia: '已配置（来源：{source}）',
   notConfigured: '未配置',
@@ -126,9 +239,66 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   statKeyCap: 'Key 上限',
   topUp: '去 ai4scholar.net 充值 ↗',
   cmdFailed: '读取余额失败',
-  testKey: '测试 Key 并显示余额',
+  testKey: '查询余额',
   recheckKey: '刷新',
   keyValid: '✓ Key 有效 · 可用积分 {credits}',
   keySpent: '此 Key 累计消耗 {credits}',
   keyInvalid: '✗ Key 检测失败：{message}',
+  keyGroupTitle: 'API Key',
+  apiKeyPlaceholderReplace: '已保存，粘贴新的 Key 可替换',
+  keyCheckTitle: '积分余额',
+  keyCheckHint: '检查 Key 是否可用，以及还剩多少积分。',
+  noteBilled: '每次检索 1 积分，单次最多 {max} 条',
+  noteFree: '免费，单次最多 {max} 条',
+  notePerPage: '每 {max} 条 1 积分；要更多可翻页',
+  unitResults: '条',
+  unitChars: '字符',
+  searchIntro: '模型没有指定时使用的默认值。',
+  searchTitle: '检索设置',
+  searchUnsupported: '当前版本的 DeepSeek Harness 不支持在这里修改这些设置。请在 profile 的 cordis.patch.yml 里，给 ai4scholar 这一行设置 searchSources、defaultMaxResults、abstractMaxChars 和 showCredits。',
+  searchReadOnly: '当前 profile 的配置在这里是只读的。',
+  sourcesLabel: '检索平台',
+  sourcesHint: '勾选的平台是模型没指定时 search_papers 会查的平台。条数同时也是该平台单独检索时的默认条数。',
+  sourcesEmpty: '至少选择一个平台。',
+  sourceSemantic: 'Semantic Scholar',
+  sourcePubmed: 'PubMed',
+  sourceArxiv: 'arXiv',
+  sourceGoogle: 'Google Scholar',
+  countLabel: '每次检索条数',
+  countHint: '1 到 {max}。',
+  countInvalid: '请输入 1 到 {max}。',
+  abstractLabel: '摘要长度',
+  abstractHint: '填 0 不提供摘要，最多 {max}。摘要越长，占用的上下文越多。',
+  abstractInvalid: '请输入 0 到 {max} 之间的整数。',
+  creditsLabel: '在结果里显示积分',
+  creditsHint: '附上每次检索消耗的积分和剩余余额。',
+  restoreDefaults: '恢复默认',
+  discard: '放弃修改',
+  searchSaved: '已保存。新对话和下一次工具调用会使用新设置。',
+  searchReset: '已恢复默认设置。',
+  searchFailed: '未保存：宿主拒绝了这次修改，请检查后重试。',
+  countLabelFor: '{name} 返回条数',
+  resultsTitle: '结果内容',
+  readLabel: '全文每次读取长度',
+  readHint: 'read_* 每次返回的全文字符数，{min} 到 {max}。模型需要时会接着读后面的部分。',
+  readInvalid: '请输入 {min} 到 {max}。',
+  generationTitle: '引用与配图',
+  generationIntro: 'auto_cite 和 sci_draw 的默认值，模型仍可按需改用其他选项。',
+  styleLabel: '参考文献格式',
+  styleHint: 'auto_cite 返回的参考文献列表格式。',
+  styleIeee: 'IEEE',
+  styleApa: 'APA',
+  styleVancouver: 'Vancouver',
+  styleNature: 'Nature',
+  styleNumbered: '数字编号',
+  preprintsLabel: '排除预印本',
+  preprintsHint: 'auto_cite 只引用经过同行评审的论文。',
+  modelLabel: '配图模型',
+  modelHint: '越快的模型消耗积分越少。',
+  modelFlash: 'Flash（最快）',
+  modelFlash31: 'Flash 3.1（均衡）',
+  modelPro: 'Pro（质量最高）',
+  modelGptImage: 'GPT Image（插画）',
+  sizeLabel: '配图分辨率',
+  sizeHint: '分辨率越高，生成越慢。',
 }

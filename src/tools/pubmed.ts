@@ -23,7 +23,8 @@ import {
 } from '../paper.js'
 import type { CreditsValue, Paper, PaperSearchValue } from '../paper.js'
 import { withCredits } from '../pdf.js'
-import { boundResults, requireIds, requireQuery } from '../runtime.js'
+import { boundResults, limitsFor, requireIds, requireQuery } from '../runtime.js'
+import { PLATFORM_CAP } from '../shared/search-settings.js'
 import type { Runtime } from '../runtime.js'
 import { PAPER_DETAIL_SCHEMA } from './semantic-scholar.js'
 
@@ -139,6 +140,8 @@ export async function runPubmedSearch(runtime: Runtime, params: PubmedSearchPara
  */
 export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
   const { client, limits, render, timeouts } = runtime
+  const searchLimits = limitsFor(limits, runtime.resultsPerSource, 'pubmed')
+  const searchCap = Math.min(limits.maxResultsCap, PLATFORM_CAP.pubmed)
 
   const listValue = (query: string, papers: Paper[], total: number, offset: number, credits: CreditsValue | undefined): PaperSearchValue => {
     const truncated = offset + papers.length < total
@@ -150,7 +153,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     description: 'Search biomedical and life-science literature on PubMed. Returns title, authors, journal, publication date, PMID, DOI, MeSH terms, and abstract. Supports a date range and relevance/date sorting.',
     parameters: {
       query: { type: 'string', required: true, description: 'PubMed query; field tags such as [Title/Abstract] and boolean operators are supported.' },
-      max_results: { type: 'integer', description: `Number of results to return (default ${limits.defaultMaxResults}, max ${limits.maxResultsCap}).` },
+      max_results: { type: 'integer', description: `Number of results to return (default ${searchLimits.defaultMaxResults}, max ${searchCap}).` },
       offset: { type: 'integer', description: 'Pagination offset (default 0). Use the returned nextOffset to fetch the next page.' },
       sort: { type: 'string', enum: ['relevance', 'date'], description: 'Sort order (default relevance).' },
       min_date: { type: 'string', description: 'Earliest publication date, YYYY, YYYY/MM, or YYYY/MM/DD.' },
@@ -168,7 +171,7 @@ export function applyPubmedTools(ctx: Context, runtime: Runtime): void {
     async execute(args, exec) {
       return runPubmedSearch(runtime, {
         query: args.query,
-        limit: boundResults(args.max_results, limits),
+        limit: boundResults(args.max_results, searchLimits, PLATFORM_CAP.pubmed),
         offset: args.offset,
         sort: args.sort,
         minDate: args.min_date,

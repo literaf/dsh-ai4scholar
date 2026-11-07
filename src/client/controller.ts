@@ -7,7 +7,6 @@
  * @module dsh-ai4scholar/client/controller
  */
 
-import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import { BALANCE_ROUTE } from '../shared/balance-route.js'
 import type { BalanceRouteResponse } from '../shared/balance-route.js'
 import type { CredentialsPortSource, CredentialView } from './credentials-port.js'
@@ -51,7 +50,9 @@ export const fetchBalanceRoute: BalanceFetch = async (signal) => {
 }
 
 /** Minimal snapshot store the slot renderer can bind as a selector hook. */
-export interface CardStore<T> extends HostObservable<T> {
+export interface CardStore<T> {
+  getSnapshot(): T
+  subscribe(listener: () => void): () => void
   set(next: T): void
 }
 

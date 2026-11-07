@@ -19,12 +19,21 @@ export interface EnabledFamilies {
   unified: boolean
 }
 
+const PLATFORM_NAME: Record<string, string> = {
+  'semantic-scholar': 'Semantic Scholar',
+  'pubmed': 'PubMed',
+  'arxiv': 'arXiv',
+  'google-scholar': 'Google Scholar',
+}
+
 /**
  * Build the guidance text for the enabled families.
  * @param enabled - the families whose tools were registered.
+ * @param defaults - platforms `search_papers` queries when `sources` is omitted
+ *   (already narrowed to mounted ones); omitted means Semantic Scholar when mounted.
  * @returns the section text, or `undefined` when nothing is enabled.
  */
-export function buildGuidance(enabled: EnabledFamilies): string | undefined {
+export function buildGuidance(enabled: EnabledFamilies, defaults?: readonly string[]): string | undefined {
   const lines: string[] = []
   const anySearch = enabled.semanticScholar || enabled.pubmed || enabled.googleScholar || enabled.arxiv
   if (enabled.unified && anySearch) {
@@ -38,9 +47,16 @@ export function buildGuidance(enabled: EnabledFamilies): string | undefined {
     const repeat = billed.length > 0
       ? ` Re-running the same query through ${billed.join(' / ')} for a platform already searched repeats the charge.`
       : ''
-    const defaultSource = enabled.semanticScholar ? 'Semantic Scholar' : 'the first enabled platform listed in the tool'
     const pubmedHint = enabled.pubmed ? ' For biomedical, clinical, or health topics, select sources ["pubmed"] when appropriate.' : ''
-    lines.push(`- search_papers: queries one platform by default (${defaultSource} only) to limit credit use; sources selects platforms and multiple sources merge duplicates.${pubmedHint} Use multiple sources only for an explicit cross-platform request or when a single source is insufficient; each additional billed source adds to the cost.${repeat} When extending a search, query only the additional sources. Reach for a platform search tool for its filters, sorting, paging, or a follow-up query.`)
+    const tail = `${repeat} When extending a search, query only the additional sources. Reach for a platform search tool for its filters, sorting, paging, or a follow-up query.`
+    if (defaults !== undefined && defaults.length > 1) {
+      const names = defaults.map((s) => PLATFORM_NAME[s] ?? s).join(' + ')
+      lines.push(`- search_papers: queries ${names} together by default, as the user configured, and merges duplicates; omit sources to keep that default and pass sources only when a call needs other platforms.${pubmedHint}${tail}`)
+    } else {
+      const only = defaults?.[0]
+      const defaultSource = only !== undefined ? (PLATFORM_NAME[only] ?? only) : enabled.semanticScholar ? 'Semantic Scholar' : 'the first enabled platform listed in the tool'
+      lines.push(`- search_papers: queries one platform by default (${defaultSource} only) to limit credit use; sources selects platforms and multiple sources merge duplicates.${pubmedHint} Use multiple sources only for an explicit cross-platform request or when a single source is insufficient; each additional billed source adds to the cost.${tail}`)
+    }
   }
   // Full-text tools exist only under a family that ships PDFs.
   const fullText = enabled.fullText && (enabled.semanticScholar || enabled.arxiv || enabled.biorxiv || enabled.doi)

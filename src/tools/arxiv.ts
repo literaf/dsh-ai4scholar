@@ -15,7 +15,7 @@ import {
 } from '../paper.js'
 import type { Paper, PaperSearchValue } from '../paper.js'
 import { READ_OUTPUT_SCHEMA, extractPdfText, fetchPdf, presentReadCall, renderRead, sliceText } from '../pdf.js'
-import { boundResults, requireQuery } from '../runtime.js'
+import { boundResults, limitsFor, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 
 const SOURCE = 'arxiv' as const
@@ -157,13 +157,14 @@ export async function runArxivSearch(runtime: Runtime, params: ArxivSearchParams
  */
 export function applyArxivTools(ctx: Context, runtime: Runtime, fullText: boolean): void {
   const { client, limits, render, timeouts } = runtime
+  const searchLimits = limitsFor(limits, runtime.resultsPerSource, 'arxiv')
 
   ctx.tools.register(defineTool({
     name: 'search_arxiv',
     description: 'Search arXiv preprints (physics, mathematics, computer science, quantitative biology, statistics, and more). Free; no API key needed. Returns title, authors, abstract, arXiv id, categories, and PDF link. Supports the arXiv query syntax (e.g. ti:"graph neural network" AND cat:cs.LG) and date filtering.',
     parameters: {
       query: { type: 'string', required: true, description: 'Search query; plain keywords or arXiv field syntax (ti:, au:, abs:, cat:).' },
-      max_results: { type: 'integer', description: `Number of results (default ${limits.defaultMaxResults}, max ${Math.min(limits.maxResultsCap, ARXIV_PAGE_CAP)}).` },
+      max_results: { type: 'integer', description: `Number of results (default ${searchLimits.defaultMaxResults}, max ${Math.min(limits.maxResultsCap, ARXIV_PAGE_CAP)}).` },
       offset: { type: 'integer', description: 'Pagination offset (default 0). Use the returned nextOffset to fetch the next page.' },
       sort_by: { type: 'string', enum: ['relevance', 'lastUpdatedDate', 'submittedDate'], description: 'Sort order (default relevance).' },
       date_from: { type: 'string', description: 'Only papers submitted on or after this date, YYYY-MM-DD.' },
@@ -180,7 +181,7 @@ export function applyArxivTools(ctx: Context, runtime: Runtime, fullText: boolea
     async execute(args, exec) {
       return runArxivSearch(runtime, {
         query: args.query,
-        limit: boundResults(args.max_results, limits, ARXIV_PAGE_CAP),
+        limit: boundResults(args.max_results, searchLimits, ARXIV_PAGE_CAP),
         offset: args.offset,
         sortBy: args.sort_by,
         dateFrom: args.date_from,

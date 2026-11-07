@@ -21,6 +21,14 @@ describe.skipIf(!existsSync(LIB_ENTRY))('built plugin in the real tool runtime',
     await ctx.plugin(SystemPrompt, {})
     await ctx.plugin(ToolRuntime, {})
     expect(ctx.tools).toBeDefined()
+    // Newer Harness compositions split execution out of the tool registry.
+    // Mount the real native executor there; legacy ToolRuntime owns it itself.
+    const modern = ctx.tools as unknown as { setExecutor?: unknown }
+    if (typeof modern.setExecutor === 'function') {
+      const packageName = '@deepseek-ai/dsh-tool-executor-native'
+      const executor = await import(packageName)
+      await ctx.plugin(executor.default ?? executor, {})
+    }
 
     const fiber = await ctx.plugin(plugin, { googleScholar: false })
     const names = ctx.tools.schemas().map((s) => s.name).sort()

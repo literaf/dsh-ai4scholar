@@ -63,8 +63,16 @@ function versionOf(dir: string, pkg: string): string | undefined {
  * @returns the contract, or undefined when neither marker is legible.
  */
 function contractOf(dir: string): Contract | undefined {
-  const remotes = `${dir}/dsh-api-remotes/lib/client.js`
-  if (existsSync(remotes) && readFileSync(remotes, 'utf8').includes('namespace: "credentials"')) return 'modern'
+  for (const filename of ['client.js', 'client.browser.js', 'client.node.js']) {
+    const remotes = `${dir}/dsh-api-remotes/lib/${filename}`
+    if (!existsSync(remotes)) continue
+    const source = readFileSync(remotes, 'utf8')
+    if (source.includes('namespace: "credentials"')) return 'modern'
+    // 0.2.2 emits endpoint-based Typert metadata instead of namespace blocks.
+    // Its describe argument is still an array and set/unset remain positional.
+    if (/"credentials\/describe":\s*\{[\s\S]*?"type":\s*"array"/.test(source)
+      && source.includes('"credentials/set"') && source.includes('"credentials/unset"')) return 'modern'
+  }
   const handle = `${dir}/dsh-client-connection/lib/types/client/index.d.ts`
   if (existsSync(handle) && /export interface ConnectionHandle \{[\s\S]*?\bapi\s*:/.test(readFileSync(handle, 'utf8'))) return 'legacy'
   return undefined

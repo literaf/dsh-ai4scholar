@@ -26,6 +26,12 @@ import type { Ai4ScholarCommandFace } from './CommandCard.js'
 import { NS, en, zh } from './locales.js'
 import { installStyles } from './styles.js'
 import { pluginConfigSlots } from './plugin-config.js'
+import { SearchSettingsController } from './search-controller.js'
+import type { ConfigFormPort } from './search-controller.js'
+import { ENTRY_ID } from '../shared/search-settings.js'
+
+export { SearchSettingsController, readSettings } from './search-controller.js'
+export type { SearchSettingsState, SearchDraft, ConfigFormPort } from './search-controller.js'
 
 export type { ApiKeyCardState } from './controller.js'
 export { ApiKeyCardController, createCardStore } from './controller.js'
@@ -94,13 +100,29 @@ export function apply(ctx: ClientContext): void {
     )
   }
 
+  // `configForms` exists from dsh 0.2.1 and is read the same way as the
+  // credentials faces: through `ctx.get()`, so a host without it leaves the
+  // search section in its "edit the file" state instead of gating apply().
+  const search = new SearchSettingsController(() => {
+    const forms = ctx.get('configForms' as never) as { get?: (entryId: string) => ConfigFormPort } | undefined
+    return typeof forms?.get === 'function' ? forms.get(ENTRY_ID) : undefined
+  })
+  ctx.effect(() => () => { search.dispose() }, 'ai4scholar: search settings form')
+
   const actions: Ai4ScholarCardFace = {
-    hooks: { card: controller.store },
+    hooks: { card: controller.store, search: search.store },
     edit: (text) => { controller.edit(text) },
     save: () => { void controller.save() },
     remove: () => { void controller.remove() },
     refresh: () => { void controller.refresh() },
     testKey: () => { void controller.testKey() },
+    attachSearch: () => { search.attach() },
+    toggleSource: (source) => { search.toggleSource(source) },
+    editCount: (source, text) => { search.editCount(source, text) },
+    editSearch: (field, value) => { search.edit(field, value) },
+    saveSearch: () => { void search.save() },
+    resetSearch: () => { void search.reset() },
+    discardSearch: () => { search.discard() },
   }
   const face = (): Ai4ScholarCardFace => actions
 
@@ -115,7 +137,7 @@ export function apply(ctx: ClientContext): void {
   }, Ai4ScholarPluginConfig))
 
   // A second, direct entrance survives changes to the host's plugin inventory.
-  ctx.slots.inject('settings.section', () => ctx.slots.register({
+  configSlots.inject('settings.section', () => configSlots.register({
     name: 'settings.section', id: 'ai4scholar', order: 190,
     label: () => ctx.locale.bind(NS)('title'), locale: NS, inject: face,
   }, Ai4ScholarSettings))
@@ -136,7 +158,7 @@ export function apply(ctx: ClientContext): void {
   // field and the list pair (`id`/`order`) is what has to hide. `order` is the
   // list host's display position; the keyed host has no use for it and reads
   // nothing in its place, so no `priority` is sent.
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+  configSlots.inject('settings.plugin.item', () => configSlots.register({
     name: 'settings.plugin.item',
     key: 'ai4scholar',
     locale: NS,
@@ -147,7 +169,7 @@ export function apply(ctx: ClientContext): void {
   // The `/ai4scholar` command row: a balance card instead of the generic
   // monospace command card. Keyed by command name; the generic card stays the
   // fallback for every other command.
-  ctx.slots.inject('conversation.chat.commandview', () => ctx.slots.register({
+  configSlots.inject('conversation.chat.commandview', () => configSlots.register({
     name: 'conversation.chat.commandview',
     key: 'ai4scholar',
     locale: NS,

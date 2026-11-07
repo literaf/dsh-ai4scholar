@@ -21,6 +21,12 @@ export interface FakeContext {
   settingsNamespaces: Map<string, unknown>
   /** Tear the fiber down the way cordis does on unload, running every effect disposer. */
   dispose: () => void
+  /** Fire a Loader event the plugin subscribed to (`loader/volatile-update`). */
+  emit: (name: string, ...args: unknown[]) => void
+  /** Times the plugin asked its fiber to restart. */
+  restarts: () => number
+  /** Settings page policies the plugin registered (`settings.configure`). */
+  policies: unknown[]
 }
 
 export function fakeContext(options: { apiKey?: string | undefined; credentialsSeam?: boolean; commands?: boolean; webServer?: boolean; settings?: boolean | 'configForms'; sharedRoutes?: Map<string, FakeRoute> } = {}): FakeContext {
@@ -34,6 +40,11 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
   // Disposers cordis would own: `ctx.effect(body)` runs the body and keeps what it
   // returns until the fiber is torn down.
   const effects: (() => void)[] = []
+  const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
+  const policies: unknown[] = []
+  let restartCount = 0
+  // Cordis fiber states: 2 is active.
+  const fiber = { state: 2, restart: async () => { restartCount += 1 } }
   const apiKey = options.apiKey
   const credentials = options.credentialsSeam === false
     ? undefined
@@ -57,6 +68,12 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
     get(name: string) {
       return name === 'credentials' ? credentials : undefined
     },
+    fiber,
+    on(name: string, listener: (...args: unknown[]) => void) {
+      if (!listeners.has(name)) listeners.set(name, [])
+      listeners.get(name)!.push(listener)
+      return () => true
+    },
     // Cordis `ctx.effect(body, label)`: run the body now, hold its disposer until disposal.
     effect(body: () => (() => void) | void) {
       const disposer = body()
@@ -70,12 +87,19 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
       if (deps.includes('settings') && options.settings === false) return
       callback({
         ...ctx,
-        settings: options.settings === 'configForms' ? {} : {
-          register(namespace: string, schema: unknown) {
-            settingsNamespaces.set(namespace, schema)
-            return { get: () => ({}), watch: () => () => undefined }
+        settings: options.settings === 'configForms'
+          ? {
+            configure(policy: unknown, owner: unknown) {
+              policies.push({ policy, owner })
+              return () => { policies.splice(policies.findIndex((p) => (p as { policy: unknown }).policy === policy), 1) }
+            },
+          }
+          : {
+            register(namespace: string, schema: unknown) {
+              settingsNamespaces.set(namespace, schema)
+              return { get: () => ({}), watch: () => () => undefined }
+            },
           },
-        },
         commands: {
           register(definition: CommandDefinition) {
             if (commands.has(definition.name)) throw new Error(`duplicate command ${definition.name}`)
@@ -96,7 +120,10 @@ export function fakeContext(options: { apiKey?: string | undefined; credentialsS
   const dispose = (): void => {
     while (effects.length > 0) effects.pop()?.()
   }
-  return { ctx, tools, sections, commands, routes, settingsNamespaces, dispose }
+  const emit = (name: string, ...args: unknown[]): void => {
+    for (const listener of listeners.get(name) ?? []) listener(...args)
+  }
+  return { ctx, tools, sections, commands, routes, settingsNamespaces, dispose, emit, restarts: () => restartCount, policies }
 }
 
 /** Mount the plugin with schemastery defaults applied over `overrides`. */

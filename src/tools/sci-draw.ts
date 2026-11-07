@@ -37,15 +37,15 @@ type SciDrawValue = InferValue<typeof OUTPUT_SCHEMA>
  * @param runtime - plugin instance runtime.
  */
 export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
-  const { client, timeouts } = runtime
+  const { client, timeouts, generation } = runtime
   ctx.tools.register(defineTool({
     name: 'sci_draw',
     description: 'Generate or process scientific figures with AI (AI4Scholar Nano Draw; costs credits). Actions: smart (auto-optimizes the prompt, Chinese OK — recommended), generate (text-to-image), edit (modify an image), style (style transfer), compose (combine 2+ images), iterate (auto-review and refine), critic (expert review, returns text), svg (vector graphic), vectorize (PNG/JPG → PDF + PPTX). Generation takes 30–90 seconds — tell the user to wait before calling. Show the returned imageUrl to the user as a Markdown image.',
     parameters: {
       action: { type: 'string', required: true, enum: ACTIONS, description: 'Operation.' },
       prompt: { type: 'string', description: 'Description or instruction; may be empty for critic and vectorize.' },
-      model: { type: 'string', enum: ['flash', 'flash31', 'pro', 'gptimage'], description: 'flash (fast), flash31 (balanced, default), pro (highest quality), gptimage (GPT Image 2, detailed illustrations).' },
-      image_size: { type: 'string', enum: ['1K', '2K', '4K'], description: 'Output resolution (default 2K).' },
+      model: { type: 'string', enum: ['flash', 'flash31', 'pro', 'gptimage'], description: `flash (fast), flash31 (balanced), pro (highest quality), gptimage (GPT Image 2, detailed illustrations). Default ${generation.drawModel}, as the user configured.` },
+      image_size: { type: 'string', enum: ['1K', '2K', '4K'], description: `Output resolution (default ${generation.drawImageSize}, as the user configured).` },
       aspect_ratio: { type: 'string', description: 'Aspect ratio: 1:1 (default), 16:9, 4:3, 3:4, 9:16.' },
       images: { type: 'array', items: { type: 'string' }, description: 'Input images as URLs or base64 data URIs; required for edit/style/compose/iterate/critic/vectorize.' },
       style_preset: { type: 'string', description: 'Style preset name (style action).' },
@@ -83,8 +83,8 @@ export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
       if (prompt.length === 0 && !['critic', 'vectorize'].includes(args.action)) throw new Error(`action "${args.action}" requires a prompt`)
       const apiKey = await runtime.requireApiKey()
       const body: Record<string, unknown> = { action: args.action, prompt }
-      if (args.model !== undefined) body.model = args.model
-      if (args.image_size !== undefined) body.imageSize = args.image_size
+      body.model = args.model ?? generation.drawModel
+      body.imageSize = args.image_size ?? generation.drawImageSize
       if (args.aspect_ratio !== undefined) body.aspectRatio = args.aspect_ratio
       if (images.length > 0) body.images = images
       if (args.style_preset !== undefined) body.stylePreset = args.style_preset

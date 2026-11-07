@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "dsh-ai4scholar",
+    "description": "为 DeepSeek Harness 提供学术检索：在 Semantic Scholar、PubMed、Google Scholar、arXiv 和 bioRxiv/medRxiv 上找论文，读取全文，自动生成引用和科研配图，并查看积分余额。由 ai4scholar.net 提供。",
+    "detail": "docs/detail.zh.md"
+  }
+}

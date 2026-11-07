@@ -9,6 +9,9 @@ import { Config, VERSION } from '../src/index.js'
 
 const manifest = createRequire(import.meta.url)('../package.json') as { version: string }
 
+/** A run context with an agent, so the plugin's credit tally runs. */
+const ctxWithAgent = () => ({ ...runContext(), agent: {} } as unknown as ReturnType<typeof runContext>)
+
 let stub: StubbedFetch | undefined
 afterEach(() => {
   stub?.restore()
@@ -82,8 +85,13 @@ describe('plugin mount', () => {
     const config = new Config({})
     expect(config.baseUrl).toBe('https://ai4scholar.net')
     expect(config.apiKeyEnv).toBe('AI4SCHOLAR_API_KEY')
-    expect(config.defaultMaxResults).toBe(10)
+    // Settings-page fields parse into references the Loader can update in place.
+    expect((config.defaultMaxResults as unknown as { get(): number }).get()).toBe(10)
+    expect((config.searchSources as unknown as { get(): string[] }).get()).toEqual(['semantic-scholar'])
+    expect(() => new Config({ searchSources: [] })).toThrow(/searchSources/)
+    expect(() => new Config({ searchSources: ['bing' as never] })).toThrow(/searchSources/)
     expect(() => mount({ defaultMaxResults: 0 })).toThrow(/defaultMaxResults/)
+    expect(() => mount({ defaultMaxResults: 2.5 })).toThrow(/defaultMaxResults/)
     expect(() => mount({ defaultMaxResults: 60, maxResultsCap: 50 })).toThrow(/must not exceed/)
     expect(() => mount({ baseUrl: 'not a url' })).toThrow(/baseUrl/)
     expect(() => mount({ apiKeyEnv: 'has-dash' })).toThrow(/credential ref/)
@@ -358,21 +366,18 @@ describe('search_pubmed', () => {
 })
 
 describe('search_google_scholar', () => {
-  it('paginates until max_results is met and parses publicationInfo', async () => {
-    stub = stubFetch((_url, init) => {
-      const body = JSON.parse(String(init.body)) as { page: number }
-      return { json: body.page === 1 ? GS_PAGE_1 : GS_PAGE_2 }
-    })
+  it('returns one page per call (one credit) and hands back nextOffset, capping max_results at a page', async () => {
+    stub = stubFetch(() => ({ json: GS_PAGE_1, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': '99' } }))
     const tool = mount().tools.get('search_google_scholar')!
-    const value = await tool.execute({ query: 'protein folding', max_results: 12, year_from: 2020, year_to: 2025 }, runContext()) as Record<string, unknown>
+    // max_results above a page is clamped to one page; only one billed request.
+    const value = await tool.execute({ query: 'protein folding', max_results: 25, year_from: 2020, year_to: 2025 }, ctxWithAgent()) as Record<string, unknown>
     assertOutput(tool.output.schema, value)
     expect(stub.calls.map((c) => c.body)).toEqual([
-      { query: 'protein folding', page: 1, yearFrom: 2020, yearTo: 2025 },
-      { query: 'protein folding', page: 2, yearFrom: 2020, yearTo: 2025 },
+      { query: 'protein folding', page: 1, results: 10, yearFrom: 2020, yearTo: 2025 },
     ])
     const papers = value.papers as Array<Record<string, unknown>>
-    expect(papers).toHaveLength(12)
-    expect(value).toMatchObject({ source: 'google-scholar', total: 12, truncated: true })
+    expect(papers).toHaveLength(10)
+    expect(value).toMatchObject({ source: 'google-scholar', total: 10, truncated: true, nextOffset: 10, credits: { charged: 1, remaining: 99 } })
     expect(papers[0]).toEqual({
       source: 'google-scholar',
       id: 'https://example.org/paper-1',
@@ -385,33 +390,51 @@ describe('search_google_scholar', () => {
       url: 'https://example.org/paper-1',
       pdfUrl: 'https://example.org/paper-1.pdf',
     })
-    expect('pdfUrl' in papers[1]!).toBe(false)
-    const text = textOf(tool.output.render({ query: 'protein folding' }, value as never))
-    expect(text).toContain('Google Scholar results for "protein folding" (showing 12)')
-    expect(text).toContain('link: https://example.org/paper-1')
-    expect(text).toContain('narrow the query or raise max_results')
+    expect(JSON.stringify(tool.parameters)).toContain('max 10 per call')
+    expect(JSON.stringify(tool.parameters)).toContain('nextOffset')
   })
 
-  it('stops when a page comes back short and reports no truncation', async () => {
-    stub = stubFetch(() => ({ json: GS_PAGE_2 }))
+  it('pages with offset: a whole-page offset maps to the proxy page and costs one credit', async () => {
+    stub = stubFetch(() => ({ json: GS_PAGE_2, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': '98' } }))
     const tool = mount().tools.get('search_google_scholar')!
-    const value = await tool.execute({ query: 'rare topic', max_results: 30 }, runContext()) as Record<string, unknown>
-    expect(stub.calls).toHaveLength(1)
-    expect(value).toMatchObject({ total: 3, truncated: false })
+    const value = await tool.execute({ query: 'x', offset: 20 }, ctxWithAgent()) as Record<string, unknown>
+    expect(stub.calls[0]!.body).toMatchObject({ query: 'x', page: 3, results: 10 })
+    // GS_PAGE_2 is a short page (3 results): no more pages.
+    expect(value).toMatchObject({ total: 3, truncated: false, credits: { charged: 1 } })
+    expect(value.nextOffset).toBeUndefined()
   })
 
-  it('keeps fetched pages and warns when a later page fails; fails when the first page fails', async () => {
-    let calls = 0
-    stub = stubFetch(() => (++calls === 1 ? { json: GS_PAGE_1 } : { status: 502, text: 'bad gateway' }))
+  it('explains that a 503 can mean an outage or an empty page, without charging', async () => {
+    stub = stubFetch(() => ({ status: 503, json: { error: 'UPSTREAM_UNAVAILABLE', message: '未从 Google Scholar 获取到结果，本次不扣费，请稍后重试' } }))
     const tool = mount({ maxRetries: 1 }).tools.get('search_google_scholar')!
-    const value = await tool.execute({ query: 'x', max_results: 20 }, runContext()) as Record<string, unknown>
-    assertOutput(tool.output.schema, value)
-    expect((value.papers as unknown[]).length).toBe(10)
-    expect(value.warning).toMatch(/Pagination stopped early: HTTP 502/)
-    expect(textOf(tool.output.render({ query: 'x' }, value as never))).toContain('Note: Pagination stopped early')
+    const value = await tool.execute({ query: 'x', offset: 50 }, runContext()) as Record<string, unknown>
+    expect(value).toMatchObject({ total: 0, truncated: false })
+    expect(value.warning).toContain('upstream may be temporarily unavailable')
+    expect(value.credits).toBeUndefined()
+  })
 
-    stub.restore()
+  it('honors the configured count and explicit overrides, keeping pagination aligned', async () => {
+    stub = stubFetch(() => ({ json: GS_PAGE_1, headers: { 'X-Credits-Charged': '1' } }))
+    const tool = mount({ resultsPerSource: { 'google-scholar': 3 } }).tools.get('search_google_scholar')!
+    const first = await tool.execute({ query: 'x' }, ctxWithAgent()) as { papers: unknown[]; nextOffset: number }
+    expect(first.papers).toHaveLength(3)
+    expect(first.nextOffset).toBe(3)
+    const next = await tool.execute({ query: 'x', offset: first.nextOffset }, ctxWithAgent()) as { nextOffset: number }
+    expect(next.nextOffset).toBe(6)
+    await tool.execute({ query: 'x', max_results: 5 }, ctxWithAgent())
+    expect(stub.calls.map((c) => c.body)).toEqual([
+      { query: 'x', page: 1, results: 3 },
+      { query: 'x', page: 2, results: 3 },
+      { query: 'x', page: 1, results: 5 },
+    ])
+    await expect(tool.execute({ query: 'x', offset: 4 }, runContext())).rejects.toThrow(/keep the same max_results/)
+    await expect(tool.execute({ query: 'x', offset: -1 }, runContext())).rejects.toThrow(/offset/)
+    expect(stub.calls).toHaveLength(3)
+  })
+
+  it('fails when the page request fails, and validates the year range', async () => {
     stub = stubFetch(() => ({ status: 502, text: 'bad gateway' }))
+    const tool = mount({ maxRetries: 1 }).tools.get('search_google_scholar')!
     await expect(tool.execute({ query: 'x' }, runContext())).rejects.toThrow(/Google Scholar search failed: HTTP 502/)
     await expect(tool.execute({ query: 'x', year_from: 2025, year_to: 2020 }, runContext())).rejects.toThrow(/year_from/)
   })

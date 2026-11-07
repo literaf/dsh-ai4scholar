@@ -23,7 +23,7 @@
 | **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / 点评 / SVG / 矢量化科研图） | 积分 |
 | **账户** | `get_ai4scholar_credits`，以及斜杠命令 `/ai4scholar` | 免费 |
 
-**优先单平台检索。** 不传 `sources`（或传 `[]`）时只查 Semantic Scholar。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果关闭了 Semantic Scholar，则按 PubMed、arXiv、Google Scholar 的顺序，默认选择第一个已开启的平台。
+**优先单平台检索。** 出厂设置下，不传 `sources`（或传 `[]`）时只查 Semantic Scholar；在插件页面修改默认平台后，同样的调用会按你的设置同时查询所选平台。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果配置的默认平台全部被关闭，则按 Semantic Scholar、PubMed、arXiv、Google Scholar 的顺序，选择第一个已开启的平台。
 
 所有论文列表类工具返回统一的结构——标题、作者、年份、期刊/会议、被引数、DOI/PMID/arXiv 等标识、链接、开放获取 PDF、摘要——模型（以及 Code Mode 程序）可以跨平台链式调用而无需特判。结果在 dsh Web UI 中渲染为引用卡片；全文类工具按片段返回（`offset` / `max_chars`），40 页的论文不会一次冲爆上下文。
 
@@ -80,7 +80,19 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 ## 配置
 
-组合包只插入一行（`id: ai4scholar`），默认值如下。在你 profile 的 `cordis.patch.yml` 中覆盖（patch 会整体替换 `config`，请把要保留的键一起写上）：
+### 在插件页面里改
+
+打开 **插件 → dsh-ai4scholar**（或 **设置 → AI4Scholar**，两处改的是同一份配置），API Key 下面可以改：
+
+- **检索设置**：勾选模型没指定时 search_papers 查的平台（默认只查 Semantic Scholar），并给每个平台设返回条数。Semantic Scholar、PubMed 每次最多 100 条、各计费一次；arXiv 每次最多 100 条且免费。Google Scholar 每次返回 1–10 条、计 1 积分，模型需要更多时保持相同条数并用 nextOffset 翻页。这个条数也是该平台单独检索工具的默认条数。
+- **结果内容**：提供给模型的摘要长度（0–5000 字符，默认 600）、read_* 每次读取的全文长度（2,000–200,000，默认 60,000）、是否在结果里显示积分。
+- **引用与配图**：auto_cite 的参考文献格式（默认 IEEE）和是否排除预印本；sci_draw 的配图模型（默认 Flash 3.1）和分辨率（默认 2K）。
+
+模型在单次调用里仍可以自己指定这些参数。点 **保存** 会把改动写进 profile 的 `cordis.patch.yml`，插件随即按新设置重新加载，下一次工具调用和新对话都会生效。**恢复默认** 会删掉这些覆盖。这个页面需要 DeepSeek Harness 0.2.1 或更高版本；旧版本会提示你改配置文件。
+
+### 在 profile 配置文件里改
+
+组合包只插入一行（`id: ai4scholar`），默认值如下。在你 profile 的 `cordis.patch.yml` 中覆盖（patch 会整体替换 `config`，请把要保留的键一起写上）。DeepSeek Harness 桌面版在 macOS 上的文件是 `~/Library/Application Support/dsh-desktop/harness/profiles/web/cordis.patch.yml`；命令行版是 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`：
 
 ```yaml
 - id: ai4scholar
@@ -100,14 +112,23 @@ dsh web                           # 打印 http://127.0.0.1:3080
     creditsTool: true                # get_ai4scholar_credits
     command: true                    # /ai4scholar 斜杠命令
     balanceRoute: true               # 设置卡片测试 Key 用的 GET /ai4scholar/balance 路由
-    showCredits: true                # 计费结果末尾的积分行
+    showCredits: true                # 计费结果末尾的积分行（插件页面可改）
     promptGuidance: true             # 注入一小段 system prompt 说明何时用哪个工具
     promptOrder: 150
+    # search_papers 默认检索的平台（插件页面可改），可选
+    # semantic-scholar、pubmed、arxiv、google-scholar
+    searchSources: [semantic-scholar]
+    # 每个平台的返回条数（插件页面可改），没设的平台用 defaultMaxResults
+    resultsPerSource: {}             # 例如 { semantic-scholar: 100, google-scholar: 10 }
+    citeStyle: ieee                  # auto_cite：ieee | apa | vancouver | nature | numbered（插件页面可改）
+    citeExcludePreprints: false      # auto_cite（插件页面可改）
+    drawModel: flash31               # sci_draw：flash | flash31 | pro | gptimage（插件页面可改）
+    drawImageSize: 2K                # sci_draw：1K | 2K | 4K（插件页面可改）
     # 条数与长度
-    defaultMaxResults: 10            # 模型未指定 max_results 时的条数
-    maxResultsCap: 50                # 单次调用上限
-    abstractMaxChars: 600            # 每篇论文展示给模型的摘要字符数；0 表示不展示
-    readMaxChars: 60000              # 全文每片字符数
+    defaultMaxResults: 10            # 各平台共用的备用条数（配置文件中修改）
+    maxResultsCap: 100               # 单次调用上限；各平台另有自己的上限
+    abstractMaxChars: 600            # 每篇论文展示给模型的摘要字符数；0 表示不展示（插件页面可改）
+    readMaxChars: 60000              # 全文每片字符数（插件页面可改）
     # 超时与重试
     requestTimeoutMs: 30000          # 单次 HTTP 请求
     pdfTimeoutMs: 120000             # 单次 PDF 下载

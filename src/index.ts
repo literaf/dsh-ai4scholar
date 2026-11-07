@@ -26,7 +26,10 @@ import { applyDoiTools } from './tools/doi.js'
 import { applyAutoCiteTool } from './tools/auto-cite.js'
 import { applySciDrawTool } from './tools/sci-draw.js'
 import { applyCreditsTools } from './tools/credits.js'
-import { applyUnifiedSearchTool } from './tools/unified.js'
+import { applyUnifiedSearchTool, defaultSourcesFor, DEFAULT_SOURCES, UNIFIED_SOURCES } from './tools/unified.js'
+import type { UnifiedSource } from './tools/unified.js'
+import { CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP } from './shared/search-settings.js'
+import type { CiteStyle, DrawModel, DrawSize, ResultsPerSource } from './shared/search-settings.js'
 
 export { Ai4ScholarClient } from './api-client.js'
 export type { ApiClientOptions, ApiResult, RequestOptions, CreditsInfo } from './api-client.js'
@@ -80,6 +83,18 @@ export interface Config {
   sciDraw?: boolean
   /** Register `search_papers` (unified cross-platform search over the enabled families). */
   unifiedSearch?: boolean
+  /** Platforms `search_papers` queries when the model names none; the settings page edits it. */
+  searchSources?: UnifiedSource[]
+  /** Default results per platform for its search tool and `search_papers`; a missing platform uses `defaultMaxResults`. */
+  resultsPerSource?: ResultsPerSource
+  /** `auto_cite` reference format when the model names none. */
+  citeStyle?: CiteStyle
+  /** Whether `auto_cite` leaves preprints out unless the model says otherwise. */
+  citeExcludePreprints?: boolean
+  /** `sci_draw` model when the model names none. */
+  drawModel?: DrawModel
+  /** `sci_draw` output resolution when the model names none. */
+  drawImageSize?: DrawSize
   /** Register `get_ai4scholar_credits`. */
   creditsTool?: boolean
   /** Register the `/ai4scholar` command (needs the commands service). */
@@ -114,6 +129,27 @@ export interface Config {
   toolTimeoutMs?: number
 }
 
+/**
+ * Mark a field editable from the settings page. Hosts from dsh 0.2.1 serve only
+ * `.volatile()` fields to configuration forms; older schemastery copies (the
+ * host's, since schemastery is a peer) lack the method, and there the field
+ * stays an ordinary one edited through `cordis.patch.yml`.
+ */
+function live<S>(schema: S): S {
+  const candidate = schema as S & { volatile?: () => S }
+  return typeof candidate.volatile === 'function' ? candidate.volatile() : schema
+}
+
+/** The fields the settings page edits; everything else stays file-only. */
+export const SETTINGS_FIELDS = [
+  'searchSources', 'resultsPerSource', 'defaultMaxResults', 'abstractMaxChars', 'showCredits',
+  'readMaxChars', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize',
+] as const
+
+/** One optional count per platform, bounded by what that platform serves per search. */
+const ResultsPerSourceSchema = Schema.object(Object.fromEntries(UNIFIED_SOURCES.map((s) =>
+  [s, Schema.natural().min(1).max(PLATFORM_CAP[s])]))) as unknown as Schema<ResultsPerSource>
+
 export const Config: Schema<Config> = Schema.object({
   baseUrl: Schema.string().default('https://ai4scholar.net').description('ai4scholar.net API origin.'),
   apiKeyEnv: Schema.string().default('AI4SCHOLAR_API_KEY').description('Credential reference holding the AI4Scholar API key.'),
@@ -127,16 +163,22 @@ export const Config: Schema<Config> = Schema.object({
   autoCite: Schema.boolean().default(true).description('Register auto_cite.'),
   sciDraw: Schema.boolean().default(true).description('Register sci_draw.'),
   unifiedSearch: Schema.boolean().default(true).description('Register search_papers (unified cross-platform search).'),
+  searchSources: live(Schema.array(Schema.union([...UNIFIED_SOURCES])).min(1).default([...DEFAULT_SOURCES]).role('checkbox').description('Platforms search_papers queries when the model names none.')),
+  resultsPerSource: live(ResultsPerSourceSchema.default({}).description('Default results per platform; a missing platform uses defaultMaxResults.')),
+  citeStyle: live(Schema.union([...CITE_STYLES]).default('ieee').description('auto_cite reference format when the model names none.')),
+  citeExcludePreprints: live(Schema.boolean().default(false).description('Leave preprints out of auto_cite unless the model asks for them.')),
+  drawModel: live(Schema.union([...DRAW_MODELS]).default('flash31').description('sci_draw model when the model names none.')),
+  drawImageSize: live(Schema.union([...DRAW_SIZES]).default('2K').description('sci_draw resolution when the model names none.')),
   creditsTool: Schema.boolean().default(true).description('Register get_ai4scholar_credits.'),
   command: Schema.boolean().default(true).description('Register the /ai4scholar command.'),
   balanceRoute: Schema.boolean().default(true).description('Register GET /ai4scholar/balance for the settings card.'),
-  showCredits: Schema.boolean().default(true).description('Attach credit accounting to billed results.'),
+  showCredits: live(Schema.boolean().default(true).description('Attach credit accounting to billed results.')),
   promptGuidance: Schema.boolean().default(true).description('Register the system-prompt guidance section.'),
   promptOrder: Schema.number().default(150).description('Order of the guidance section within the assembled prompt.'),
-  defaultMaxResults: Schema.number().default(10).description('Results returned when the model omits max_results.'),
-  maxResultsCap: Schema.number().default(50).description('Upper bound the model may request per call.'),
-  abstractMaxChars: Schema.number().default(600).description('Abstract characters per paper in model-facing text; 0 omits abstracts.'),
-  readMaxChars: Schema.number().default(60_000).description('Characters per full-text read call by default.'),
+  defaultMaxResults: live(Schema.natural().min(1).default(10).description('Results returned when the model omits max_results.')),
+  maxResultsCap: Schema.number().default(100).description('Upper bound the model may request per call; each platform also applies its own.'),
+  abstractMaxChars: live(Schema.natural().default(600).description('Abstract characters per paper in model-facing text; 0 omits abstracts.')),
+  readMaxChars: live(Schema.natural().min(1).default(60_000).description('Characters per full-text read call by default.')),
   requestTimeoutMs: Schema.number().default(30_000).description('Per-attempt HTTP timeout (ms).'),
   pdfTimeoutMs: Schema.number().default(120_000).description('Per-download PDF timeout (ms).'),
   generationTimeoutMs: Schema.number().default(300_000).description('auto_cite / sci_draw timeout (ms).'),
@@ -147,6 +189,26 @@ export const Config: Schema<Config> = Schema.object({
 
 /** Complete config after schemastery applies every default. */
 type ResolvedConfig = Required<Config>
+
+/** A parsed `.volatile()` field: a stable reference the Loader writes new values into. */
+interface VolatileRef { get(): unknown }
+
+const isVolatileRef = (value: unknown): value is VolatileRef =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) && typeof (value as { get?: unknown }).get === 'function'
+
+/**
+ * Read the config with every settings field unwrapped to its current value.
+ * The plugin reads them once per mount: a settings save restarts the fiber
+ * (see `apply`), because tool descriptions and the prompt quote them.
+ */
+function plainConfig(config: Config): ResolvedConfig {
+  const out: Record<string, unknown> = { ...config }
+  for (const field of SETTINGS_FIELDS) {
+    const value = out[field]
+    if (isVolatileRef(value)) out[field] = value.get()
+  }
+  return out as ResolvedConfig
+}
 
 function assertPositiveInteger(field: string, value: number): void {
   if (!Number.isInteger(value) || value < 1) throw new Error(`ai4scholar: ${field} must be a positive integer`)
@@ -164,7 +226,7 @@ function assertNonNegativeInteger(field: string, value: number): void {
  * @param config - schemastery-validated config with defaults applied.
  */
 export function apply(ctx: Context, config: Config): void {
-  const resolved = config as ResolvedConfig
+  const resolved = plainConfig(config)
   for (const field of ['defaultMaxResults', 'maxResultsCap', 'readMaxChars', 'requestTimeoutMs', 'pdfTimeoutMs', 'generationTimeoutMs', 'maxRetries', 'toolTimeoutMs'] as const) {
     assertPositiveInteger(field, resolved[field])
   }
@@ -193,6 +255,13 @@ export function apply(ctx: Context, config: Config): void {
     client,
     render: { abstractMaxChars: resolved.abstractMaxChars },
     limits: { defaultMaxResults: resolved.defaultMaxResults, maxResultsCap: resolved.maxResultsCap },
+    resultsPerSource: { ...resolved.resultsPerSource },
+    generation: {
+      citeStyle: resolved.citeStyle,
+      citeExcludePreprints: resolved.citeExcludePreprints,
+      drawModel: resolved.drawModel,
+      drawImageSize: resolved.drawImageSize,
+    },
     read: { maxChars: resolved.readMaxChars },
     timeouts: { tool: resolved.toolTimeoutMs, pdf: resolved.pdfTimeoutMs, generation: resolved.generationTimeoutMs },
     showCredits: resolved.showCredits,
@@ -207,14 +276,13 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.arxiv) applyArxivTools(ctx, runtime, resolved.fullText)
   if (resolved.biorxiv) applyRxivTools(ctx, runtime, resolved.fullText)
   if (resolved.doi) applyDoiTools(ctx, runtime, resolved.fullText)
-  if (resolved.unifiedSearch) {
-    applyUnifiedSearchTool(ctx, runtime, {
-      'semantic-scholar': resolved.semanticScholar,
-      'pubmed': resolved.pubmed,
-      'arxiv': resolved.arxiv,
-      'google-scholar': resolved.googleScholar,
-    })
+  const platforms: Record<UnifiedSource, boolean> = {
+    'semantic-scholar': resolved.semanticScholar,
+    'pubmed': resolved.pubmed,
+    'arxiv': resolved.arxiv,
+    'google-scholar': resolved.googleScholar,
   }
+  if (resolved.unifiedSearch) applyUnifiedSearchTool(ctx, runtime, platforms, resolved.searchSources)
   if (resolved.autoCite) applyAutoCiteTool(ctx, runtime)
   if (resolved.sciDraw) applySciDrawTool(ctx, runtime)
   if (resolved.creditsTool || resolved.command || resolved.balanceRoute) applyCreditsTools(ctx, runtime, resolved.command, resolved.creditsTool, resolved.balanceRoute)
@@ -232,7 +300,7 @@ export function apply(ctx: Context, config: Config): void {
       sciDraw: resolved.sciDraw,
       credits: resolved.creditsTool,
       unified: resolved.unifiedSearch,
-    })
+    }, defaultSourcesFor(resolved.searchSources, platforms))
     if (text !== undefined) ctx.systemPrompt.section({ name: 'tool:ai4scholar', order: resolved.promptOrder, text })
   }
 
@@ -252,5 +320,29 @@ export function apply(ctx: Context, config: Config): void {
     if (typeof service.register === 'function') {
       service.register('ai4scholar', Schema.object({}).description('AI4Scholar — configured through its Settings card; the API key lives in the credential store.'))
     }
+    // From 0.2.1 the service serves this entry's `.volatile()` fields as a form,
+    // and the plugin page draws its own (Card.tsx), so no page is generated.
+    const configure = (service as { configure?: (policy: { auto: boolean }, owner: unknown) => () => void }).configure
+    if (typeof configure === 'function') settingsCtx.effect(() => configure.call(service, { auto: false }, ctx.fiber), 'ai4scholar: settings page policy')
+  })
+
+  // A settings save commits new values into the running references and emits
+  // this event. Tool descriptions and the prompt section quote those values, so
+  // remount: the restart re-parses the saved config and registers everything
+  // again, the way any other config change would.
+  // The Loader's event is not in this package's Events map; it is declared by
+  // the Loader the host composes, so subscribe through the untyped overload.
+  //
+  // The restart waits a tick: the event fires inside the settings write, and
+  // the Host answers that write by describing this entry, which it skips while
+  // the fiber is unloading — restarting synchronously turned every accepted
+  // save into a reported failure.
+  const on = ctx.on as (this: Context, name: string, listener: () => void) => unknown
+  on.call(ctx, 'loader/volatile-update', () => {
+    const fiber = ctx.fiber
+    setTimeout(() => {
+      if (fiber.state !== 2) return
+      fiber.restart().catch((error: unknown) => { console.warn('ai4scholar: remount after a settings change failed', error) })
+    }, 0)
   })
 }

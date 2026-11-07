@@ -9,7 +9,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { InferValue, JsonValue } from '@deepseek-ai/dsh-tools'
+import type { InferValue } from '@deepseek-ai/dsh-tools'
+import type { JsonValue } from '../paper.js'
 import {
   CREDITS_SCHEMA,
   PAPER_SCHEMA,
@@ -32,7 +33,7 @@ import {
 } from '../paper.js'
 import type { CreditsValue, Paper, PaperSearchValue } from '../paper.js'
 import { READ_OUTPUT_SCHEMA, extractPdfText, fetchPdf, presentReadCall, renderRead, sliceText, withCredits } from '../pdf.js'
-import { boundResults, requireIds, requireQuery } from '../runtime.js'
+import { boundResults, limitsFor, requireIds, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 
 const SOURCE = 'semantic-scholar' as const
@@ -375,6 +376,7 @@ export async function runSemanticSearch(runtime: Runtime, params: SemanticSearch
 export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullText: boolean): void {
   const { client, limits, render, timeouts } = runtime
   const graphSearchCap = Math.min(limits.maxResultsCap, S2_SEARCH_PAGE_CAP)
+  const searchLimits = limitsFor(limits, runtime.resultsPerSource, 'semantic-scholar')
   const listCap = Math.min(limits.maxResultsCap, S2_EDGE_CAP)
   // ── search ──────────────────────────────────────────────────────────────
 
@@ -383,7 +385,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     description: 'Search academic papers on Semantic Scholar (200M+ papers, all fields). Returns title, authors, year, venue, citation count, identifiers, and abstract. Supports year filtering and offset pagination.',
     parameters: {
       query: { type: 'string', required: true, description: 'Search query, e.g. "graph neural networks drug discovery".' },
-      max_results: { type: 'integer', description: `Number of results to return (default ${limits.defaultMaxResults}, max ${graphSearchCap}).` },
+      max_results: { type: 'integer', description: `Number of results to return (default ${searchLimits.defaultMaxResults}, max ${graphSearchCap}).` },
       offset: { type: 'integer', description: 'Pagination offset (default 0). Use the returned nextOffset to fetch the next page.' },
       year: { type: 'string', description: 'Year filter: "2019", "2016-2020", "2010-" (from 2010), or "-2015" (up to 2015).' },
     },
@@ -399,7 +401,7 @@ export function applySemanticScholarTools(ctx: Context, runtime: Runtime, fullTe
     async execute(args, exec) {
       return runSemanticSearch(runtime, {
         query: args.query,
-        limit: boundResults(args.max_results, limits, S2_SEARCH_PAGE_CAP),
+        limit: boundResults(args.max_results, searchLimits, S2_SEARCH_PAGE_CAP),
         offset: args.offset,
         year: args.year,
       }, exec.signal, exec.agent)

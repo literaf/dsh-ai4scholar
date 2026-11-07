@@ -85,7 +85,7 @@ function normalizeReference(record: unknown, index: number): Reference | undefin
  * @param runtime - plugin instance runtime.
  */
 export function applyAutoCiteTool(ctx: Context, runtime: Runtime): void {
-  const { client, timeouts } = runtime
+  const { client, timeouts, generation } = runtime
   ctx.tools.register(defineTool({
     name: 'auto_cite',
     description: 'Add real citations to a passage of academic text: the AI4Scholar Auto-Cite service finds matching papers (Semantic Scholar / PubMed / Google Scholar), inserts numbered citation markers, and returns the reference list (IEEE, APA, Vancouver, Nature, or numbered style) plus BibTeX. Takes 20–90 seconds and costs credits (refunded if nothing is found). Text must be 100–10,000 characters. Use it when the user pastes a paragraph and asks for citations/references.',
@@ -95,9 +95,9 @@ export function applyAutoCiteTool(ctx: Context, runtime: Runtime): void {
       min_citations: { type: 'integer', description: 'Minimum citations to add in auto mode (default 10, max 50).' },
       field: { type: 'string', description: 'Academic field to bias the search, e.g. "computer science", "oncology".' },
       year_preference: { type: 'integer', description: 'Preferred publication year for cited papers, e.g. 2024.' },
-      exclude_preprints: { type: 'boolean', description: 'Exclude preprints (default false).' },
+      exclude_preprints: { type: 'boolean', description: `Exclude preprints (default ${generation.citeExcludePreprints}, as the user configured).` },
       exclude_conferences: { type: 'boolean', description: 'Exclude conference papers (default false).' },
-      citation_style: { type: 'string', enum: ['ieee', 'apa', 'vancouver', 'nature', 'numbered'], description: 'Reference format (default ieee).' },
+      citation_style: { type: 'string', enum: ['ieee', 'apa', 'vancouver', 'nature', 'numbered'], description: `Reference format (default ${generation.citeStyle}, as the user configured).` },
       preferred_venues: { type: 'array', items: { type: 'string' }, description: 'Journal or venue names to prefer (a hint, not a guarantee).' },
     },
     output: {
@@ -137,9 +137,9 @@ export function applyAutoCiteTool(ctx: Context, runtime: Runtime): void {
       if (args.min_citations !== undefined) body.minCitations = Math.min(Math.max(1, Math.trunc(args.min_citations)), 50)
       if (args.field !== undefined && args.field.trim().length > 0) body.field = args.field.trim()
       if (args.year_preference !== undefined) body.yearPreference = Math.trunc(args.year_preference)
-      if (args.exclude_preprints !== undefined) body.excludePreprints = args.exclude_preprints
+      body.excludePreprints = args.exclude_preprints ?? generation.citeExcludePreprints
       if (args.exclude_conferences !== undefined) body.excludeConferences = args.exclude_conferences
-      if (args.citation_style !== undefined) body.citationStyle = args.citation_style
+      body.citationStyle = args.citation_style ?? generation.citeStyle
       if (args.preferred_venues !== undefined && args.preferred_venues.length > 0) body.preferredVenues = args.preferred_venues
       const res = await client.postSse<Record<string, unknown>>('/api/proxy/auto-cite', body, { apiKey, signal: exec.signal, timeoutMs: timeouts.generation })
       if (!res.ok) throw new Error(`Auto-cite failed: ${res.error}`)

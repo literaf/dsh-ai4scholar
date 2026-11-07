@@ -1,7 +1,8 @@
 /**
  * Google Scholar search over the ai4scholar.net proxy (`/google-scholar/v1/search`).
- * The proxy returns ten results per page; the tool paginates until it has
- * `max_results` or the platform runs dry.
+ * The proxy returns one page of up to ten results and bills one credit; the
+ * tool returns one page per call and hands back `nextOffset` so the caller can
+ * page on when it wants more.
  * @module dsh-ai4scholar/tools/google-scholar
  */
 
@@ -19,13 +20,13 @@ import {
   str,
 } from '../paper.js'
 import type { Paper, PaperSearchValue } from '../paper.js'
-import { boundResults, requireQuery } from '../runtime.js'
+import { boundResults, limitsFor, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 
 const SOURCE = 'google-scholar' as const
 
-/** Google Scholar page size, fixed by the platform. */
-const GS_PAGE_SIZE = 10
+/** Keep requests in the proxy's one-credit tier (1–10 results). */
+export const GS_PAGE_SIZE = 10
 
 /**
  * Normalize one Google Scholar result from the ai4scholar proxy.
@@ -67,8 +68,10 @@ export function normalizeScholarResult(record: unknown): Paper | undefined {
 /** Parameters of one Google Scholar search. */
 export interface ScholarSearchParams {
   query: string
-  /** Already bounded number of results wanted (fetched in pages of 10). */
+  /** Already bounded number of results wanted (at most one page, GS_PAGE_SIZE). */
   wanted: number
+  /** Results to skip; must align with the requested page size. */
+  offset?: number | undefined
   yearFrom?: number | undefined
   yearTo?: number | undefined
 }
@@ -83,55 +86,45 @@ export interface ScholarSearchParams {
  */
 export async function runScholarSearch(runtime: Runtime, params: ScholarSearchParams, signal: AbortSignal | undefined, agent: object | undefined): Promise<PaperSearchValue> {
   const query = requireQuery(params.query)
-  const wanted = params.wanted
   if (params.yearFrom !== undefined && params.yearTo !== undefined && params.yearFrom > params.yearTo) {
     throw new Error('year_from must not be later than year_to')
   }
-  const apiKey = await runtime.requireApiKey()
-  const papers: Paper[] = []
-  let page = 1
-  let exhausted = false
-  let firstError: string | undefined
-  let credits: ReturnType<Runtime['creditsOf']>
-  while (papers.length < wanted && !exhausted) {
-    signal?.throwIfAborted()
-    const body: Record<string, unknown> = { query, page }
-    if (params.yearFrom !== undefined) body.yearFrom = params.yearFrom
-    if (params.yearTo !== undefined) body.yearTo = params.yearTo
-    const res = await runtime.client.post<{ results?: unknown[]; resultsCount?: number }>('/google-scholar/v1/search', body, { apiKey, signal })
-    if (!res.ok) {
-      // A later page failing keeps the pages already fetched; the first page failing is the failure.
-      if (papers.length === 0) throw new Error(`Google Scholar search failed: ${res.error}`)
-      firstError = res.error
-      break
-    }
-    const pageCredits = runtime.creditsOf(res, agent)
-    if (pageCredits !== undefined) {
-      // Each page is one billed call: sum the charges, keep the latest balance.
-      credits = compact({
-        charged: (credits?.charged ?? 0) + (pageCredits.charged ?? 0),
-        remaining: pageCredits.remaining ?? credits?.remaining,
-        sessionTotal: pageCredits.sessionTotal ?? credits?.sessionTotal,
-      })
-    }
-    const batch = (res.data.results ?? []).map(normalizeScholarResult).filter((p): p is Paper => p !== undefined)
-    papers.push(...batch)
-    const pageCount = typeof res.data.resultsCount === 'number' ? res.data.resultsCount : batch.length
-    if (batch.length === 0 || pageCount < GS_PAGE_SIZE) exhausted = true
-    page += 1
+  const wanted = boundResults(params.wanted, { defaultMaxResults: GS_PAGE_SIZE, maxResultsCap: GS_PAGE_SIZE })
+  const offset = params.offset ?? 0
+  // The proxy computes its start as (page - 1) * results. Never round an
+  // incompatible cursor down: that would silently repeat papers and charges.
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset % wanted !== 0) {
+    throw new Error(`offset must be a non-negative multiple of max_results (${wanted}); keep the same max_results when following nextOffset`)
   }
-  const kept = papers.slice(0, wanted)
-  // Google Scholar reports no total; more may exist whenever the last page was full.
-  const truncated = !exhausted || papers.length > kept.length
+  const page = offset / wanted + 1
+  const apiKey = await runtime.requireApiKey()
+  signal?.throwIfAborted()
+  const body: Record<string, unknown> = { query, page, results: wanted }
+  if (params.yearFrom !== undefined) body.yearFrom = params.yearFrom
+  if (params.yearTo !== undefined) body.yearTo = params.yearTo
+  const res = await runtime.client.post<{ results?: unknown[]; resultsCount?: number }>('/google-scholar/v1/search', body, { apiKey, signal })
+  // This response also covers outages and upstream limits. Do not present it
+  // as proof that no papers exist or that the last page has been reached.
+  if (!res.ok && res.status === 503 && res.code === 'UPSTREAM_UNAVAILABLE') {
+    return {
+      source: SOURCE, query, total: 0, papers: [], truncated: false,
+      warning: 'Google Scholar returned no results: the upstream may be temporarily unavailable or this page may be empty. No credits were charged; retry later or refine the query.',
+    }
+  }
+  if (!res.ok) throw new Error(`Google Scholar search failed: ${res.error}`)
+  const records = (res.data.results ?? []).slice(0, wanted)
+  const papers = records.map(normalizeScholarResult).filter((p): p is Paper => p !== undefined)
+  const pageCount = typeof res.data.resultsCount === 'number' ? res.data.resultsCount : records.length
+  // Google Scholar reports no total; a full page means more may follow.
+  const more = pageCount >= wanted && records.length > 0
   return compact({
     source: SOURCE,
     query,
-    total: kept.length,
-    papers: kept,
-    truncated,
-    // A later page failing is a degraded success: keep the fetched pages and say why it stopped.
-    warning: firstError !== undefined ? `Pagination stopped early: ${firstError}` : undefined,
-    credits,
+    total: papers.length,
+    papers,
+    truncated: more,
+    nextOffset: more ? offset + wanted : undefined,
+    credits: runtime.creditsOf(res, agent),
   })
 }
 
@@ -141,14 +134,18 @@ export async function runScholarSearch(runtime: Runtime, params: ScholarSearchPa
  * @param runtime - plugin instance runtime.
  */
 export function applyGoogleScholarTools(ctx: Context, runtime: Runtime): void {
-  const { client, limits, render, timeouts } = runtime
+  const { limits, render, timeouts } = runtime
+  // One Google Scholar call is one page of up to GS_PAGE_SIZE, billed one credit;
+  // the per-platform default is clamped to that page, and the model pages with offset.
+  const defaultPerCall = Math.min(limitsFor(limits, runtime.resultsPerSource, 'google-scholar').defaultMaxResults, GS_PAGE_SIZE)
 
   ctx.tools.register(defineTool({
     name: 'search_google_scholar',
-    description: 'Search Google Scholar (broad coverage across publishers, theses, and books). Returns title, authors, venue, year, cited-by count, snippet, and PDF link when available. Supports a year range. Slower than the other search tools; each 10 results is one page fetch.',
+    description: `Search Google Scholar (broad coverage across publishers, theses, and books). Returns title, authors, venue, year, cited-by count, snippet, and PDF link when available. Supports a year range. Slower than the other search tools. One call returns up to ${GS_PAGE_SIZE} results and costs one credit; for more, call again with the returned offset.`,
     parameters: {
       query: { type: 'string', required: true, description: 'Search query.' },
-      max_results: { type: 'integer', description: `Number of results to return (default ${limits.defaultMaxResults}, max ${limits.maxResultsCap}); fetched in pages of ${GS_PAGE_SIZE}.` },
+      max_results: { type: 'integer', description: `Number of results to return (default ${defaultPerCall}, max ${GS_PAGE_SIZE} per call — one billed page). To read beyond ${GS_PAGE_SIZE}, call again with offset.` },
+      offset: { type: 'integer', description: 'Results to skip (default 0). Use the returned nextOffset and keep the same max_results while paging; offset must be a multiple of that count. Each request costs one credit.' },
       year_from: { type: 'integer', description: 'Earliest publication year, e.g. 2020.' },
       year_to: { type: 'integer', description: 'Latest publication year, e.g. 2025.' },
     },
@@ -164,7 +161,8 @@ export function applyGoogleScholarTools(ctx: Context, runtime: Runtime): void {
     async execute(args, exec) {
       return runScholarSearch(runtime, {
         query: args.query,
-        wanted: boundResults(args.max_results, limits),
+        wanted: boundResults(args.max_results, { defaultMaxResults: defaultPerCall, maxResultsCap: GS_PAGE_SIZE }, GS_PAGE_SIZE),
+        offset: args.offset,
         yearFrom: args.year_from,
         yearTo: args.year_to,
       }, exec.signal, exec.agent)

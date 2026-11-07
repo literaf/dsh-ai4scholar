@@ -2,6 +2,26 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.3.10] - 2026-11-07
+
+### Added
+- Settings on the plugin page, below the API key. **Search**: the platforms `search_papers` queries by default (any mix of Semantic Scholar, PubMed, arXiv, and Google Scholar) and a result count for each, up to what that platform serves per search (Semantic Scholar, PubMed, arXiv 100; Google Scholar 10 — one billed page per call). **Results**: abstract length, full-text slice length, and the credit line. **Citations and figures**: `auto_cite` reference style and whether to leave out preprints, `sci_draw` model and resolution. Saving writes them into the profile's `cordis.patch.yml` through the Host's configuration forms (DeepSeek Harness 0.2.1 and later), and the plugin reloads so tool descriptions and the prompt quote the new values. **Restore defaults** removes the overrides. On older hosts the section explains which file to edit.
+- Config fields `searchSources`, `resultsPerSource`, `citeStyle`, `citeExcludePreprints`, `drawModel`, and `drawImageSize`; `readMaxChars` is now editable on the page too. A per-platform count is also that platform's default for its own search tool (`search_semantic`, `search_pubmed`, `search_arxiv`, `search_google_scholar`). The model can still pass its own values for one call.
+- `searchSources` (default `[semantic-scholar]`). With several platforms selected, the `search_papers` description and the prompt guidance tell the model to search them together instead of steering it back to one.
+
+- Localized package title and description (`locale/en.json`, `locale/zh.json`), so the plugin list and the plugin page show Chinese text in the Chinese UI.
+
+### Changed
+- `search_google_scholar` now returns one page of up to 10 results per call (one credit) and reports `nextOffset`; it takes an `offset` parameter so the model pages for more on request, rather than the tool fanning out across pages on its own. This makes its per-call cap consistent with the other platforms (each "max N" is what one billed request returns). A 503 `UPSTREAM_UNAVAILABLE` response (not billed) carries a warning: it can mean an empty page or a temporary upstream outage. Configured counts and explicit `max_results` both apply to the request; pagination keeps that page size and rejects misaligned offsets. `PLATFORM_CAP['google-scholar']` is now 10.
+- Redesigned the plugin page to match the host's own settings pages: an API key group (status pill, one row with the input and its buttons, the balance below) and a search group (platform tiles with their cost, number fields with units, a switch for the credit line), each in one bordered panel.
+- `maxResultsCap` now defaults to 100, so Semantic Scholar, PubMed, and arXiv searches can return up to 100 results per call; each platform still applies its own maximum.
+- `defaultMaxResults`, `abstractMaxChars`, and `readMaxChars` must now be whole numbers; the schema rejects fractions.
+
+### Fixed
+- Preserve untouched per-platform counts when another settings surface updates them while a draft is open.
+- DOI downloads and full-text reads try the publisher's `citation_pdf_url` metadata before URL templates, including relative links and directory-shaped Copernicus article pages (issue #1). Failures distinguish missing PDF links from failed requests and include the attempted URLs and HTTP statuses.
+- Keep client slot/store types and JSON metadata compatible with Harness 0.2.2 while retaining the older host UI. Update the credentials contract probe and runtime smoke composition for its generated endpoints and separate native executor.
+
 ## [0.3.9] - 2026-11-04
 
 ### Changed

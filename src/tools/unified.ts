@@ -21,17 +21,31 @@ import {
   presentPaperListResult,
 } from '../paper.js'
 import type { CreditsValue, Paper, PaperSearchValue, PaperSource } from '../paper.js'
-import { boundResults, requireQuery } from '../runtime.js'
+import { boundResults, limitsFor, requireQuery } from '../runtime.js'
 import type { Runtime } from '../runtime.js'
 import { runSemanticSearch } from './semantic-scholar.js'
 import { runPubmedSearch } from './pubmed.js'
 import { runScholarSearch } from './google-scholar.js'
 import { runArxivSearch } from './arxiv.js'
 
-/** Platforms the unified search can fan out to, in merge priority order (richest metadata first). */
-export const UNIFIED_SOURCES = ['semantic-scholar', 'pubmed', 'arxiv', 'google-scholar'] as const
-export type UnifiedSource = (typeof UNIFIED_SOURCES)[number]
-const DEFAULT_SOURCES: readonly UnifiedSource[] = ['semantic-scholar']
+import { DEFAULT_SOURCES, PLATFORM_CAP, UNIFIED_SOURCES } from '../shared/search-settings.js'
+import type { UnifiedSource } from '../shared/search-settings.js'
+
+export { DEFAULT_SOURCES, UNIFIED_SOURCES }
+export type { UnifiedSource }
+
+/**
+ * The platforms a call without `sources` queries: the configured ones that are
+ * mounted, else the first mounted platform.
+ * @param configured - `searchSources` from the config.
+ * @param enabled - which platforms this composition mounted.
+ * @returns the default platforms in merge order; empty when none is mounted.
+ */
+export function defaultSourcesFor(configured: readonly UnifiedSource[], enabled: Record<UnifiedSource, boolean>): UnifiedSource[] {
+  const offered = UNIFIED_SOURCES.filter((s) => enabled[s])
+  const picked = offered.filter((s) => configured.includes(s))
+  return picked.length > 0 ? picked : offered.slice(0, 1)
+}
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -211,22 +225,30 @@ function formatUnified(value: UnifiedValue, abstractMaxChars: number): string {
  * @param ctx - context whose `tools` registry receives the effect-scoped registration.
  * @param runtime - plugin instance runtime.
  * @param enabled - which platforms this composition mounted; the tool offers only those.
+ * @param configured - `searchSources`: the platforms a call without `sources` queries.
  */
-export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: Record<UnifiedSource, boolean>): void {
+export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: Record<UnifiedSource, boolean>, configured: readonly UnifiedSource[] = DEFAULT_SOURCES): void {
   const { limits, render, timeouts } = runtime
   const offered = UNIFIED_SOURCES.filter((s) => enabled[s])
   if (offered.length === 0) return
-  const defaults = DEFAULT_SOURCES.filter((s) => enabled[s])
-  const fallbackDefaults = defaults.length > 0 ? defaults : [offered[0]!]
+  const fallbackDefaults = defaultSourcesFor(configured, enabled)
+  const several = fallbackDefaults.length > 1
+  const capFor = (s: UnifiedSource): number => Math.min(limits.maxResultsCap, PLATFORM_CAP[s])
+  const countFor = (s: UnifiedSource): number => Math.min(limitsFor(limits, runtime.resultsPerSource, s).defaultMaxResults, capFor(s))
   const pubmedHint = enabled.pubmed ? ' For biomedical, clinical, or health topics, select sources ["pubmed"] when appropriate.' : ''
+  // A user who picked several default platforms asked for them together; the
+  // description must not tell the model to stay on one.
+  const lead = several
+    ? `Search academic papers; by default it queries ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')} together, as the user configured, and merges the results.${pubmedHint} Pass sources only to change the platforms for one call.`
+    : `Search academic papers on one platform by default to limit credit use.${pubmedHint} Select multiple sources only for an explicit cross-platform request or when a single source is insufficient.`
 
   ctx.tools.register(defineTool({
     name: 'search_papers',
-    description: `Search academic papers on one platform by default to limit credit use.${pubmedHint} Select multiple sources only for an explicit cross-platform request or when a single source is insufficient. Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first; charges add up across billed API requests. Do not repeat the same query on already searched platforms via their individual tools, as that repeats the charge. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')} only; arXiv is free, the others cost credits, Google Scholar is slowest and bills per page).`,
+    description: `${lead} Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first; charges add up across billed API requests. Do not repeat the same query on already searched platforms via their individual tools, as that repeats the charge. Available platforms: ${offered.map((s) => SOURCE_LABEL[s]).join(', ')} (default ${fallbackDefaults.map((s) => SOURCE_LABEL[s]).join(' + ')}${several ? '' : ' only'}; arXiv is free, the others cost credits, Google Scholar is slowest and bills per page).`,
     parameters: {
       query: { type: 'string', required: true, description: 'Topic or keywords; sent to every selected platform as-is.' },
-      sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}). Prefer one source; select multiple only when broader coverage is requested or needed. Each billed source adds to the cost.` },
-      max_results_per_source: { type: 'integer', description: `Results requested from each platform (default ${limits.defaultMaxResults}, max ${limits.maxResultsCap}).` },
+      sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}).${several ? '' : ' Prefer one source; select multiple only when broader coverage is requested or needed.'} Each billed source adds to the cost.` },
+      max_results_per_source: { type: 'integer', description: `Results requested from each platform; omit it to use each platform's configured default (${offered.map((s) => `${SOURCE_LABEL[s]} ${countFor(s)}`).join(', ')}). Each platform caps it at its own maximum (${offered.map((s) => `${SOURCE_LABEL[s]} ${capFor(s)}`).join(', ')}).` },
       year_from: { type: 'integer', description: 'Earliest publication year.' },
       year_to: { type: 'integer', description: 'Latest publication year.' },
     },
@@ -244,18 +266,19 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
       const chosen = (args.sources !== undefined && args.sources.length > 0 ? args.sources : fallbackDefaults) as UnifiedSource[]
       const sources = UNIFIED_SOURCES.filter((s) => chosen.includes(s) && enabled[s])
       if (sources.length === 0) throw new Error(`sources must name at least one of: ${offered.join(', ')}`)
-      const per = boundResults(args.max_results_per_source, limits)
+      // An explicit count applies to every platform; otherwise each uses its own default.
+      const per = (s: UnifiedSource): number => boundResults(args.max_results_per_source, limitsFor(limits, runtime.resultsPerSource, s), PLATFORM_CAP[s])
       if (args.year_from !== undefined && args.year_to !== undefined && args.year_from > args.year_to) throw new Error('year_from must not be later than year_to')
       const s2Year = args.year_from !== undefined || args.year_to !== undefined ? `${args.year_from ?? ''}-${args.year_to ?? ''}` : undefined
       const runners: Record<UnifiedSource, () => Promise<PaperSearchValue>> = {
-        'semantic-scholar': () => runSemanticSearch(runtime, { query, limit: Math.min(per, 100), year: s2Year }, exec.signal, exec.agent),
-        'pubmed': () => runPubmedSearch(runtime, { query, limit: per, minDate: args.year_from !== undefined ? String(args.year_from) : undefined, maxDate: args.year_to !== undefined ? String(args.year_to) : undefined }, exec.signal, exec.agent),
+        'semantic-scholar': () => runSemanticSearch(runtime, { query, limit: per('semantic-scholar'), year: s2Year }, exec.signal, exec.agent),
+        'pubmed': () => runPubmedSearch(runtime, { query, limit: per('pubmed'), minDate: args.year_from !== undefined ? String(args.year_from) : undefined, maxDate: args.year_to !== undefined ? String(args.year_to) : undefined }, exec.signal, exec.agent),
         'arxiv': async () => {
-          const page = await runArxivSearch(runtime, { query, limit: per, dateFrom: args.year_from !== undefined ? `${args.year_from}-01-01` : undefined }, exec.signal)
+          const page = await runArxivSearch(runtime, { query, limit: per('arxiv'), dateFrom: args.year_from !== undefined ? `${args.year_from}-01-01` : undefined }, exec.signal)
           // arXiv has no upper date bound in the query syntax; apply it client-side.
           return args.year_to !== undefined ? { ...page, papers: page.papers.filter((p) => p.year === undefined || p.year <= args.year_to!) } : page
         },
-        'google-scholar': () => runScholarSearch(runtime, { query, wanted: per, yearFrom: args.year_from, yearTo: args.year_to }, exec.signal, exec.agent),
+        'google-scholar': () => runScholarSearch(runtime, { query, wanted: per('google-scholar'), yearFrom: args.year_from, yearTo: args.year_to }, exec.signal, exec.agent),
       }
       const settled = await Promise.allSettled(sources.map((s) => runners[s]()))
       const lists: Paper[][] = []

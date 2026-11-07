@@ -19,6 +19,27 @@ export interface SearchLimits {
   maxResultsCap: number
 }
 
+/**
+ * The limits one platform's tools use: its own default count from
+ * `resultsPerSource` when the user set one, else the shared default.
+ * @param limits - the shared limits.
+ * @param perSource - `resultsPerSource` from the config.
+ * @param source - the platform.
+ * @returns limits whose default is that platform's.
+ */
+export function limitsFor(limits: SearchLimits, perSource: Partial<Record<string, number>>, source: string): SearchLimits {
+  const own = perSource[source]
+  return own === undefined ? limits : { ...limits, defaultMaxResults: Math.min(own, limits.maxResultsCap) }
+}
+
+/** Defaults the generation tools apply when the model leaves a field out. */
+export interface GenerationDefaults {
+  citeStyle: string
+  citeExcludePreprints: boolean
+  drawModel: string
+  drawImageSize: string
+}
+
 /** Timeouts for the slow tool families. */
 export interface Timeouts {
   /** Cooperative per-call budget attached to ordinary tools as `timeoutMs`. */
@@ -73,6 +94,10 @@ export interface Runtime {
   render: RenderOptions
   /** Result-count limits. */
   limits: SearchLimits
+  /** Per-platform default counts (`resultsPerSource`); see {@link limitsFor}. */
+  resultsPerSource: Partial<Record<string, number>>
+  /** auto_cite and sci_draw defaults. */
+  generation: GenerationDefaults
   /** Full-text limits. */
   read: ReadLimits
   /** Timeouts. */

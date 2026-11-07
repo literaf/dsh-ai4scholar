@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { ARXIV_FEED } from './fixtures-extended.js'
@@ -194,6 +194,71 @@ describe('search_papers', () => {
     expect(value.sources).toEqual(['pubmed'])
     expect(tool.description).toContain('(default PubMed only;')
     expect(fake.sections[0]?.text).not.toContain('Semantic Scholar')
+  })
+
+  it('queries the configured default platforms together and says so to the model', async () => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/graph/v1/paper/search') return { json: S2_SEARCH_RESPONSE, headers: { 'X-Credits-Charged': '10', 'X-Credits-Remaining': '990' } }
+      if (url.pathname === '/google-scholar/v1/search') return { json: { results: [], resultsCount: 0 }, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': '989' } }
+      return { status: 404, text: 'unexpected platform request' }
+    })
+    const fake = mount({ searchSources: ['google-scholar', 'semantic-scholar'] })
+    const tool = fake.tools.get('search_papers')!
+    const value = await tool.execute({ query: 'transformers', max_results_per_source: 2 }, ctxWithAgent()) as Record<string, unknown>
+    // Merge order follows UNIFIED_SOURCES, not the order the user ticked them.
+    expect(value.sources).toEqual(['semantic-scholar', 'google-scholar'])
+    expect(stub.calls.map((call) => call.url.pathname).sort()).toEqual(['/google-scholar/v1/search', '/graph/v1/paper/search'])
+    expect(tool.description).toContain('by default it queries Semantic Scholar + Google Scholar together')
+    expect(tool.description).not.toContain('one platform by default')
+    expect(fake.sections[0]?.text).toContain('queries Semantic Scholar + Google Scholar together by default')
+    // An explicit sources list still wins for one call.
+    await tool.execute({ query: 'x', sources: ['semantic-scholar'] }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.url.pathname).toBe('/graph/v1/paper/search')
+  })
+
+  it('uses a single configured platform and ignores ones the composition did not mount', async () => {
+    const only = mount({ searchSources: ['google-scholar'] })
+    expect(only.tools.get('search_papers')!.description).toContain('(default Google Scholar only;')
+    expect(only.sections[0]?.text).toContain('(Google Scholar only)')
+    // Google Scholar unmounted: the configured default falls back to the first mounted platform.
+    const fallback = mount({ searchSources: ['google-scholar'], googleScholar: false })
+    expect(fallback.tools.get('search_papers')!.description).toContain('(default Semantic Scholar only;')
+  })
+
+  it('remounts after a settings save so descriptions pick up the new values', async () => {
+    vi.useFakeTimers()
+    try {
+      const fake = mount()
+      fake.emit('loader/volatile-update', [['searchSources']])
+      expect(fake.restarts()).toBe(0) // deferred past the settings write
+      await vi.runAllTimersAsync()
+      expect(fake.restarts()).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('asks each platform for its own configured count, capped by that platform', async () => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/graph/v1/paper/search') return { json: S2_SEARCH_RESPONSE }
+      if (url.pathname === '/pubmed/v1/paper/search') return { json: PUBMED_SEARCH_RESPONSE }
+      return { status: 404, text: 'unexpected' }
+    })
+    const fake = mount({ searchSources: ['semantic-scholar', 'pubmed'], resultsPerSource: { 'semantic-scholar': 100, 'pubmed': 30 } })
+    const tool = fake.tools.get('search_papers')!
+    await tool.execute({ query: 'x' }, ctxWithAgent())
+    const s2 = stub.calls.find((c) => c.url.pathname.startsWith('/graph'))!
+    const pm = stub.calls.find((c) => c.url.pathname.startsWith('/pubmed'))!
+    expect(s2.url.searchParams.get('limit')).toBe('100')
+    expect(pm.body).toMatchObject({ limit: 30 })
+    expect(JSON.stringify(tool.parameters)).toContain('Semantic Scholar 100, PubMed 30')
+    // An explicit count applies to every platform, still within each one's cap.
+    await tool.execute({ query: 'x', max_results_per_source: 500 }, ctxWithAgent())
+    expect(stub.calls.filter((c) => c.url.pathname.startsWith('/graph')).at(-1)!.url.searchParams.get('limit')).toBe('100')
+    // The platform's own search tool uses the same default.
+    expect(JSON.stringify(fake.tools.get('search_semantic')!.parameters)).toContain('(default 100, max 100)')
+    expect(JSON.stringify(fake.tools.get('search_pubmed')!.parameters)).toContain('(default 30, max 100)')
+    expect(() => mount({ resultsPerSource: { 'google-scholar': 20 } })).toThrow(/google-scholar/)
   })
 
   it('offers only the enabled platforms and disappears when none is', () => {

@@ -7,7 +7,10 @@
  */
 
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { GenericCallView, GenericResultView, InferValue, JsonValue, ToolResult, WebSearchResultView, WebSource } from '@deepseek-ai/dsh-tools'
+import type { GenericCallView, GenericResultView, InferValue, ToolResult, WebSearchResultView, WebSource } from '@deepseek-ai/dsh-tools'
+
+/** JSON metadata; newer tool SDKs no longer re-export their JsonValue alias. */
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 /** Which platform produced a record. */
 export type PaperSource = 'semantic-scholar' | 'pubmed' | 'google-scholar' | 'arxiv' | 'biorxiv' | 'medrxiv'

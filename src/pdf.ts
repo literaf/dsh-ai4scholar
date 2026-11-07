@@ -10,7 +10,7 @@ import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { InferValue, GenericCallView } from '@deepseek-ai/dsh-tools'
 import type { Ai4ScholarClient, ApiErr } from './api-client.js'
 import { BROWSER_HEADERS, requestSignal } from './api-client.js'
-import { CREDITS_SCHEMA, compact, formatCredits } from './paper.js'
+import { CREDITS_SCHEMA, compact, decodeEntities, formatCredits } from './paper.js'
 import type { CreditsValue } from './paper.js'
 
 /** `%PDF` magic. */
@@ -146,8 +146,28 @@ export function pdfCandidatesFor(landingUrl: string): string[] {
   if ((host.includes('biorxiv.org') || host.includes('medrxiv.org')) && path.startsWith('/content/')) candidates.push(`${u.origin}${path.replace(/(\.full)?(\.pdf)?$/, '')}.full.pdf`)
   if (host.includes('arxiv.org') && path.startsWith('/abs/')) candidates.push(`https://arxiv.org/pdf/${path.slice('/abs/'.length)}`)
   // Generic fallback for path-only URLs; a query string means the site keys on parameters, not paths.
-  if (!path.endsWith('.pdf') && u.search.length === 0) candidates.push(`${u.origin}${path}.pdf`)
+  if (!path.endsWith('/') && !path.endsWith('.pdf') && u.search.length === 0) candidates.push(`${u.origin}${path}.pdf`)
   return [...new Set(candidates)]
+}
+
+/** Highwire metadata is the publisher's own PDF link, including directory-shaped article URLs. */
+function metadataPdfUrls(html: string, landingUrl: string): string[] {
+  const urls: string[] = []
+  // Ignore comments/scripts; an example tag in article text is not metadata.
+  const markup = html.replace(/<!--[\s\S]*?-->|<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+  for (const match of markup.matchAll(/<meta\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi)) {
+    const attrs: Record<string, string> = {}
+    for (const attr of match[0].matchAll(/([^\s=<>/]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)) {
+      attrs[attr[1]!.toLowerCase()] = attr[2] ?? attr[3] ?? attr[4] ?? ''
+    }
+    if ((attrs.name ?? attrs.property)?.toLowerCase() !== 'citation_pdf_url' || !attrs.content?.trim()) continue
+    try {
+      const url = new URL(decodeEntities(attrs.content.trim()), landingUrl)
+      if ((url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password) urls.push(url.href)
+    } catch { /* A malformed metadata link does not suppress the publisher templates. */ }
+    if (urls.length >= 10) break
+  }
+  return [...new Set(urls)]
 }
 
 /** Outcome of resolving a DOI to PDF bytes. */
@@ -155,7 +175,7 @@ export type DoiResolution = (PdfDownload & { landingUrl: string }) | (ApiErr & {
 
 /**
  * Resolve a DOI through doi.org with PDF content negotiation, then try
- * publisher PDF URL patterns derived from the landing page. Publisher access
+ * the landing page's citation_pdf_url metadata and publisher URL patterns. Publisher access
  * depends on the network dsh runs on (institutional subscriptions).
  * @param client - the shared client.
  * @param doi - bare DOI.
@@ -172,6 +192,7 @@ export async function resolveDoiToPdf(client: Ai4ScholarClient, doi: string, opt
   }
   const doiUrl = `https://doi.org/${encodeURI(doi)}`
   let landingUrl = doiUrl
+  let metadata: string[] = []
   try {
     const res = await fetch(doiUrl, {
       headers: { ...BROWSER_HEADERS, Accept: 'application/pdf' },
@@ -184,6 +205,8 @@ export async function resolveDoiToPdf(client: Ai4ScholarClient, doi: string, opt
       if (contentType.includes('pdf') || contentType.includes('octet-stream')) {
         const data = new Uint8Array(await res.arrayBuffer())
         if (looksLikePdf(data)) return { ok: true, data, finalUrl: landingUrl, landingUrl }
+      } else if (contentType.includes('html')) {
+        metadata = metadataPdfUrls(await res.text(), landingUrl)
       }
     } else if (res.status === 404) {
       return { ok: false, error: `DOI ${doi} did not resolve (HTTP 404)`, status: 404, landingUrl }
@@ -192,14 +215,19 @@ export async function resolveDoiToPdf(client: Ai4ScholarClient, doi: string, opt
     if (options.signal?.aborted === true) throw error
     return { ok: false, error: `DOI resolution failed: ${error instanceof Error ? error.message : String(error)}`, status: 0 }
   }
-  for (const candidate of pdfCandidatesFor(landingUrl)) {
+  const candidates = [...new Set([...metadata, ...pdfCandidatesFor(landingUrl)])]
+  const failures: string[] = []
+  for (const candidate of candidates) {
     options.signal?.throwIfAborted()
     const attempt = await fetchPdf(client, candidate, options)
     if (attempt.ok) return { ...attempt, landingUrl }
+    failures.push(`${candidate}: ${attempt.status > 0 ? `HTTP ${attempt.status}` : attempt.error}`)
   }
   return {
     ok: false,
-    error: 'could not obtain the PDF: the publisher may require institutional access (a campus network), or the article has no PDF',
+    error: candidates.length === 0
+      ? 'could not find a PDF link in the publisher metadata or URL patterns; open the landing page to locate the PDF'
+      : `could not obtain the PDF from the candidate URLs (${failures.join('; ')}). The publisher may require institutional access, or its PDF link may have changed`,
     status: 0,
     landingUrl,
   }

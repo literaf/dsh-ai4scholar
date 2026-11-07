@@ -23,7 +23,7 @@ Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/
 | **Writing & figures** | `auto_cite` (insert real citations + reference list + BibTeX), `sci_draw` (generate / edit / style / compose / critique / SVG / vectorize scientific figures) | credits |
 | **Account** | `get_ai4scholar_credits`, plus the `/ai4scholar` slash command | free |
 
-**Start with one source.** Omitting `sources` (or passing `[]`) queries only Semantic Scholar. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If Semantic Scholar is disabled, the default is the first enabled platform in this order: PubMed, arXiv, Google Scholar.
+**Start with one source.** With the shipped settings, omitting `sources` (or passing `[]`) queries only Semantic Scholar. If you choose other default platforms on the plugin page, the same call searches those platforms together. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If none of the configured default platforms is enabled, the default is the first enabled platform in this order: Semantic Scholar, PubMed, arXiv, Google Scholar.
 
 Every paper-list tool returns one normalized record shape — title, authors, year, venue, citation count, DOI/PMID/arXiv ids, URL, open-access PDF, abstract — so the model (and Code Mode programs) can chain calls across platforms without special cases. Results render as citation cards in the dsh Web UI; full-text tools return the PDF text in slices (`offset` / `max_chars`) so a 40-page paper never floods the context.
 
@@ -80,7 +80,19 @@ Then just ask:
 
 ## Configuration
 
-The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from your profile's `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key you keep):
+### On the plugin page
+
+Open **Plugins → AI4Scholar** (or **Settings → AI4Scholar**; both edit the same values). Under the API key:
+
+- **Search**: tick the platforms `search_papers` queries when the model names none (Semantic Scholar only by default), and set each platform's result count. Semantic Scholar and PubMed return up to 100 per search, billed once each; arXiv returns up to 100 for free. Google Scholar returns 1–10 per call (one credit); the model follows nextOffset with the same result count for more. The count is also the default for that platform's own search tool.
+- **Results**: abstract length shown to the model (0–5000 characters, default 600), full-text slice per `read_*` call (2,000–200,000, default 60,000), and whether results carry the credit line.
+- **Citations and figures**: `auto_cite` reference style (IEEE by default) and whether to leave out preprints; `sci_draw` model (Flash 3.1 by default) and resolution (2K by default).
+
+The model can still pass its own values for a single call. **Save** writes the changed fields into your profile's `cordis.patch.yml` and the plugin reloads with them. The next tool call and new conversations use the new values. **Restore defaults** removes them again. This page needs DeepSeek Harness 0.2.1 or later; on older versions it tells you to edit the file instead.
+
+### In the profile file
+
+The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from your profile's `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key you keep). For DeepSeek Harness Desktop the file is `~/Library/Application Support/dsh-desktop/harness/profiles/web/cordis.patch.yml` on macOS; for the CLI it is `$DSH_HOME/profiles/<profile>/cordis.patch.yml`:
 
 ```yaml
 - id: ai4scholar
@@ -100,14 +112,23 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     creditsTool: true                # get_ai4scholar_credits
     command: true                    # the /ai4scholar slash command
     balanceRoute: true               # GET /ai4scholar/balance for the settings card's key test
-    showCredits: true                # credit line on billed results
+    showCredits: true                # credit line on billed results (plugin page)
     promptGuidance: true             # short system-prompt section describing the tools
     promptOrder: 150
+    # search_papers default platforms (plugin page); any of
+    # semantic-scholar, pubmed, arxiv, google-scholar
+    searchSources: [semantic-scholar]
+    # per-platform result count (plugin page); a missing one uses defaultMaxResults
+    resultsPerSource: {}             # e.g. { semantic-scholar: 100, google-scholar: 10 }
+    citeStyle: ieee                  # auto_cite: ieee | apa | vancouver | nature | numbered (plugin page)
+    citeExcludePreprints: false      # auto_cite (plugin page)
+    drawModel: flash31               # sci_draw: flash | flash31 | pro | gptimage (plugin page)
+    drawImageSize: 2K                # sci_draw: 1K | 2K | 4K (plugin page)
     # sizes
-    defaultMaxResults: 10            # when the model omits max_results
-    maxResultsCap: 50                # hard upper bound per call
-    abstractMaxChars: 600            # abstract characters shown per paper; 0 hides abstracts
-    readMaxChars: 60000              # characters per full-text slice
+    defaultMaxResults: 10            # shared fallback count (configuration file)
+    maxResultsCap: 100               # hard upper bound per call; each platform also caps
+    abstractMaxChars: 600            # abstract characters shown per paper; 0 hides abstracts (plugin page)
+    readMaxChars: 60000              # characters per full-text slice (plugin page)
     # timeouts / retry
     requestTimeoutMs: 30000          # per HTTP attempt
     pdfTimeoutMs: 120000             # per PDF download
