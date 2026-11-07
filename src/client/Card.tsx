@@ -119,21 +119,17 @@ function KeyStatus({ t, state }: PropsLocale<'ai4scholar'> & { state: ApiKeyCard
 }
 
 /** Keep configuration state visible even though saved secrets never fill the input. */
-function KeyConfigurationState({ t, state }: PropsLocale<'ai4scholar'> & { state: ApiKeyCardState }) {
-  if (!state.loaded) return null
+function KeyConfigurationState({ t, state, id }: PropsLocale<'ai4scholar'> & { state: ApiKeyCardState; id?: string }) {
   const pending = state.draft.trim().length > 0
-  const configured = state.configured && !pending
-  const title = pending ? 'keyPendingTitle' : configured ? 'keyConfiguredTitle' : 'keyMissingTitle'
-  const hint = pending
-    ? state.configured ? 'keyReplacePendingHint' : 'keyPendingHint'
-    : configured ? 'keyConfiguredHint' : 'keyMissingHint'
+  const configured = state.loaded && state.configured && !pending
+  const title = !state.loaded ? 'checking' : pending ? 'keyPendingTitle' : configured ? 'keyConfiguredTitle' : 'keyMissingTitle'
+  const sourceKey = state.source !== undefined && state.source in SOURCE_KEYS
+    ? SOURCE_KEYS[state.source as keyof typeof SOURCE_KEYS]
+    : undefined
   return (
-    <div className={`${cls.keyState}${configured ? ` ${cls.keyStateConfigured}` : ''}`} role="status">
+    <div id={id} className={`${cls.keyState}${configured ? ` ${cls.keyStateConfigured}` : ''}`} role="status" title={configured && sourceKey !== undefined ? t('configuredVia', { source: t(sourceKey) }) : undefined}>
       {configured ? <CheckIcon className={cls.keyStateIcon} /> : null}
-      <div>
-        <strong className={cls.keyStateTitle}>{t(title)}</strong>
-        <p className={cls.hint}>{t(hint)}</p>
-      </div>
+      <strong className={cls.keyStateTitle}>{t(title)}</strong>
     </div>
   )
 }
@@ -218,14 +214,20 @@ function KeyGroup(props: Ai4ScholarSettingsProps) {
   const { t } = props
   const state = props.useCard((snapshot) => snapshot)
   const inputId = useId()
-  const hintId = useId()
+  const statusId = useId()
+  const errorId = useId()
   useEffect(() => { props.refresh() }, [props.refresh])
   const canSave = state.draft.trim().length > 0 && state.writable && !state.busy
   const canRemove = state.configured && state.writable && !state.busy
 
   return (
     <div className={cls.group}>
-      <GroupHead title={t('keyGroupTitle')} status={<KeyStatus t={t} state={state} />} />
+      <GroupHead title={t('keyGroupTitle')} status={(
+        <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">
+          {t('getKey')}
+          <ExternalIcon className={cls.linkIcon} />
+        </a>
+      )} />
       <div className={cls.panel}>
         <div className={cls.row}>
           {!state.writable ? <p className={cls.readOnly} role="status">{t('readOnly')}</p> : null}
@@ -239,7 +241,7 @@ function KeyGroup(props: Ai4ScholarSettingsProps) {
               autoComplete="off"
               spellCheck={false}
               placeholder={t(state.configured ? 'apiKeyPlaceholderReplace' : 'apiKeyPlaceholder')}
-              aria-describedby={hintId}
+              aria-describedby={state.notice?.kind === 'error' ? `${statusId} ${errorId}` : statusId}
               value={state.draft}
               disabled={!state.writable || state.busy}
               onChange={(event) => { props.edit(event.target.value) }}
@@ -254,24 +256,10 @@ function KeyGroup(props: Ai4ScholarSettingsProps) {
               {t(state.busy ? 'saving' : 'save')}
             </button>
           </div>
-          <KeyConfigurationState t={t} state={state} />
-          <p id={hintId} className={state.notice?.kind === 'error' ? cls.hintError : cls.hint} role={state.notice !== undefined ? 'status' : undefined}>
-            {state.notice === undefined
-              ? (
-                <>
-                  {t('apiKeyHint')}{' '}
-                  <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">
-                    {t('getKey')}
-                    <ExternalIcon className={cls.linkIcon} />
-                  </a>
-                </>
-              )
-              : state.notice.kind === 'saved'
-                ? t('saved')
-                : state.notice.kind === 'removed'
-                  ? t('removed')
-                  : t('failed', { message: state.notice.message ?? '' })}
-          </p>
+          <KeyConfigurationState t={t} state={state} id={statusId} />
+          {state.notice?.kind === 'error'
+            ? <p id={errorId} className={cls.hintError} role="alert">{t('failed', { message: state.notice.message ?? '' })}</p>
+            : null}
         </div>
         {state.loaded && state.configured ? <KeyCheckRow {...props} state={state} canRemove={canRemove} /> : null}
       </div>
@@ -288,7 +276,7 @@ function KeyCheckRow(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState; 
       <div className={cls.rowText} role="status">
         <span className={cls.label}>{t('keyCheckTitle')}</span>
         {check === undefined
-          ? <p className={cls.hint}>{t('keyCheckHint')}</p>
+          ? null
           : check.status === 'checking'
             ? <p className={cls.hint}>{t('checking')}</p>
             : check.status === 'ok'
@@ -388,6 +376,10 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
             )
           })}
         </div>
+        <details className={cls.help}>
+          <summary><Chevron className={cls.chevron} />{t('sourcesDetailsLabel')}</summary>
+          <p className={cls.hint}>{t('sourcesDetails')}</p>
+        </details>
       </div>
 
       <div className={cls.group}>
@@ -413,17 +405,16 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
             disabled={disabled}
             onEdit={(text) => { props.editSearch('readMaxChars', text) }}
           />
-          <SwitchRow id={ids.credits} label={t('creditsLabel')} hint={t('creditsHint')} on={draft.showCredits} disabled={disabled} onToggle={() => { props.editSearch('showCredits', !draft.showCredits) }} />
+          <SwitchRow id={ids.credits} label={t('creditsLabel')} on={draft.showCredits} disabled={disabled} onToggle={() => { props.editSearch('showCredits', !draft.showCredits) }} />
         </div>
       </div>
 
       <div className={cls.group}>
-        <GroupHead title={t('generationTitle')} intro={t('generationIntro')} />
+        <GroupHead title={t('generationTitle')} />
         <div className={cls.panel}>
           <SelectRow
             id={ids.style}
             label={t('styleLabel')}
-            hint={t('styleHint')}
             value={draft.citeStyle}
             options={CITE_STYLES.map((v) => ({ value: v, label: t(CITE_STYLE_KEYS[v]) }))}
             disabled={disabled}
@@ -528,12 +519,12 @@ function NumberRow(props: { id: string; label: string; hint: string; invalid: bo
 }
 
 /** Label and hint on the left, the host-style switch on the right. */
-function SwitchRow(props: { id: string; label: string; hint: string; on: boolean; disabled: boolean; onToggle: () => void }) {
+function SwitchRow(props: { id: string; label: string; hint?: string; on: boolean; disabled: boolean; onToggle: () => void }) {
   return (
     <div className={`${cls.row} ${cls.rowInline}`}>
       <div className={cls.rowText}>
         <label className={cls.label} htmlFor={props.id}>{props.label}</label>
-        <p className={cls.hint}>{props.hint}</p>
+        {props.hint !== undefined ? <p className={cls.hint}>{props.hint}</p> : null}
       </div>
       <button id={props.id} type="button" role="switch" className={cls.switch} aria-checked={props.on} disabled={props.disabled} onClick={props.onToggle}>
         <span className={cls.thumb} />
@@ -543,12 +534,12 @@ function SwitchRow(props: { id: string; label: string; hint: string; on: boolean
 }
 
 /** Label and hint on the left, a native select on the right. */
-function SelectRow(props: { id: string; label: string; hint: string; value: string; options: { value: string; label: string }[]; disabled: boolean; onPick: (value: string) => void }) {
+function SelectRow(props: { id: string; label: string; hint?: string; value: string; options: { value: string; label: string }[]; disabled: boolean; onPick: (value: string) => void }) {
   return (
     <div className={`${cls.row} ${cls.rowInline}`}>
       <div className={cls.rowText}>
         <label className={cls.label} htmlFor={props.id}>{props.label}</label>
-        <p className={cls.hint}>{props.hint}</p>
+        {props.hint !== undefined ? <p className={cls.hint}>{props.hint}</p> : null}
       </div>
       <div className={cls.selectBox}>
         <select id={props.id} className={cls.select} value={props.value} disabled={props.disabled} onChange={(event) => { props.onPick(event.target.value) }}>
@@ -591,7 +582,6 @@ function KeyForm(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState }) {
           }}
         />
         <KeyConfigurationState t={t} state={state} />
-        <p className={cls.hint}>{t('apiKeyHint')}</p>
         {state.loaded && state.configured
           ? (
             <p className={cls.check} role="status">

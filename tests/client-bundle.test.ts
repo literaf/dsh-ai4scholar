@@ -319,7 +319,6 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(fake.api.calls).toContainEqual({ method: 'set', payload: { ref: 'AI4SCHOLAR_API_KEY', value: 'sk-new-desktop' } })
     expect(input.value).toBe('')
     expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('API key is configured')
-    expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('No need to paste it again')
     // The page shows the balance as a number with its unit beside it.
     const balance = () => container!.querySelector('.ai4s-balance')?.textContent
     expect(balance()).toBe('125credits available')
@@ -329,7 +328,6 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     await act(async () => { button('Remove').click() })
     await flush()
     expect(fake.api.calls).toContainEqual({ method: 'unset', payload: { ref: 'AI4SCHOLAR_API_KEY' } })
-    expect(container.textContent).toContain('Not configured')
     expect(container.querySelector('.ai4s-key-state')?.textContent).toContain('No API key configured')
     expect(balance()).toBeUndefined()
   })
@@ -351,12 +349,12 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(new Set(inputs.map((input) => input.id)).size).toBe(2)
     expect(inputs.every((input) => input.value === '')).toBe(true)
     expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.textContent?.includes('API key is configured'))).toBe(true)
-    expect([...container.querySelectorAll('section')].every((section) => section.textContent?.includes('Configured via credentials file'))).toBe(true)
+    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.getAttribute('title') === 'Configured via credentials file')).toBe(true)
     fake.api.state.configured = false
     delete fake.api.state.source
     await act(async () => { fake.remoteHandlers['credentials/reference-updated']!('AI4SCHOLAR_API_KEY') })
     await flush()
-    expect([...container.querySelectorAll('section')].every((section) => section.textContent?.includes('Not configured'))).toBe(true)
+    expect([...container.querySelectorAll('.ai4s-key-state')].every((status) => status.textContent === 'No API key configured')).toBe(true)
   })
 
   it('waits for late page declarations and cancels pending registrations on unload', async () => {

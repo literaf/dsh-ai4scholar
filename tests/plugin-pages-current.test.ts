@@ -90,7 +90,7 @@ describe.skipIf(!compatRoot)('published current UI runtime', () => {
       })
       if (isScholar) {
         expect(container.querySelectorAll('input[type="password"]')).toHaveLength(3)
-        expect(container.textContent).toContain('Configured via')
+        expect(container.textContent).toContain('API key is configured')
       } else {
         expect(container.querySelectorAll('input')).toHaveLength(3)
         expect(container.textContent).toContain('Research plugins')
