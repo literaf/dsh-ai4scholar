@@ -2,6 +2,12 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.4] - 2026-11-08
+
+### Changed
+- Aligned logo, brand, balance, spending, and key status on a shared center line with consistent header line heights.
+- Command help now uses two columns, with each command name above its purpose. Narrow cards switch to one column.
+
 ## [0.4.3] - 2026-11-08
 
 ### Changed
