@@ -7,6 +7,9 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 ### Changed
 - The `/ai4s-author` default example and documentation examples now use Semantic Scholar and confirm author identity before retrieving a profile or publications. No separate Google Scholar author command is added.
 
+### Known limitations
+- Google Scholar author search may return no candidates. Use `/ai4s-author` with its default Semantic Scholar source; no dedicated Google Scholar author slash command is provided.
+
 ## [0.5.1] - 2026-11-08
 
 ### Fixed
