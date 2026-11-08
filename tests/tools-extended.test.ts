@@ -88,7 +88,7 @@ describe('credits accounting', () => {
     expect(value).toMatchObject({ totalAvailable: 5000, permanent: 4500, memberMonthlyRemaining: 500, keyCreditsUsed: 120, sessionTotal: 3, membership: { plan: 'pro', status: 'active' } })
     expect('keyCreditLimit' in value).toBe(false)
     const text = textOf(tool.output.render({}, value as never))
-    expect(text).toContain('Credits available: 5,000\nPermanent: 4,500\nMember monthly remaining: 500\nMembership: pro (active), period ends 2026-09-01\nAPI key spent in total: 120\nSession spent: 3')
+    expect(text).toContain('Credits available: 5,000\nAPI key spent in total: 120\nSession spent: 3')
     expect(stub.calls.at(-1)?.headers.authorization).toBe('Bearer test-key')
   })
 

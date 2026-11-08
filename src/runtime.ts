@@ -194,10 +194,10 @@ export function makeCredentialResolvers(ctx: Context, apiKeyEnv: string): Pick<R
  */
 export function makeCreditsFolder(ledger: CreditLedger, enabled: boolean): Runtime['creditsOf'] {
   return (response, agent) => {
-    if (!enabled) return undefined
     const info: CreditsInfo | undefined = response.credits
     if (info === undefined) return undefined
     const sessionTotal = info.charged !== undefined ? ledger.record(agent, info.charged) : undefined
+    if (!enabled) return undefined
     const out: { charged?: number; remaining?: number; sessionTotal?: number } = {}
     if (info.charged !== undefined) out.charged = info.charged
     if (info.remaining !== undefined) out.remaining = info.remaining

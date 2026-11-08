@@ -34,6 +34,17 @@ describe('Google Scholar follow-up identifiers', () => {
 })
 
 describe('new Google tools', () => {
+  it.each([true, false])('records billed empty author responses even when credit display is %s', async (showCredits) => {
+    stub = stubFetch((url) => url.pathname === '/api/credits'
+      ? { json: { credits: { total_available: 99 } } }
+      : { json: {}, headers: { 'X-Credits-Charged': '1', 'X-Credits-Remaining': '99' } })
+    const fake = mount({ showCredits })
+    const context = { ...runContext(), agent: {} } as never
+    await expect(fake.tools.get('get_google_scholar_author')!.execute({ author_id: 'oneAAAAJ' }, context)).rejects.toThrow(/no author profile/)
+    const balance = await fake.tools.get('get_ai4scholar_credits')!.execute({}, context)
+    expect(balance).toMatchObject({ totalAvailable: 99, sessionTotal: 1 })
+  })
+
   it('keeps author candidates separate with affiliation, ID and profile pagination', async () => {
     stub = stubFetch(() => ({ json: { profiles: [
       { title: 'Alex Li', authorId: 'oneAAAAJ', affiliations: 'University A', citedBy: 51, interests: [{ title: 'batteries' }] },

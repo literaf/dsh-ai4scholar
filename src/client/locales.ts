@@ -59,6 +59,8 @@ export type Ai4ScholarLocaleKey =
   | 'statKeySpent'
   | 'statKeyCap'
   | 'topUp'
+  | 'cmdDefaults'
+  | 'cmdHelp'
   | 'cmdFailed'
   | 'testKey'
   | 'recheckKey'
@@ -190,7 +192,9 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   statSessionSpent: 'Spent this session',
   statKeySpent: 'Spent by this key',
   statKeyCap: 'Key cap',
-  topUp: 'Top up at ai4scholar.net ↗',
+  cmdDefaults: 'Default search',
+  cmdHelp: 'Commands & usage',
+  topUp: 'Top up ↗',
   cmdFailed: 'could not read the balance',
   testKey: 'Check balance',
   recheckKey: 'Refresh',
@@ -313,9 +317,11 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   statPermanent: '永久积分',
   statMemberMonthly: '会员本月剩余',
   statSessionSpent: '本会话已用',
-  statKeySpent: '此 Key 累计消耗',
+  statKeySpent: '此密钥累计消耗',
   statKeyCap: 'Key 上限',
-  topUp: '去 ai4scholar.net 充值 ↗',
+  cmdDefaults: '默认检索',
+  cmdHelp: '全部命令与用法',
+  topUp: '官网充值 ↗',
   cmdFailed: '读取余额失败',
   testKey: '查询余额',
   recheckKey: '刷新',

@@ -107,15 +107,16 @@ export function applyGoogleExtraTools(ctx: Context, runtime: Runtime): void {
       const apiKey = await runtime.requireApiKey()
       const res = await runtime.client.post<Record<string, unknown>>('/google-scholar/v1/author', compact({ authorId: id, sort: args.sort }), { apiKey, signal: exec.signal })
       if (!res.ok) throw new Error(`Google Scholar author lookup failed: ${res.error}`)
+      const credits = runtime.creditsOf(res, exec.agent)
       const author = profile(res.data, id)
-      if (!author) throw new Error('Google Scholar returned no author profile; check the author ID or retry later.')
+      if (!author) throw new Error(['Google Scholar returned no author profile; check the author ID or retry later.', formatCredits(credits)].filter(Boolean).join('\n'))
       const articles = records(res.data.articles).flatMap((p) => {
         const title = str(p, 'title')
         return title ? [compact({ title, url: str(p, 'link'), authors: str(p, 'authors'), year: int(p, 'year'), citationCount: int(p, 'citedBy'), citationId: scholarId(p.citationId) })] : []
       })
       return compact({ author, articles, coAuthors: records(res.data.coAuthors).map((p) => profile(p)).filter((p): p is Profile => p !== undefined),
         warning: 'Only the articles available from this profile response are shown. This is not a complete publication list; no h-index was supplied. Search an article title to obtain its Google Scholar paper ID for citation formats.',
-        credits: runtime.creditsOf(res, exec.agent) })
+        credits })
     },
   }))
 

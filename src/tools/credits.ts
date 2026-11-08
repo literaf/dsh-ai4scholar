@@ -81,9 +81,6 @@ export function formatBalance(value: CreditsBalance): string {
   const n = (v: number): string => v.toLocaleString('en-US')
   const lines: string[] = []
   lines.push(`Credits available: ${n(value.totalAvailable)}`)
-  lines.push(`Permanent: ${n(value.permanent)}`)
-  lines.push(`Member monthly remaining: ${n(value.memberMonthlyRemaining)}`)
-  if (value.membership !== undefined) lines.push(`Membership: ${value.membership.plan} (${value.membership.status})${value.membership.periodEnd !== undefined ? `, period ends ${value.membership.periodEnd.slice(0, 10)}` : ''}`)
   if (value.keyCreditsUsed !== undefined) lines.push(`API key spent in total: ${n(value.keyCreditsUsed)}`)
   if (value.keyCreditLimit !== undefined) lines.push(`API key cap: ${n(value.keyCreditLimit)}${value.keyCreditsRemaining !== undefined ? ` (${n(value.keyCreditsRemaining)} left)` : ''}`)
   lines.push(`Session spent: ${n(value.sessionTotal)}`)

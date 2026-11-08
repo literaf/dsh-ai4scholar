@@ -2,6 +2,14 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.1] - 2026-11-08
+
+### Changed
+- Compact account card with a prominent balance, session/key spending, readable search defaults, and collapsed command help. Removed obsolete membership and duplicate permanent-credit display; legacy API fields remain compatible.
+
+### Fixed
+- Billed empty Google Scholar author responses now update the session ledger before reporting the missing profile. Disabling credit display no longer disables session accounting.
+
 ## [0.4.0] - 2026-11-08
 
 ### Added

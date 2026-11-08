@@ -56,18 +56,23 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
     )
   }
   const stats: Array<[string, string | undefined]> = [
-    [t('statPermanent'), view.permanent],
-    [t('statMemberMonthly'), view.memberMonthly],
     [t('statSessionSpent'), view.sessionSpent],
     [t('statKeySpent'), view.keySpent],
     [t('statKeyCap'), view.keyCap],
   ]
+  const defaults = view.other.filter((line) => /^默认(检索来源|条数)：/.test(line))
+  const names: Record<string, string> = { 'semantic-scholar': 'Semantic Scholar', 'google-scholar': 'Google Scholar', pubmed: 'PubMed', arxiv: 'arXiv', chinese: '中文文献' }
+  const counts = defaults.find((line) => line.startsWith('默认条数：'))?.replace('默认条数：', '').trim()
+  const sources = defaults.find((line) => line.startsWith('默认检索来源：'))?.replace('默认检索来源：', '').trim()
+  const defaultText = (counts && counts !== '—' ? counts : sources)?.replace(/semantic-scholar|google-scholar|pubmed|arxiv|chinese/g, (source) => names[source]!)
+  const help = view.other.filter((line) => !defaults.includes(line))
+  const commands = help.filter((line) => /^\/ai4s-[a-z]+\s/.test(line))
+  const hints = help.filter((line) => !commands.includes(line))
   return (
     <div className={cls.cmd}>
       <div className={cls.cmdHead}>
         <span className={cls.cmdBrand}>AI4Scholar</span>
         {view.keyStatus !== undefined ? <span className={cls.cmdPill}>{view.keyStatus.replace(/^configured/, t('configured'))}</span> : null}
-        {view.membership !== undefined ? <span className={cls.cmdPill}>{view.membership}</span> : null}
       </div>
       <div className={cls.cmdHero}>
         <span className={cls.cmdNumber}>{view.available}</span>
@@ -81,8 +86,18 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
           </div>
         ))}
       </dl>
-      {view.other.length > 0 ? <pre className={cls.cmdPre}>{view.other.join('\n')}</pre> : null}
+      {defaultText ? <div className={cls.cmdDefaults}><span>{t('cmdDefaults')}</span><span>{defaultText}</span></div> : null}
       <div className={cls.cmdFoot}>
+        {help.length > 0 ? <details className={cls.cmdHelp}>
+          <summary>{t('cmdHelp')}</summary>
+          <div className={cls.cmdHelpBody}>
+            {commands.length > 0 ? <dl className={cls.cmdCommands}>{commands.map((line) => {
+              const [command, ...title] = line.split(/\s+/)
+              return <div key={command}><dt><code>{command}</code></dt><dd>{title.join(' ')}</dd></div>
+            })}</dl> : null}
+            {hints.length > 0 ? <p className={cls.cmdPre}>{hints.join('\n')}</p> : null}
+          </div>
+        </details> : null}
         <a className={cls.link} href={props.topUpUrl} target="_blank" rel="noreferrer">{t('topUp')}</a>
       </div>
     </div>
