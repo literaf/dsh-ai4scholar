@@ -54,7 +54,7 @@ export function Ai4ScholarResearchCard({ toolName, phase, block, inspect, fillDr
   }
   return <details className={cls.research}>
     <summary className={cls.researchHead}>
-      <span>AI4Scholar</span>
+      <span>Ai4Scholar</span>
       <span className={cls.cmdMuted}>{settled ? block.isError ? t('resultError') : items.length ? t('resultCount', { count: items.length }) : toolName : t('resultRunning')}</span>
       {typeof credits.charged === 'number' ? <span className={cls.cmdMuted}>{t('resultCharge', { count: credits.charged })}</span> : null}
       {typeof credits.remaining === 'number' ? <span className={cls.cmdMuted}>{t('resultRemaining', { count: credits.remaining })}</span> : null}

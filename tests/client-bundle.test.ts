@@ -445,7 +445,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     const fake = fakeClientContext()
     bundle.exports.apply(fake.ctx)
     expect(Object.keys(fake.locales)).toEqual(['ai4scholar'])
-    expect(fake.locales.ai4scholar?.zh?.title).toBe('AI4Scholar')
+    expect(fake.locales.ai4scholar?.zh?.title).toBe('Ai4Scholar')
     expect(document.head.querySelector('style[data-plugin="dsh-ai4scholar"]')).not.toBeNull()
     // Both event names: dsh renamed this to `credentials/reference-updated` in
     // 0.1.2-alpha, and only one of the two is forwarded on any given host.
@@ -490,7 +490,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
 
     const header = container.querySelector('button[aria-expanded]') as HTMLButtonElement
     expect(header).not.toBeNull()
-    expect(container.textContent).toContain('AI4Scholar')
+    expect(container.textContent).toContain('Ai4Scholar')
     expect(container.textContent).toContain('Not configured')
     expect(container.querySelector('input')).toBeNull() // collapsed
 
@@ -629,7 +629,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(help.open).toBe(true)
     const other = await render({ kind: 'success', text: 'plain text from an older plugin' })
     expect(container!.querySelector('pre')?.textContent).toBe('plain text from an older plugin')
-    expect(other).toContain('AI4Scholar')
+    expect(other).toContain('Ai4Scholar')
   })
 
   it('renders read-only when the environment supplies the key', async () => {

@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.3] - 2026-11-08
+
+### Changed
+- Combined account branding, balance, spending, and key status into one desktop row. Added the existing Ai4 logo and corrected visible client branding to “Ai4Scholar”; narrower cards wrap the account metrics below the brand.
+
 ## [0.4.2] - 2026-11-08
 
 ### Changed

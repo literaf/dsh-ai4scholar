@@ -8,6 +8,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { parseBalance } from './balance.js'
 import { cls } from './styles.js'
+import { Ai4ScholarBrand } from './Brand.js'
 import type { CommandView } from './plugin-config.js'
 
 /** Registration-side face of the command card (nothing injected today; kept for symmetry). */
@@ -33,14 +34,14 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
   if (outcome === null) {
     return (
       <div className={cls.cmd}>
-        <div className={cls.cmdHead}><span className={cls.cmdBrand}>AI4Scholar</span><span className={cls.cmdMuted}>{t('checking')}</span></div>
+        <div className={cls.cmdHead}><Ai4ScholarBrand /><span className={cls.cmdMuted}>{t('checking')}</span></div>
       </div>
     )
   }
   if (outcome.kind === 'error') {
     return (
       <div className={`${cls.cmd} ${cls.cmdError}`}>
-        <div className={cls.cmdHead}><span className={cls.cmdBrand}>AI4Scholar</span><span className={cls.cmdMuted}>{t('cmdFailed')}</span></div>
+        <div className={cls.cmdHead}><Ai4ScholarBrand /><span className={cls.cmdMuted}>{t('cmdFailed')}</span></div>
         <p className={cls.cmdErrorText}>{outcome.text ?? ''}</p>
       </div>
     )
@@ -50,7 +51,7 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
     // Not a balance report (older plugin, or a future shape): keep the text readable.
     return (
       <div className={cls.cmd}>
-        <div className={cls.cmdHead}><span className={cls.cmdBrand}>AI4Scholar</span></div>
+        <div className={cls.cmdHead}><Ai4ScholarBrand /></div>
         <pre className={cls.cmdPre}>{outcome.text ?? ''}</pre>
       </div>
     )
@@ -71,22 +72,22 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
   return (
     <div className={cls.cmd}>
       <div className={cls.cmdHead}>
-        <span className={cls.cmdBrand}>AI4Scholar</span>
-        {view.keyStatus !== undefined ? <span className={cls.cmdPill}>{view.keyStatus.replace(/^configured/, t('configured'))}</span> : null}
-      </div>
-      <div className={cls.cmdMetrics}>
-        <div className={cls.cmdHero}>
-          <span className={cls.cmdUnit}>{t('creditsAvailable')}</span>
-          <span className={cls.cmdNumber}>{view.available}</span>
+        <Ai4ScholarBrand />
+        <div className={cls.cmdMetrics}>
+          <div className={cls.cmdHero}>
+            <span className={cls.cmdUnit}>{t('creditsAvailable')}</span>
+            <span className={cls.cmdNumber}>{view.available}</span>
+          </div>
+          <dl className={cls.cmdStats}>
+            {stats.filter((s): s is [string, string] => s[1] !== undefined).map(([label, value]) => (
+              <div key={label} className={cls.cmdStat}>
+                <dt className={cls.cmdStatLabel}>{label}</dt>
+                <dd className={cls.cmdStatValue}>{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        <dl className={cls.cmdStats}>
-          {stats.filter((s): s is [string, string] => s[1] !== undefined).map(([label, value]) => (
-            <div key={label} className={cls.cmdStat}>
-              <dt className={cls.cmdStatLabel}>{label}</dt>
-              <dd className={cls.cmdStatValue}>{value}</dd>
-            </div>
-          ))}
-        </dl>
+        {view.keyStatus !== undefined ? <span className={cls.cmdPill}>{view.keyStatus.replace(/^configured/, t('configured'))}</span> : null}
       </div>
       <div className={cls.cmdFoot}>
         {defaultText ? <div className={cls.cmdDefaults}><span>{t('cmdDefaults')}</span><span>{defaultText}</span></div> : null}

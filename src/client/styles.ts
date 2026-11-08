@@ -102,6 +102,7 @@ export const cls = {
   cmdError: `${P}-cmd-error`,
   cmdHead: `${P}-cmd-head`,
   cmdBrand: `${P}-cmd-brand`,
+  cmdLogo: `${P}-cmd-logo`,
   cmdMuted: `${P}-cmd-muted`,
   cmdPill: `${P}-cmd-pill`,
   cmdMetrics: `${P}-cmd-metrics`,
@@ -143,12 +144,13 @@ export const CSS = `
 .${cls.researchRaw} pre { max-height: 300px; overflow: auto; overflow-wrap: anywhere; }
 .${cls.cmd} { container: ai4s-account / inline-size; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: transparent; width: 100%; min-width: 0; box-sizing: border-box; color: var(--dsw-alias-label-primary); }
 .${cls.cmdError} { border-color: var(--dsw-alias-label-error); }
-.${cls.cmdHead} { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; line-height: 18px; }
-.${cls.cmdBrand} { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
-.${cls.cmdMuted} { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
-.${cls.cmdPill} { font-size: 11px; line-height: 18px; white-space: nowrap; color: var(--dsw-alias-label-tertiary); }
+.${cls.cmdHead} { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 18px; line-height: 18px; }
+.${cls.cmdBrand} { grid-column: 1; grid-row: 1; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
+.${cls.cmdLogo} { flex: none; display: block; width: 24px; height: 24px; }
+.${cls.cmdMuted} { grid-column: 3; grid-row: 1; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.${cls.cmdPill} { grid-column: 3; grid-row: 1; font-size: 11px; line-height: 18px; white-space: nowrap; color: var(--dsw-alias-label-tertiary); }
 .${cls.cmdPill}::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--dsw-alias-state-success-primary, #41a77e); margin-right: 6px; vertical-align: 2px; }
-.${cls.cmdMetrics} { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 24px; min-width: 0; }
+.${cls.cmdMetrics} { grid-column: 2; grid-row: 1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 20px; min-width: 0; }
 .${cls.cmdHero} { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
 .${cls.cmdNumber} { font-size: 18px; font-weight: 600; line-height: 26px; color: var(--dsw-alias-label-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .${cls.cmdUnit} { font-size: 12px; color: var(--dsw-alias-label-secondary); }
@@ -174,6 +176,11 @@ export const CSS = `
 .${cls.cmdCommands} dt { width: 145px; }
 .${cls.cmdCommands} code { font-size: 11px; color: var(--dsw-alias-label-primary); }
 .${cls.cmdCommands} dd { margin: 0; color: var(--dsw-alias-label-secondary); }
+@container ai4s-account (max-width: 680px) {
+  .${cls.cmdHead} { grid-template-columns: minmax(0, 1fr) auto; }
+  .${cls.cmdPill}, .${cls.cmdMuted} { grid-column: 2; }
+  .${cls.cmdMetrics} { grid-column: 1 / -1; grid-row: 2; }
+}
 @container ai4s-account (max-width: 540px) {
   .${cls.cmdFoot} { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
   .${cls.cmdDefaults} { grid-column: 1 / -1; grid-row: 1; }

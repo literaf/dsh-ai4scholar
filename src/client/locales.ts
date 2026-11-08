@@ -133,7 +133,7 @@ export type Ai4ScholarLocaleKey =
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** The AI4Scholar settings card. */
+    /** The Ai4Scholar settings card. */
     'ai4scholar': Ai4ScholarLocaleKey
   }
 }
@@ -161,8 +161,8 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   resultCharge: '{count} credits',
   resultFullOutput: 'Full result and credit details',
   resultInspect: 'Inspect call',
-  title: 'AI4Scholar',
-  settingsTitle: 'AI4Scholar API key',
+  title: 'Ai4Scholar',
+  settingsTitle: 'Ai4Scholar API key',
   settingsIntro: 'Every search and full-text tool uses this key.',
   description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, and Chinese literature, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
   apiKeyLabel: 'API key',
@@ -288,8 +288,8 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   resultCharge: '{count} 积分',
   resultFullOutput: '完整结果与积分明细',
   resultInspect: '查看调用',
-  title: 'AI4Scholar',
-  settingsTitle: 'AI4Scholar API Key',
+  title: 'Ai4Scholar',
+  settingsTitle: 'Ai4Scholar API Key',
   settingsIntro: '所有检索和全文工具都通过这个 Key 调用。',
   description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv、bioRxiv/medRxiv 及中文文献 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
   apiKeyLabel: '密钥（API Key）',

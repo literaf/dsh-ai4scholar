@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="AI4Scholar">
-  <!-- AI4Scholar mark: the "Ai4" wordmark on a rounded dark card, so it reads on
-       the plugin list the way dsh-cite and 归藏设计 do. The "4" uses AI4Scholar's
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Ai4Scholar">
+  <!-- Ai4Scholar mark: the "Ai4" wordmark on a rounded dark card, so it reads on
+       the plugin list the way dsh-cite and 归藏设计 do. The "4" uses Ai4Scholar's
        lime accent. Self-contained, no external refs. -->
   <rect width="100" height="100" rx="22" fill="#0a0a0a"/>
   <g transform="translate(10.1 30.9) scale(0.104)">
