@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.5.1] - 2026-11-08
+
+### Fixed
+- Convert plain arXiv keywords to explicit `all:` terms joined with `AND`, while preserving quoted phrases and native advanced queries. Date filters now wrap the normalized query. Real multi-word searches previously returned an overly broad result set.
+
 ## [0.5.0] - 2026-11-08
 
 ### Added

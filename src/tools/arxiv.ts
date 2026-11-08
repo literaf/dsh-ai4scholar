@@ -122,11 +122,14 @@ export interface ArxivSearchParams {
 export async function runArxivSearch(runtime: Runtime, params: ArxivSearchParams, signal: AbortSignal | undefined): Promise<PaperSearchValue> {
   const query = requireQuery(params.query)
   const offset = params.offset !== undefined && params.offset > 0 ? Math.trunc(params.offset) : 0
-  let searchQuery = query
+  // Plain words need explicit fields/conjunctions; preserve native advanced syntax.
+  let searchQuery = /(?:\b[a-z_]+:|\b(?:AND|OR|ANDNOT)\b|[()\[\]])/i.test(query)
+    ? query
+    : (query.match(/"[^"\n]+"|\S+/g) ?? []).map((term) => `all:${term}`).join(' AND ')
   if (params.dateFrom !== undefined && params.dateFrom.trim().length > 0) {
     const d = params.dateFrom.trim()
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new Error('date_from must be YYYY-MM-DD')
-    searchQuery = `(${query}) AND submittedDate:[${d.replace(/-/g, '')}0000 TO 99991231]`
+    searchQuery = `(${searchQuery}) AND submittedDate:[${d.replace(/-/g, '')}0000 TO 99991231]`
   }
   const urlParams = new URLSearchParams({
     search_query: searchQuery,

@@ -221,7 +221,7 @@ describe('arXiv', () => {
     assertOutput(tool.output.schema, value)
     const call = stub.calls[0]!
     expect(call.url.origin + call.url.pathname).toBe('https://export.arxiv.org/api/query')
-    expect(call.url.searchParams.get('search_query')).toBe('(transformer) AND submittedDate:[201701010000 TO 99991231]')
+    expect(call.url.searchParams.get('search_query')).toBe('(all:transformer) AND submittedDate:[201701010000 TO 99991231]')
     expect(call.url.searchParams.get('start')).toBe('10')
     expect(call.url.searchParams.get('max_results')).toBe('2')
     expect(call.url.searchParams.get('sortBy')).toBe('submittedDate')
@@ -233,6 +233,16 @@ describe('arXiv', () => {
     expect(text).toContain('arXiv: 1706.03762 · DOI: 10.48550/arXiv.1706.03762 · PDF: https://arxiv.org/pdf/1706.03762')
     expect(text).toContain('Categories: cs.CL, cs.LG')
     await expect(tool.execute({ query: 'x', date_from: '2017/01/01' }, runContext())).rejects.toThrow(/YYYY-MM-DD/)
+  })
+
+  it.each([
+    ['diffusion models', 'all:diffusion AND all:models'],
+    ['"diffusion models"', 'all:"diffusion models"'],
+    ['ti:"diffusion model" AND cat:cs.LG', 'ti:"diffusion model" AND cat:cs.LG'],
+  ])('normalizes arXiv plain keywords while preserving advanced query %s', async (query, expected) => {
+    stub = stubFetch(() => ({ text: ARXIV_FEED, contentType: 'application/atom+xml' }))
+    await mount().tools.get('search_arxiv')!.execute({ query, max_results: 2 }, runContext())
+    expect(stub.calls[0]?.url.searchParams.get('search_query')).toBe(expected)
   })
 
   it('read_arxiv_paper downloads the PDF, extracts, and slices with continuation', async () => {
