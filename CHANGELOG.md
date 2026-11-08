@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.5] - 2026-11-08
+
+### Changed
+- Command help uses four columns on wide conversation panels, two on medium panels, and one on narrow panels, reducing the expanded menu from seven rows to four on desktop.
+
 ## [0.4.4] - 2026-11-08
 
 ### Changed

@@ -171,11 +171,14 @@ export const CSS = `
 .${cls.cmdHelp} > summary:focus-visible, .${cls.cmdFoot} > a:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 3px; border-radius: 2px; }
 .${cls.cmdHelpBody} { grid-column: 1 / -1; padding-top: 4px; }
 .${cls.cmdHelp}:not([open]) > .${cls.cmdHelpBody} { display: none; }
-.${cls.cmdCommands} { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin: 0 0 12px; }
+.${cls.cmdCommands} { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 20px; margin: 0 0 12px; }
 .${cls.cmdCommands} > div { display: grid; align-content: start; min-width: 0; gap: 1px; padding: 6px 0; border-bottom: 1px solid var(--dsw-alias-border-l2); }
 .${cls.cmdCommands} dt { min-width: 0; line-height: 18px; }
 .${cls.cmdCommands} code { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-primary); }
 .${cls.cmdCommands} dd { margin: 0; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
+@container ai4s-account (max-width: 760px) {
+  .${cls.cmdCommands} { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @container ai4s-account (max-width: 680px) {
   .${cls.cmdHead} { grid-template-columns: minmax(0, 1fr) auto; }
   .${cls.cmdPill}, .${cls.cmdMuted} { grid-column: 2; }
