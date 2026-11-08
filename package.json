@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai4scholar",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "AI4Scholar for DeepSeek Harness: 43 native research tools, natural-language /ai4s-* commands, papers, scholars, patents, full text, references and scientific figures. Powered by ai4scholar.net.",
   "type": "module",
   "license": "MIT",

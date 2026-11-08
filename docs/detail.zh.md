@@ -45,7 +45,7 @@
 ```text
 /ai4s-google 固态电池，2022 年以来的 10 篇
 /ai4s-search 同时用 Google Scholar 和 Semantic Scholar 查固态电池，合并去重
-/ai4s-author 查 Geoffrey Hinton 在 Google Scholar 上的资料和代表论文
+/ai4s-author 用 Semantic Scholar 查 Geoffrey Hinton，先确认作者身份，再看资料和代表论文
 /ai4s-read 读刚才第三篇论文，重点解释研究方法
 /ai4s-snippets 查找固态电池界面阻抗的实验描述，返回 5 段
 /ai4s-references 查刚才第一篇引用的参考文献

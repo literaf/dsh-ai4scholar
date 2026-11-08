@@ -43,7 +43,7 @@ There are 20 research commands plus `/ai4s` for account status, with `/ai4schola
 ```text
 /ai4s-google 10 solid-state battery papers published since 2022
 /ai4s-search Search Google Scholar and Semantic Scholar for solid-state batteries and merge duplicates
-/ai4s-author Find Geoffrey Hinton’s Google Scholar profile and representative papers
+/ai4s-author Use Semantic Scholar to find Geoffrey Hinton; confirm the author’s identity before showing the profile and representative papers
 /ai4s-read Read the third paper above, focusing on its methodology
 /ai4s-snippets Find 5 passages describing solid-state battery interface resistance experiments
 /ai4s-references List the references cited by the first paper

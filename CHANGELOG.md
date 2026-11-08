@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.5.2] - 2026-11-08
+
+### Changed
+- The `/ai4s-author` default example and documentation examples now use Semantic Scholar and confirm author identity before retrieving a profile or publications. No separate Google Scholar author command is added.
+
 ## [0.5.1] - 2026-11-08
 
 ### Fixed
