@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.4.2] - 2026-11-08
+
+### Changed
+- Account status now follows the conversation width, with smaller balance typography, inline spending metrics, and a single compact utility row. Reduced spacing and surface contrast; narrow containers wrap without truncating values or hiding help.
+
 ## [0.4.1] - 2026-11-08
 
 ### Changed

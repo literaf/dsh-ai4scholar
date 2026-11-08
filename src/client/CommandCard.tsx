@@ -1,7 +1,7 @@
 /**
  * The `/ai4scholar` command row: a balance card in place of the generic
  * monospace command card. Reads the settled outcome text (labeled lines) and
- * shows the available credits large, the breakdown small, and the key status.
+ * shows a compact balance summary, usage, defaults, and collapsible help.
  */
 
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
@@ -74,20 +74,22 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
         <span className={cls.cmdBrand}>AI4Scholar</span>
         {view.keyStatus !== undefined ? <span className={cls.cmdPill}>{view.keyStatus.replace(/^configured/, t('configured'))}</span> : null}
       </div>
-      <div className={cls.cmdHero}>
-        <span className={cls.cmdNumber}>{view.available}</span>
-        <span className={cls.cmdUnit}>{t('creditsAvailable')}</span>
+      <div className={cls.cmdMetrics}>
+        <div className={cls.cmdHero}>
+          <span className={cls.cmdUnit}>{t('creditsAvailable')}</span>
+          <span className={cls.cmdNumber}>{view.available}</span>
+        </div>
+        <dl className={cls.cmdStats}>
+          {stats.filter((s): s is [string, string] => s[1] !== undefined).map(([label, value]) => (
+            <div key={label} className={cls.cmdStat}>
+              <dt className={cls.cmdStatLabel}>{label}</dt>
+              <dd className={cls.cmdStatValue}>{value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
-      <dl className={cls.cmdStats}>
-        {stats.filter((s): s is [string, string] => s[1] !== undefined).map(([label, value]) => (
-          <div key={label} className={cls.cmdStat}>
-            <dt className={cls.cmdStatLabel}>{label}</dt>
-            <dd className={cls.cmdStatValue}>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      {defaultText ? <div className={cls.cmdDefaults}><span>{t('cmdDefaults')}</span><span>{defaultText}</span></div> : null}
       <div className={cls.cmdFoot}>
+        {defaultText ? <div className={cls.cmdDefaults}><span>{t('cmdDefaults')}</span><span>{defaultText}</span></div> : null}
         {help.length > 0 ? <details className={cls.cmdHelp}>
           <summary>{t('cmdHelp')}</summary>
           <div className={cls.cmdHelpBody}>
