@@ -225,6 +225,7 @@ const SNIPPET_OUTPUT_SCHEMA = {
             additionalProperties: false,
             properties: {
               corpusId: { type: 'string' },
+              paperId: { type: 'string', description: 'Graph API paper_id input with its required prefix, e.g. CorpusId:13756489. A bare numeric corpusId is not a paperId.' },
               title: { type: 'string', required: true },
               authors: { type: 'array', required: true, items: { type: 'string' } },
               url: { type: 'string' },
@@ -254,6 +255,7 @@ function normalizeSnippet(record: unknown): Snippet | undefined {
     score,
     paper: compact({
       corpusId,
+      paperId: corpusId !== undefined ? `CorpusId:${corpusId}` : undefined,
       title,
       authors: authorNames(record.paper.authors),
       url: corpusId !== undefined ? `https://www.semanticscholar.org/p/${corpusId}` : undefined,
@@ -271,7 +273,8 @@ function formatSnippets(value: SnippetValue, abstractMaxChars: number): string {
       const meta = [formatAuthors(s.paper.authors), where.length > 0 ? where : undefined, s.score !== undefined ? `score ${s.score.toFixed(3)}` : undefined]
         .filter((x): x is string => x !== undefined).join(' · ')
       const body = clip(s.text, Math.max(abstractMaxChars, 200))
-      return `${i + 1}. **${heading}**\n   ${meta}\n   > ${body}`
+      const identity = s.paper.paperId !== undefined ? `\n   Graph API paper_id: ${s.paper.paperId} (keep the CorpusId: prefix)` : ''
+      return `${i + 1}. **${heading}**\n   ${meta}${identity}\n   > ${body}`
     })
     parts.push(`Semantic Scholar full-text snippets for "${value.query}":\n\n${items.join('\n\n')}`)
   }

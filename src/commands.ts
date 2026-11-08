@@ -14,14 +14,15 @@ declare module '@deepseek-ai/dsh-llm' {
 
 /** Feature-aware catalog, shared by discovery, help and command routing. */
 export function availableCommands(enabledTools: ReadonlySet<string>): ResearchCommand[] {
-  return RESEARCH_COMMANDS.filter((c) => c.tools.some((t) => enabledTools.has(t)))
+  return RESEARCH_COMMANDS.filter((c) => (c.requiresAny ?? c.tools).some((t) => enabledTools.has(t)))
     .map((c) => ({ ...c, tools: c.tools.filter((t) => enabledTools.has(t)) }))
 }
 
-/** The same source rule is checked at execution, including Code Mode subcalls. */
+/** Source/activity rules are checked at execution, including Code Mode subcalls. */
 export function sourceDenial(command: ResearchCommand | undefined, name: string): string | undefined {
-  if (!command?.source || !RESEARCH_TOOL_NAMES.has(name) || command.tools.includes(name)) return undefined
-  return `/${command.name} selected ${command.source}. Use ${command.tools.join(' or ')} for this request. Do not silently switch sources; explain the limitation or ask the user to choose a different command.`
+  if (!command || (!command.source && !command.restrictTools) || !RESEARCH_TOOL_NAMES.has(name) || command.tools.includes(name)) return undefined
+  const selection = command.source ? `selected ${command.source}` : `requested ${command.title}`
+  return `/${command.name} ${selection}. Use ${command.tools.join(' or ')} for this request. Do not silently switch sources or operations; explain the limitation or ask the user to choose a different command.`
 }
 
 function routeFromMessage(message: UserMessage, commands: readonly ResearchCommand[]): ResearchCommand | undefined {
@@ -72,7 +73,7 @@ export function applyResearchCommands(ctx: Context, enabledTools: ReadonlySet<st
 
   ctx.inject(['commands'], (child) => {
     for (const command of commands) child.commands.register({
-      name: command.name, description: `AI4Scholar · ${command.title} · 后面接自然语言`,
+      name: command.name, description: `Ai4Scholar · ${command.title} · 后面接自然语言`,
       // rc hosts call this images; newer hosts call it attachments. Each
       // registry snapshots only the flag it understands.
       input: { hint: command.example, images: command.name === 'ai4s-draw', ...{ attachments: command.name === 'ai4s-draw' } },

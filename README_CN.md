@@ -21,6 +21,7 @@
 | `/ai4s-search` | 统一论文检索，可用自然语言临时指定多个来源并去重 |
 | `/ai4s-google` | Google Scholar 论文检索 |
 | `/ai4s-semantic` | Semantic Scholar 检索、批量收集和全文片段 |
+| `/ai4s-snippets` | 在 Semantic Scholar 索引的全文中查找匹配片段 |
 | `/ai4s-pubmed` | PubMed 生物医学论文 |
 | `/ai4s-arxiv` | arXiv 预印本 |
 | `/ai4s-chinese` | 中文期刊、学位论文和会议文献 |
@@ -28,6 +29,12 @@
 | `/ai4s-patents` | Google Patents 专利检索 |
 | `/ai4s-author` | 找学者、看资料、论文列表和作者比较 |
 | `/ai4s-paper` | 论文详情、标题匹配、批量详情、全文、PDF、被引、参考文献、相关推荐和引用格式 |
+| `/ai4s-references` | 参考文献：这篇论文引用了谁（Semantic Scholar） |
+| `/ai4s-citations` | 被引论文：谁引用了这篇论文 |
+| `/ai4s-related` | 相似与推荐论文，支持多篇种子论文 |
+| `/ai4s-read` | 读取论文全文，可按字符范围分段 |
+| `/ai4s-pdf` | 获取 PDF 链接，不等于保存本地文件 |
+| `/ai4s-export` | 获取已知论文的引用格式和 BibTeX 等导出链接（Google Scholar） |
 | `/ai4s-cite` | 为一段文字补充真实引用 |
 | `/ai4s-draw` | 科研绘图、编辑、风格、合成、迭代、点评、SVG 和矢量化 |
 
@@ -35,11 +42,17 @@
 /ai4s-google 固态电池，2022 年以来的 10 篇
 /ai4s-search 同时用 Google Scholar 和 Semantic Scholar 查固态电池，合并去重
 /ai4s-author 查 Geoffrey Hinton 在 Google Scholar 上的资料和代表论文
-/ai4s-paper 读刚才第三篇论文，重点解释研究方法
+/ai4s-read 读刚才第三篇论文，重点解释研究方法
+/ai4s-snippets 查找固态电池界面阻抗的实验描述，返回 5 段
+/ai4s-references 查刚才第一篇引用的参考文献
+/ai4s-citations 查哪些论文引用了刚才第一篇
+/ai4s-export 获取刚才第一篇的 APA 引用格式和 BibTeX 链接
 /ai4s-patents 找宁德时代近五年在中国申请的固态电池专利
 ```
 
-空命令显示用法，不调用检索接口。研究命令作为当前对话的新请求排队，由已配置的模型理解自然语言并调用工具；结果进入对话历史，可以继续追问。执行前模型会简要说明理解出的来源和条件，遇到来源冲突或作者重名才澄清。来源命令在执行时校验来源，不修改全局设置。旧 `/ai4scholar` 与 `/ai4s` 都可查看状态。
+空命令显示用法，不调用检索接口。研究命令作为当前对话的新请求排队，由已配置的模型理解自然语言并调用工具；结果进入对话历史，可以继续追问。执行前模型会简要说明理解出的来源和条件，遇到来源冲突或作者重名才澄清。来源命令在执行时校验来源，独立操作命令会校验操作类型，不修改全局设置。关闭对应能力时入口会隐藏，即使仍有可用的论文定位工具。旧 `/ai4scholar` 与 `/ai4s` 都可查看状态。
+
+默认提供 20 个研究命令，加上 `/ai4s` 状态入口共 21 个主命令；旧 `/ai4scholar` 继续兼容。Snippets 返回匹配片段，不是整篇全文；References 是向外引用，Citations 是被引关系，Export 是已有论文的引用格式，Cite 是为文字补充引用。
 
 当前 Harness 的论文、作者和专利结果卡片提供适用的后续操作。点击按钮会把带有准确标识的自然语言请求填入输入框，修改后发送即可；已有草稿会保留。PDF 和来源链接直接打开。旧版 Harness 没有对应卡片插槽时仍显示普通工具结果。
 

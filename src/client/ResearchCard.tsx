@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { ComponentType } from 'react'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { RESULT_CARD_TOOLS } from '../shared/commands.js'
+import { PAPER_ACTION_COMMANDS, RESULT_CARD_TOOLS } from '../shared/commands.js'
 import { NS } from './locales.js'
 import type { Ai4ScholarLocaleKey } from './locales.js'
 import { cls } from './styles.js'
@@ -23,6 +23,7 @@ const safeUrl = (x: unknown): string | undefined => {
   try { const u = new URL(x); return ['https:', 'http:'].includes(u.protocol) ? u.href : undefined } catch { return undefined }
 }
 const actionKey: Record<string, Ai4ScholarLocaleKey> = { details: 'actionDetails', read: 'actionRead', pdf: 'actionPdf', citations: 'actionCitations', references: 'actionReferences', related: 'actionRelated', authors: 'actionAuthors', citation: 'actionCitation', versions: 'actionVersions', profile: 'actionProfile', papers: 'actionPapers' }
+const actionCommands = new Set(['ai4s-paper', 'ai4s-author', ...Object.values(PAPER_ACTION_COMMANDS)])
 
 export function readResearchItems(meta: unknown): Item[] {
   if (!obj(meta) || !obj(meta.ai4s) || meta.ai4s.version !== 1 || !Array.isArray(meta.ai4s.items)) return []
@@ -31,7 +32,8 @@ export function readResearchItems(meta: unknown): Item[] {
     const actions: Action[] = Array.isArray(x.actions) ? x.actions.filter(obj).flatMap((a): Action[] => {
       if (typeof a.label !== 'string' || !actionKey[a.label]) return []
       const url = safeUrl(a.url)
-      const prompt = typeof a.prompt === 'string' && /^\/ai4s-(paper|author)\s/.test(a.prompt) ? a.prompt : undefined
+      const command = typeof a.prompt === 'string' ? /^\/(ai4s-[a-z]+)\s/.exec(a.prompt)?.[1] : undefined
+      const prompt = command && actionCommands.has(command) ? a.prompt as string : undefined
       return url ? [{ label: a.label, url }] : prompt ? [{ label: a.label, prompt }] : []
     }) : []
     const url = safeUrl(x.url)

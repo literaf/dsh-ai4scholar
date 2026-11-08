@@ -19,6 +19,8 @@ describe('result actions', () => {
     expect(items[0]?.actions.map((a) => a.label)).toEqual(['read', 'references'])
     expect(items[0]?.actions[0]?.prompt).toContain('paper-123')
     expect(items[0]?.actions[0]?.prompt).toContain('10.1234/battery')
+    expect(items[0]?.actions[0]?.prompt).toMatch(/^\/ai4s-read /)
+    expect(items[0]?.actions[1]?.prompt).toMatch(/^\/ai4s-references /)
     const google = { ...paper, source: 'google-scholar', id: 'https://example.org/no-id', externalIds: {} }
     const noIds = readResearchItems(researchMeta({ papers: [google] }, new Set(['get_google_scholar_citation', 'search_google_scholar']), {}))
     expect(noIds[0]?.actions).toEqual([])
@@ -26,6 +28,18 @@ describe('result actions', () => {
     const yesIds = readResearchItems(researchMeta({ papers: [withIds] }, new Set(['get_google_scholar_citation', 'search_google_scholar']), {}))
     expect(yesIds[0]?.actions.map((a) => a.label)).toEqual(['citations', 'citation'])
     expect(yesIds[0]?.actions[0]?.prompt).toContain('9007199254740993123')
+    expect(yesIds[0]?.actions[0]?.prompt).toMatch(/^\/ai4s-citations /)
+    expect(yesIds[0]?.actions[1]?.prompt).toMatch(/^\/ai4s-export /)
+  })
+
+  it('routes PDF and recommendations to their shortcuts while retaining old saved prompts', () => {
+    const items = readResearchItems(researchMeta({ papers: [paper] }, new Set(['download_semantic', 'get_semantic_recommendations_for_paper']), {}))
+    expect(items[0]?.actions.map((a) => a.prompt?.split(' ')[0])).toEqual(['/ai4s-pdf', '/ai4s-related'])
+    const saved = readResearchItems({ ai4s: { version: 1, items: [{ title: paper.title, source: paper.source, actions: [
+      { label: 'read', prompt: '/ai4s-paper 读这篇旧结果' },
+      { label: 'read', prompt: '/ai4s-draw unsupported action' },
+    ] }] } })
+    expect(saved[0]?.actions).toEqual([{ label: 'read', prompt: '/ai4s-paper 读这篇旧结果' }])
   })
 
   it('keeps author identities distinct and offers comparison and profile/paper actions', () => {
@@ -60,7 +74,7 @@ describe('result actions', () => {
       expect(el.textContent).toContain('剩余 99')
       const button = [...el.querySelectorAll('button')].find((b) => b.textContent === '读全文')!
       await act(async () => button.click())
-      expect(fillDraft).toHaveBeenCalledWith(expect.stringContaining('/ai4s-paper 读《Battery mechanisms》'))
+      expect(fillDraft).toHaveBeenCalledWith(expect.stringContaining('/ai4s-read 读《Battery mechanisms》'))
       expect(el.textContent).toContain('已填入输入框')
       expect(el.querySelector('img')).toBeNull()
     } finally { await act(async () => root.unmount()); el.remove() }

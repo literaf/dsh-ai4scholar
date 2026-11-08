@@ -44,7 +44,7 @@ describe('plugin mount', () => {
     const fake = mount()
     expect([...fake.tools.keys()].sort()).toEqual(ALL_TOOLS)
     expect(ALL_TOOLS).toHaveLength(43)
-    expect(fake.commands.size).toBe(15)
+    expect(fake.commands.size).toBe(22)
     expect(fake.commands.has('ai4s')).toBe(true)
     expect(fake.commands.has('ai4scholar')).toBe(true)
     expect(fake.sections).toHaveLength(1)
@@ -306,11 +306,12 @@ describe('semantic scholar follow-up tools', () => {
       kind: 'body',
       section: 'Introduction',
       score: 0.9123,
-      paper: { corpusId: '13756489', title: 'Attention is All you Need', authors: ['Ashish Vaswani'], url: 'https://www.semanticscholar.org/p/13756489' },
+      paper: { corpusId: '13756489', paperId: 'CorpusId:13756489', title: 'Attention is All you Need', authors: ['Ashish Vaswani'], url: 'https://www.semanticscholar.org/p/13756489' },
     }])
     const text = textOf(tool.output.render({ query: 'transformer architecture' }, value as never))
     expect(text).toContain('body / Introduction')
     expect(text).toContain('score 0.912')
+    expect(text).toContain('Graph API paper_id: CorpusId:13756489')
   })
 })
 

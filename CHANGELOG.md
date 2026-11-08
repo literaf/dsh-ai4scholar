@@ -2,6 +2,18 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [0.5.0] - 2026-11-08
+
+### Added
+- Seven direct commands: `/ai4s-snippets`, `/ai4s-references`, `/ai4s-citations`, `/ai4s-read`, `/ai4s-pdf`, `/ai4s-related`, and `/ai4s-export`. The menu now has 20 research entries in five rows on wide screens, plus the account-status command; the 43 underlying tools are unchanged.
+- Primary-capability checks hide an operation when only its lookup helpers are enabled. Execution guards distinguish snippets from ordinary search, outgoing references from incoming citations, full-text reading from PDF links, and export from prose citation insertion.
+
+### Changed
+- Paper result buttons now prepare the specific operation command with the selected paper's exact identifiers. Existing saved `/ai4s-paper` prompts remain supported; PDF URLs still open directly and drafts are never sent automatically.
+
+### Fixed
+- Snippet results expose a graph-ready `CorpusId:` identifier in both structured output and model-visible text, preventing follow-up graph queries from confusing numeric corpus IDs with paper IDs.
+
 ## [0.4.5] - 2026-11-08
 
 ### Changed

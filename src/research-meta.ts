@@ -1,5 +1,6 @@
 import { isRecord, str } from './paper.js'
 import type { JsonValue } from './paper.js'
+import { PAPER_ACTION_COMMANDS } from './shared/commands.js'
 
 interface Action { label: string; prompt?: string; url?: string }
 interface Item { title: string; source: string; identity: string; summary: string; url?: string; actions: Action[] }
@@ -24,7 +25,7 @@ export function researchMeta(value: unknown, enabled: ReadonlySet<string>, base:
     const ids = isRecord(p.externalIds) ? p.externalIds : {}
     const ref = `《${title}》（${sourceLabel}，ID：${id}${doi ? `，DOI：${doi}` : ''}）`
     const actions: Action[] = []
-    const add = (label: string, tool: string | undefined, request: string): void => { if (tool && enabled.has(tool)) actions.push({ label, prompt: `/ai4s-paper ${request}` }) }
+    const add = (label: string, tool: string | undefined, request: string): void => { if (tool && enabled.has(tool)) actions.push({ label, prompt: `/${PAPER_ACTION_COMMANDS[label] ?? 'ai4s-paper'} ${request}` }) }
     const detail = source === 'semantic-scholar' ? 'get_semantic_paper_detail' : source === 'pubmed' ? 'get_pubmed_paper_detail' : undefined
     add('details', detail, `查看${ref}的详情`)
     const reader = ({ 'semantic-scholar': 'read_semantic_paper', arxiv: 'read_arxiv_paper', biorxiv: 'read_biorxiv_paper', medrxiv: 'read_medrxiv_paper' } as Record<string, string>)[source]

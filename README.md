@@ -21,6 +21,7 @@ Choose a capability with a slash command, then describe the request normally. Un
 | `/ai4s-search` | Unified paper search; request multiple sources and deduplication in plain language |
 | `/ai4s-google` | Google Scholar papers |
 | `/ai4s-semantic` | Semantic Scholar search, bulk collection, and full-text snippets |
+| `/ai4s-snippets` | Search matching passages in Semantic Scholar indexed full texts |
 | `/ai4s-pubmed` | PubMed biomedical literature |
 | `/ai4s-arxiv` | arXiv preprints |
 | `/ai4s-chinese` | Chinese journals, theses, and conference literature |
@@ -28,14 +29,26 @@ Choose a capability with a slash command, then describe the request normally. Un
 | `/ai4s-patents` | Google Patents search |
 | `/ai4s-author` | Author discovery, profiles, publications, and comparisons |
 | `/ai4s-paper` | Details, title matching, batches, full text, PDF links, citations, references, recommendations, and citation formats |
+| `/ai4s-references` | Outgoing references: papers this paper cites (Semantic Scholar) |
+| `/ai4s-citations` | Incoming citations: papers that cite this paper |
+| `/ai4s-related` | Related papers and single/multiple-seed recommendations |
+| `/ai4s-read` | Read full text, including requested character slices |
+| `/ai4s-pdf` | Obtain a PDF URL; this does not save a local file |
+| `/ai4s-export` | Citation formats and BibTeX/export links for a known paper (Google Scholar) |
 | `/ai4s-cite` | Add real references to prose |
 | `/ai4s-draw` | Generate, edit, style, compose, iterate, critique, SVG, and vectorize scientific figures |
+
+There are 20 research commands plus `/ai4s` for account status, with `/ai4scholar` retained as an alias. Operation shortcuts disappear when their primary capability is disabled; lookup helpers alone do not keep them visible. Source and operation constraints are checked during tool execution. Snippets return excerpts, references are outgoing, citations are incoming, export formats an existing paper, and cite inserts references into prose.
 
 ```text
 /ai4s-google 10 solid-state battery papers published since 2022
 /ai4s-search Search Google Scholar and Semantic Scholar for solid-state batteries and merge duplicates
 /ai4s-author Find Geoffrey Hinton’s Google Scholar profile and representative papers
-/ai4s-paper Read the third paper above, focusing on its methodology
+/ai4s-read Read the third paper above, focusing on its methodology
+/ai4s-snippets Find 5 passages describing solid-state battery interface resistance experiments
+/ai4s-references List the references cited by the first paper
+/ai4s-citations Find papers citing the first paper
+/ai4s-export Get the APA reference and BibTeX link for the first paper
 /ai4s-patents Find CATL’s solid-state battery patent applications in China from the last five years
 ```
 

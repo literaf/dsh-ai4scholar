@@ -4,16 +4,18 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { UserMessage } from '@deepseek-ai/dsh-llm'
 import { mount, stubFetch } from './helpers.js'
 import { RESEARCH_COMMANDS, RESEARCH_TOOL_NAMES } from '../src/shared/commands.js'
+import { availableCommands } from '../src/commands.js'
 
 function invocation(rawInput = '', options: Partial<CommandInvocation> = {}) {
   return { commandId: 'test-command', rawInput, attachments: [], signal: new AbortController().signal, agent: { followup: vi.fn() }, ...options } as unknown as CommandInvocation
 }
 
 describe('natural-language commands', () => {
-  it('covers every enabled research tool through 14 main commands plus the legacy alias', () => {
+  it('covers every enabled research tool through 21 main commands plus the legacy alias', () => {
     const fake = mount()
     expect(fake.tools.size).toBe(43)
-    expect(fake.commands.size).toBe(15)
+    expect(fake.commands.size).toBe(22)
+    expect(RESEARCH_COMMANDS).toHaveLength(20)
     expect([...fake.tools.keys()].filter((n) => n !== 'get_ai4scholar_credits' && !RESEARCH_TOOL_NAMES.has(n))).toEqual([])
     for (const c of RESEARCH_COMMANDS) {
       expect(fake.commands.get(c.name)?.input?.hint).toBe(c.example)
@@ -24,6 +26,49 @@ describe('natural-language commands', () => {
     for (const c of ['ai4s-google', 'ai4s-patents', 'ai4s-biorxiv', 'ai4s-medrxiv', 'ai4s-draw']) expect(disabled.commands.has(c)).toBe(false)
     expect(disabled.commands.has('ai4s-author')).toBe(true)
     expect(mount({ command: false }).commands.size).toBe(0)
+  })
+
+  it('hides operation shortcuts when only their lookup helpers remain enabled', () => {
+    const helperOnly = availableCommands(new Set(['get_semantic_paper_detail', 'get_pubmed_paper_detail', 'search_semantic_paper_match']))
+    for (const name of ['ai4s-references', 'ai4s-citations', 'ai4s-related', 'ai4s-read', 'ai4s-pdf', 'ai4s-export']) {
+      expect(helperOnly.some((c) => c.name === name)).toBe(false)
+    }
+    const noRead = mount({ fullText: false })
+    expect(noRead.commands.has('ai4s-read')).toBe(false)
+    expect(noRead.commands.has('ai4s-pdf')).toBe(true)
+    const noSemantic = mount({ semanticScholar: false })
+    expect(noSemantic.commands.has('ai4s-snippets')).toBe(false)
+    expect(noSemantic.commands.has('ai4s-references')).toBe(false)
+    expect(noSemantic.commands.has('ai4s-citations')).toBe(true)
+    expect(noSemantic.commands.has('ai4s-related')).toBe(true)
+    expect(mount({ googleScholar: false }).commands.has('ai4s-export')).toBe(false)
+    const pdfOnly = availableCommands(new Set(['download_by_doi']))
+    expect(pdfOnly.find((c) => c.name === 'ai4s-pdf')?.tools).toEqual(['download_by_doi'])
+  })
+
+  it.each([
+    ['ai4s-snippets', 'search_semantic_snippets', 'search_semantic'],
+    ['ai4s-references', 'get_semantic_references', 'get_semantic_citations'],
+    ['ai4s-citations', 'get_semantic_citations', 'get_semantic_references'],
+    ['ai4s-read', 'read_arxiv_paper', 'download_arxiv'],
+    ['ai4s-pdf', 'download_arxiv', 'read_arxiv_paper'],
+    ['ai4s-related', 'get_semantic_recommendations_for_paper', 'get_semantic_references'],
+    ['ai4s-export', 'get_google_scholar_citation', 'auto_cite'],
+  ])('%s queues a contextual request and prevents substitution of a different operation', async (name, allowed, denied) => {
+    const fake = mount(); const input = invocation('处理刚才第一篇论文')
+    await fake.commands.get(name!)!.handler(input)
+    const request = vi.mocked(input.agent.followup).mock.calls[0]![0]
+    expect(request.content).toEqual([{ type: 'text', text: `/${name} 处理刚才第一篇论文` }])
+    const [entered] = await fake.dispatch('agent/pre-step', { agent: input.agent }, async () => ({ kind: 'enter', messages: [request] })) as [{ messages: UserMessage[] }]
+    expect(JSON.stringify(entered.messages[1])).toContain(allowed)
+    const guard = (tool: string) => fake.dispatch('tools/pre-execute', { agent: input.agent, name: tool, arguments: {} }, async () => ({ kind: 'allow' }))
+    expect(await guard(allowed!)).toEqual([{ kind: 'allow' }])
+    expect(await guard(denied!)).toEqual([{ kind: 'deny', reason: expect.stringContaining(`/${name}`) }])
+    // Host tools remain usable, and a subsequent ordinary request releases this operation.
+    expect(await guard('host_file_write')).toEqual([{ kind: 'allow' }])
+    const followup = createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: '再换一种操作' }] })
+    await fake.dispatch('agent/pre-step', { agent: input.agent }, async () => ({ kind: 'enter', messages: [request, followup] }))
+    expect(await guard(denied!)).toEqual([{ kind: 'allow' }])
   })
 
   it('returns useful empty/help examples without an API call or queued model turn', async () => {
