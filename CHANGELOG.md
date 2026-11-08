@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-ai4scholar` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change tool schemas).
 
+## [Unreleased]
+
+### Documentation
+- Added a repository release policy and agent instructions covering version bumps, prerelease packages, release notes, and publication verification. Linked the policy from both READMEs and included it in future packages.
+
 ## [0.5.2] - 2026-11-08
 
 ### Changed

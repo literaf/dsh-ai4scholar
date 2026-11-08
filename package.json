@@ -35,7 +35,8 @@
     "README_CN.md",
     "LICENSE",
     "assets/icon.svg",
-    "docs/detail.zh.md"
+    "docs/detail.zh.md",
+    "RELEASING.md"
   ],
   "sideEffects": false,
   "keywords": [

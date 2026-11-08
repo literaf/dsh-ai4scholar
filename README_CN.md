@@ -205,6 +205,8 @@ API Key 通过 `ctx.credentials` **按调用**解析：新存入或轮换的 Key
 
 ## 开发
 
+版本号、测试包和正式发布遵循[版本与发布规则](RELEASING.md)。日常修改不逐次升版，需要区分测试包时使用预发布版本号。
+
 ```sh
 pnpm install
 pnpm test          # 先构建 lib/（Node 半侧 tsc，浏览器 bundle tsdown），再跑：单元测试、

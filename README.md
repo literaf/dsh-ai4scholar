@@ -205,6 +205,8 @@ The settings card always edits `AI4SCHOLAR_API_KEY` (the browser half does not r
 
 ## Development
 
+For version numbers, test packages, and release checks, follow the [release policy](RELEASING.md) (Chinese). Routine development changes do not require a version bump.
+
 ```sh
 pnpm install
 pnpm test          # builds lib/ (Node half via tsc, browser bundle via tsdown), then runs:
