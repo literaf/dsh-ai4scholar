@@ -6,7 +6,7 @@ import { Ai4ScholarPluginConfig } from './Card.js'
 import type { Ai4ScholarCardFace } from './Card.js'
 import type { CardStore } from './controller.js'
 import type { InjectedFace } from './plugin-config.js'
-import { Ai4ScholarBrand } from './Brand.js'
+import { Ai4ScholarBrand, Ai4ScholarLogo } from './Brand.js'
 import { NS } from './locales.js'
 import type { Ai4ScholarLocaleKey } from './locales.js'
 import { WorkbenchController } from './workbench-controller.js'
@@ -1069,8 +1069,8 @@ export function applyWorkbench(ctx: ClientContext, settings: Ai4ScholarCardFace)
   )
   slots.inject('sidebar.panellist', () =>
     slots.register(
-      { name: 'sidebar.panellist', id: WORKBENCH_ID, order: 65, label: () => 'AI4Scholar' },
-      ({ size }) => <Icon name="search" size={size ?? 20} />,
+      { name: 'sidebar.panellist', id: WORKBENCH_ID, order: 65, label: () => 'Ai4Scholar' },
+      ({ size }) => <Ai4ScholarLogo size={size ?? 20} />,
     ),
   )
 }
