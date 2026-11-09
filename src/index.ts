@@ -17,6 +17,7 @@ import { Ai4ScholarClient } from './api-client.js'
 import { buildGuidance } from './prompt.js'
 import { CreditLedger, makeCreditsFolder, makeCredentialResolvers } from './runtime.js'
 import { applyKeyRevealRoute } from './key-reveal.js'
+import { applyWorkbenchRoute } from './workbench.js'
 import type { Runtime } from './runtime.js'
 import { applySemanticScholarTools } from './tools/semantic-scholar.js'
 import { applyPubmedTools } from './tools/pubmed.js'
@@ -308,6 +309,7 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.command) for (const name of RESEARCH_TOOL_NAMES) if (ctx.tools.get(name)) enabledTools.add(name)
   const help = resolved.command ? applyResearchCommands(ctx, enabledTools) : ''
   const defaults = defaultSourcesFor(resolved.searchSources, platforms)
+  applyWorkbenchRoute(ctx, runtime, defaults)
   const status = [
     `默认检索来源：${defaults.length ? defaults.join('、') : '未启用论文检索来源'}`,
     `默认条数：${defaults.map((s) => `${s} ${Math.min(resolved.resultsPerSource[s] ?? resolved.defaultMaxResults, resolved.maxResultsCap, PLATFORM_CAP[s])} 篇`).join('；') || '—'}`,

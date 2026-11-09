@@ -1,10 +1,12 @@
 /** Copy for the settings card, in the two locales the dsh web client ships. */
+import { workbenchEn, workbenchZh } from './workbench-locales.js'
 
 /** Dictionary namespace owned by this plugin's browser half. */
 export const NS = 'ai4scholar'
 
 /** Copy keys of the card. */
 export type Ai4ScholarLocaleKey =
+  | keyof typeof workbenchEn
   | 'resultRemaining'
   | 'actionCompare'
   | 'actionDetails'
@@ -139,6 +141,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const en: Record<Ai4ScholarLocaleKey, string> = {
+  ...workbenchEn,
   actionCompare: 'Compare these authors',
   resultRemaining: '{count} remaining',
   actionDetails: 'Details',
@@ -266,6 +269,7 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   sizeHint: 'Higher resolutions take longer.',
 }
 export const zh: Record<Ai4ScholarLocaleKey, string> = {
+  ...workbenchZh,
   actionCompare: '比较这些作者',
   resultRemaining: '剩余 {count}',
   actionDetails: '查看详情',

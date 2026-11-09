@@ -31,6 +31,7 @@ import type { ConfigFormPort } from './search-controller.js'
 import { ENTRY_ID } from '../shared/search-settings.js'
 import { API_KEY_REF } from '../shared/key-reveal.js'
 import { applyResearchCards } from './ResearchCard.js'
+import { applyWorkbench } from './Workbench.js'
 
 export { SearchSettingsController, readSettings } from './search-controller.js'
 export type { SearchSettingsState, SearchDraft, ConfigFormPort } from './search-controller.js'
@@ -128,6 +129,7 @@ export function apply(ctx: ClientContext): void {
     discardSearch: () => { search.discard() },
   }
   const face = (): Ai4ScholarCardFace => actions
+  applyWorkbench(ctx, actions)
 
   // Third-party bundles belong on their own native detail page. These slots
   // are absent on older hosts, where inject() simply waits for a declaration.

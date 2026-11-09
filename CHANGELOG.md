@@ -4,6 +4,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+### Added
+- An AI4Scholar sidebar workbench with a search start page, source-specific filters, paginated results, and a paper/detail split view. It reuses the existing search tools and shared API key/settings; the Settings and plugin-detail entrances remain available.
+- Direct searches for Semantic Scholar, full-text excerpts, Google Scholar, PubMed, patents, Chinese literature, and preprints. Search results and recent queries stay in memory during the session; previously loaded pages do not trigger another paid request.
+- An authenticated owner-only workbench API. Hosts without this channel retain their existing tools and settings.
+
 ### Documentation
 - Added a repository release policy and agent instructions covering version bumps, prerelease packages, release notes, and publication verification. Linked the policy from both READMEs and included it in future packages.
 

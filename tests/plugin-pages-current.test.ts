@@ -76,11 +76,25 @@ describe.skipIf(!compatRoot)('published current UI runtime', () => {
         expect(declaration, `published declaration ${name}`).not.toBeNull()
         children[name] = new Function(`return (${declaration![1]})`)() as object
       }
+      if (isScholar) for (const [name, pkg] of [['main', 'layout'], ['sidebar.panellist', 'sidebar']] as const) {
+        const source = readFileSync(sdk.resolve(`@deepseek-ai/dsh-client-ui-${pkg}/client`), 'utf8')
+        const declaration = source.match(new RegExp(`"${name.replaceAll('.', '\\.')}":\\s*(\\{\\s*kind:\\s*"\\w+",\\s*scope:\\s*"[\\w-]+"\\s*\\})`))
+        expect(declaration, `published declaration ${name}`).not.toBeNull()
+        children[name] = new Function(`return (${declaration![1]})`)() as object
+      }
       removeOwner = slots.register({ name: 'root', children }, () => null)
       expect(slots.entries('plugins.bundle.config')[0]?.options.key).toBe(manifest.name)
       expect(slots.entries('plugins.row.config')[0]?.options.key).toBe(`${manifest.name}#${rowId}`)
       expect(slots.entries('settings.section')[0]?.options.id).toBe(rowId)
       expect(slots.entries('settings.plugin.item')).toHaveLength(0)
+      if (isScholar) {
+        expect(slots.entries('main')[0]?.options.key).toBe('ai4scholar.workbench')
+        expect(slots.entries('sidebar.panellist')[0]?.options.id).toBe('ai4scholar.workbench')
+        const settings = slots.entries('settings.section')[0]!.inject().hooks
+        const workbench = slots.entries('main')[0]!.inject().hooks as Record<string, unknown>
+        expect(workbench.card).toBe((settings as Record<string, unknown>).card)
+        expect(workbench.search).toBe((settings as Record<string, unknown>).search)
+      }
       await act(async () => {
         const entries = ['plugins.bundle.config', 'plugins.row.config', 'settings.section'].map((name) => slots.entries(name)[0]!)
         root.render(createElement('div', {}, ...entries.map((entry, key) => {
