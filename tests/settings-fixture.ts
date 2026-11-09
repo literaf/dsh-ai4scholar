@@ -1,7 +1,7 @@
 import type { ConfigFormPort, FormOp } from '../src/client/search-controller.js'
 
 const DEFAULTS = {
-  searchSources: ['semantic-scholar'], resultsPerSource: {}, defaultMaxResults: 10, abstractMaxChars: 600, showCredits: true,
+  searchSources: ['semantic-scholar'], resultsPerSource: {}, defaultMaxResults: 10, abstractMaxChars: 600, showCredits: true, showCommandCard: false,
   readMaxChars: 60_000, citeStyle: 'ieee', citeExcludePreprints: false, drawModel: 'flash31', drawImageSize: '2K',
 }
 

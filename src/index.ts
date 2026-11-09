@@ -19,12 +19,13 @@ import { CreditLedger, makeCreditsFolder, makeCredentialResolvers } from './runt
 import { applyKeyRevealRoute } from './key-reveal.js'
 import { applyWorkbenchRoute } from './workbench.js'
 import { applyUpdateRoute } from './update.js'
+import { applyCommandCardRoute } from './command-card.js'
 import type { Runtime } from './runtime.js'
 import { applySemanticScholarTools } from './tools/semantic-scholar.js'
 import { applyPubmedTools } from './tools/pubmed.js'
 import { applyGoogleScholarTools } from './tools/google-scholar.js'
 import { applyGoogleExtraTools, applyGooglePatentsTool } from './tools/google-extras.js'
-import { applyResearchCommands } from './commands.js'
+import { applyResearchCommands, availableCommands } from './commands.js'
 import { RESEARCH_TOOL_NAMES } from './shared/commands.js'
 import { applyChineseTools } from './tools/chinese.js'
 import { applyArxivTools } from './tools/arxiv.js'
@@ -115,6 +116,8 @@ export interface Config {
   balanceRoute?: boolean
   /** Attach credits charged/remaining and the session tally to billed results. */
   showCredits?: boolean
+  /** Show the Ai4Scholar command menu after the latest completed reply. */
+  showCommandCard?: boolean
   /** Register the system-prompt guidance section. */
   promptGuidance?: boolean
   /** Order of the guidance section within the assembled prompt (tool guidance uses 100–199). */
@@ -154,7 +157,7 @@ function live<S>(schema: S): S {
 
 /** The fields the settings page edits; everything else stays file-only. */
 export const SETTINGS_FIELDS = [
-  'searchSources', 'resultsPerSource', 'defaultMaxResults', 'abstractMaxChars', 'showCredits',
+  'searchSources', 'resultsPerSource', 'defaultMaxResults', 'abstractMaxChars', 'showCredits', 'showCommandCard',
   'readMaxChars', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize',
 ] as const
 
@@ -187,6 +190,7 @@ export const Config: Schema<Config> = Schema.object({
   command: Schema.boolean().default(true).description('Register /ai4s, /ai4scholar and the natural-language /ai4s-* commands.'),
   balanceRoute: Schema.boolean().default(true).description('Register GET /ai4scholar/balance for the settings card.'),
   showCredits: live(Schema.boolean().default(true).description('Attach credit accounting to billed results.')),
+  showCommandCard: live(Schema.boolean().default(false).description('Show the Ai4Scholar command card after the latest completed reply.')),
   promptGuidance: Schema.boolean().default(true).description('Register the system-prompt guidance section.'),
   promptOrder: Schema.number().default(150).description('Order of the guidance section within the assembled prompt.'),
   defaultMaxResults: live(Schema.natural().min(1).default(10).description('Results returned when the model omits max_results.')),
@@ -310,6 +314,18 @@ export function apply(ctx: Context, config: Config): void {
   if (resolved.command) for (const name of RESEARCH_TOOL_NAMES) if (ctx.tools.get(name)) enabledTools.add(name)
   const help = resolved.command ? applyResearchCommands(ctx, enabledTools) : ''
   const defaults = defaultSourcesFor(resolved.searchSources, platforms)
+  const menu = resolved.command ? availableCommands(enabledTools).map(({ name, title, example }) => ({ name, title, example })) : []
+  applyCommandCardRoute(ctx, () => {
+    // Volatile values update before the remount: a just-saved switch is
+    // already authoritative even when its replacement fiber has not started.
+    const current = plainConfig(config)
+    const sources = defaultSourcesFor(current.searchSources, platforms)
+    return {
+      enabled: current.showCommandCard && menu.length > 0,
+      commands: menu,
+      defaults: sources.map(source => ({ source, count: Math.min(current.resultsPerSource[source] ?? current.defaultMaxResults, current.maxResultsCap, PLATFORM_CAP[source]) })),
+    }
+  })
   applyWorkbenchRoute(ctx, runtime, defaults)
   applyUpdateRoute(ctx, VERSION)
   const status = [

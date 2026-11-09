@@ -59,6 +59,7 @@ export interface SearchSettings {
   resultsPerSource: Record<UnifiedSource, number>
   abstractMaxChars: number
   showCredits: boolean
+  showCommandCard: boolean
   readMaxChars: number
   citeStyle: CiteStyle
   citeExcludePreprints: boolean

@@ -117,7 +117,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 **设置**旁的**检查更新**会查询 npm 最新正式版并显示当前与最新版本；本地测试版领先时会明确提示，不建议降级。可查看发布说明，发现新版本后可进入**管理插件**。检查本身不会安装或替换插件，也不消耗 API 积分。
 
-选一个工作区目录就可以直接提问了。Desktop 升级：`dsh plugin --profile desktop add dsh-ai4scholar@latest`，然后重启 Desktop。Web 使用 `dsh plugin --profile web add dsh-ai4scholar@latest` 并重启 `dsh web`。从注册表安装的插件也可通过宿主的插件管理器升级；本地测试包需要先替换为注册表安装，才能使用原生版本管理。
+选一个工作区目录就可以直接提问了。当前 Desktop 从注册表安装的版本，可在 **插件 → dsh-ai4scholar → 版本** 中更新。Desktop 自行管理 profile，CLI 不会修改它。替换本地测试包时，在 Desktop 卸载该包，再用**添加插件**输入 `dsh-ai4scholar@0.6.2` 并启用；API Key 保留在共用凭据存储中。Web 使用 `dsh plugin --profile web add dsh-ai4scholar@latest` 并重启 `dsh web`。
 
 更喜欢文件或 CI 方式？插件解析的是凭据引用 `AI4SCHOLAR_API_KEY`，以下途径同样有效（优先级从高到低）：启动 dsh 的 shell 里 `export AI4SCHOLAR_API_KEY=…` · `$DSH_HOME/.credentials.yaml` 中一行 · 项目目录或 `$DSH_HOME` 下的 `.env` 中一行。卡片会显示当前 Key 来自哪一层；来自环境变量时卡片变为只读。headless 没有设置页，请用其中一种。
 
@@ -141,6 +141,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 - **检索设置**：勾选模型没指定时 search_papers 查的平台（默认只查 Semantic Scholar），并给每个平台设返回条数。Semantic Scholar、PubMed、中文文献每次最多 100 条、各计费一次；arXiv 每次最多 100 条且免费。Google Scholar 每次返回 1–10 条、计 1 积分，模型需要更多时保持相同条数并用 nextOffset 翻页。所有来源都能通过独立检索工具继续翻页；收费来源每多请求一页都会计费。这里的条数也是独立检索工具的默认条数。
 - **结果内容**：提供给模型的摘要长度（0–5000 字符，默认 600）、read_* 每次读取的全文长度（2,000–200,000，默认 60,000）、是否在结果里显示积分。
+- **命令卡片**：开启 **在对话末尾显示命令卡片**（默认关闭）并保存，最新回复结束后就会显示命令菜单。点击命令填入当前对话的草稿，补充需求后再发送，已有草稿会保留。发起新一轮对话后，上一轮菜单自动隐藏。展示卡片只读取本机命令信息和本轮已有积分记录，不请求 AI4Scholar 或模型。需要宿主的回复末尾扩展和认证插件 Fetch 通道；旧宿主仍可手动输入 `/ai4s` 或 `/ai4scholar` 查看原有卡片。
 - **引用与配图**：auto_cite 的参考文献格式（默认 IEEE）和是否排除预印本；sci_draw 的配图模型（默认 Flash 3.1）和分辨率（默认 2K）。
 
 模型在单次调用里仍可以自己指定这些参数。点 **保存** 会把改动写进 profile 的 `cordis.patch.yml`，插件随即按新设置重新加载，下一次工具调用和新对话都会生效。**恢复默认** 会删掉这些覆盖。这个页面需要 DeepSeek Harness 0.2.1 或更高版本；旧版本会提示你改配置文件。
@@ -170,6 +171,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     command: true                    # /ai4s、/ai4scholar 和 /ai4s-* 命令
     balanceRoute: true               # 设置卡片测试 Key 用的 GET /ai4scholar/balance 路由
     showCredits: true                # 计费结果末尾的积分行（插件页面可改）
+    showCommandCard: false           # 最新回复末尾显示命令菜单，默认关闭（插件页面可改）
     promptGuidance: true             # 注入一小段 system prompt 说明何时用哪个工具
     promptOrder: 150
     # search_papers 默认检索的平台（插件页面可改），可选

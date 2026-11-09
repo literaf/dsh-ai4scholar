@@ -71,4 +71,6 @@ Google Scholar 论文保留原始论文 ID、被引和版本 ID；引用格式�
 1. 打开 **设置 → AI4Scholar**，或在这个页面下方，粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh) 获取），点**保存**。输入框下方显示隐藏的密钥，点击眼睛可显示或隐藏，右侧标注「密钥已配置」。Key 存进 dsh 的凭据存储，不会发送给模型，下一次工具调用即生效。
 2. 在**检索设置**里可以调默认检索平台、每个平台单次返回的条数（所有来源均可继续翻页）、摘要长度、全文读取长度，以及 auto_cite 和 sci_draw 的默认选项。
 
+在设置中开启 **在对话末尾显示命令卡片** 并保存后，最新回复结束会显示全部可用命令。默认关闭；点击命令只填入草稿，补充需求后自行发送，已有草稿会保留。新一轮开始后上一轮菜单自动隐藏。展示卡片不会查询 AI4Scholar 或调用模型，积分信息使用本轮工具已返回的记录。需要宿主的回复末尾扩展和认证插件 Fetch 通道；旧宿主仍可用 `/ai4s` 或 `/ai4scholar` 手动查看。
+
 arXiv 和 bioRxiv/medRxiv 免费；Semantic Scholar、PubMed、Google Scholar、Google Patents、中文文献和生成类工具按次消耗积分，开启「显示积分消耗与余额」后每次检索都会附上消耗和余额。

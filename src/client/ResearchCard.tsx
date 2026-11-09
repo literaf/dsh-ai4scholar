@@ -6,6 +6,7 @@ import { PAPER_ACTION_COMMANDS, RESULT_CARD_TOOLS } from '../shared/commands.js'
 import { NS } from './locales.js'
 import type { Ai4ScholarLocaleKey } from './locales.js'
 import { cls } from './styles.js'
+import { fillConversationDraft } from './draft.js'
 
 interface Action { label: string; prompt?: string; url?: string }
 interface Item { title: string; source: string; identity: string; summary: string; url?: string; actions: Action[] }
@@ -82,30 +83,12 @@ interface ResearchSlots {
   inject(name: 'tool.call.toolview', callback: () => () => void): () => void
   register(options: { name: 'tool.call.toolview'; key: string; locale: typeof NS; inject(sessionId: string): Face }, component: ComponentType<Props>): () => void
 }
-interface SessionInput {
-  state: { getSnapshot(): { draft: string; phase: string } }
-  setDraft(text: string): void
-  focus?(): void
-}
-
 export function applyResearchCards(ctx: ClientContext): void {
   const slots = ctx.slots as unknown as ResearchSlots
   // This keyed seat exists on current Harness; older clients keep their
   // ordinary tool cards and still receive the same readable result text.
   for (const name of RESULT_CARD_TOOLS) slots.inject('tool.call.toolview', () => slots.register({
     name: 'tool.call.toolview', key: name, locale: NS,
-    inject: (sessionId) => ({ fillDraft: (text) => {
-      const sessions = ctx.get('sessions') as unknown as { binding(id: string): { ctx: ClientContext } | undefined } | undefined
-      const conversation = ctx.get('conversation') as unknown as { input: { for(ctx: ClientContext): SessionInput } } | undefined
-      const binding = sessions?.binding(sessionId)
-      if (!binding || !conversation) return 'unavailable'
-      const input = conversation.input.for(binding.ctx)
-      const state = input.state.getSnapshot()
-      if (state.draft.trim() || ['submitting', 'adjudicating', 'submitted'].includes(state.phase)) return 'busy'
-      input.setDraft(text)
-      if (input.state.getSnapshot().draft !== text) return 'busy'
-      input.focus?.()
-      return 'filled'
-    } }),
+    inject: (sessionId) => ({ fillDraft: text => fillConversationDraft(ctx, sessionId, text) }),
   }, Ai4ScholarResearchCard))
 }

@@ -4,6 +4,17 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-09
+
+### Added
+- An opt-in **Show the command card after replies** switch shared by the workbench, plugin detail, and Settings. It shows the existing command menu below the latest completed reply and hides it when a new turn starts. Command buttons prepare a draft without sending it or replacing an existing draft. The card uses recorded turn credits and local command metadata; displaying it makes no AI4Scholar or model request.
+
+### Compatibility
+- Automatic command cards require the host's session-scoped `conversation.chat.turnTail` extension and authenticated plugin Fetch channel. Older hosts retain the manual `/ai4s` and `/ai4scholar` cards.
+
+### Documentation
+- Clarify that small UI enhancements and settings switches normally use a patch release, and direct current Desktop users to its native plugin manager for updates.
+
 ## [0.6.1] - 2026-11-09
 
 ### Changed

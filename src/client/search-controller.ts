@@ -42,6 +42,7 @@ export interface SearchDraft {
   resultsPerSource: Record<UnifiedSource, string>
   abstractMaxChars: string
   showCredits: boolean
+  showCommandCard: boolean
   readMaxChars: string
   citeStyle: CiteStyle
   citeExcludePreprints: boolean
@@ -59,6 +60,9 @@ export interface SearchInvalid {
 
 /** What the settings groups render. */
 export interface SearchSettingsState {
+  /** Committed Host values, separate from unsaved drafts on a settings page. */
+  committed: SearchSettings
+  revision: number | undefined
   /** `unsupported`: this host has no configuration forms; `unavailable`: it does not serve this entry. */
   status: 'unsupported' | 'loading' | 'ready' | 'unavailable'
   writable: boolean
@@ -73,7 +77,7 @@ export interface SearchSettingsState {
 }
 
 /** Top-level fields the page writes; `resultsPerSource` is written per platform. */
-const FIELDS = ['searchSources', 'resultsPerSource', 'abstractMaxChars', 'showCredits', 'readMaxChars', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize'] as const
+const FIELDS = ['searchSources', 'resultsPerSource', 'abstractMaxChars', 'showCredits', 'showCommandCard', 'readMaxChars', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize'] as const
 type Field = (typeof FIELDS)[number]
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -92,6 +96,7 @@ export function readSettings(value: unknown): SearchSettings {
     resultsPerSource: Object.fromEntries(UNIFIED_SOURCES.map((s) => [s, Math.min(int(per[s], shared), PLATFORM_CAP[s])])) as Record<UnifiedSource, number>,
     abstractMaxChars: int(section.abstractMaxChars, 600),
     showCredits: typeof section.showCredits === 'boolean' ? section.showCredits : true,
+    showCommandCard: section.showCommandCard === true,
     readMaxChars: int(section.readMaxChars, 60_000),
     citeStyle: oneOf(CITE_STYLES, section.citeStyle, 'ieee'),
     citeExcludePreprints: section.citeExcludePreprints === true,
@@ -105,6 +110,7 @@ const draftOf = (s: SearchSettings): SearchDraft => ({
   resultsPerSource: Object.fromEntries(UNIFIED_SOURCES.map((p) => [p, String(s.resultsPerSource[p])])) as Record<UnifiedSource, string>,
   abstractMaxChars: String(s.abstractMaxChars),
   showCredits: s.showCredits,
+  showCommandCard: s.showCommandCard,
   readMaxChars: String(s.readMaxChars),
   citeStyle: s.citeStyle,
   citeExcludePreprints: s.citeExcludePreprints,
@@ -206,6 +212,8 @@ export class SearchSettingsController {
       || draft.readMaxChars.trim() !== String(stored.readMaxChars)
     const user = isRecord(snapshot?.user) ? snapshot.user : {}
     const state: SearchSettingsState = {
+      committed: stored,
+      revision: snapshot?.revision,
       status: snapshot === undefined ? 'unsupported' : snapshot.status,
       writable: snapshot?.writable ?? false,
       draft,
@@ -229,7 +237,7 @@ export class SearchSettingsController {
     }
     if (p.abstractMaxChars !== undefined && p.abstractMaxChars !== stored.abstractMaxChars) ops.push({ op: 'set', path: ['abstractMaxChars'], value: p.abstractMaxChars })
     if (p.readMaxChars !== undefined && p.readMaxChars !== stored.readMaxChars) ops.push({ op: 'set', path: ['readMaxChars'], value: p.readMaxChars })
-    for (const field of ['showCredits', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize'] as const) {
+    for (const field of ['showCredits', 'showCommandCard', 'citeStyle', 'citeExcludePreprints', 'drawModel', 'drawImageSize'] as const) {
       if (draft[field] !== stored[field]) ops.push({ op: 'set', path: [field], value: draft[field] })
     }
     return ops

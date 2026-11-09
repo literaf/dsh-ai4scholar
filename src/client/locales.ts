@@ -63,6 +63,11 @@ export type Ai4ScholarLocaleKey =
   | 'topUp'
   | 'cmdDefaults'
   | 'cmdHelp'
+  | 'commandCardLabel'
+  | 'commandCardHint'
+  | 'commandCardFailed'
+  | 'commandCardRetry'
+  | 'commandCardTurnSpent'
   | 'cmdFailed'
   | 'testKey'
   | 'recheckKey'
@@ -197,6 +202,11 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   statKeyCap: 'Key cap',
   cmdDefaults: 'Default search',
   cmdHelp: 'Commands & usage',
+  commandCardLabel: 'Show the command card after replies',
+  commandCardHint: 'Show commands below the latest completed reply. Buttons prepare a draft; they do not send it.',
+  commandCardFailed: 'The command menu is temporarily unavailable.',
+  commandCardRetry: 'Retry',
+  commandCardTurnSpent: 'This turn: {credits} credits',
   topUp: 'Top up ↗',
   cmdFailed: 'could not read the balance',
   testKey: 'Check balance',
@@ -325,6 +335,11 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   statKeyCap: 'Key 上限',
   cmdDefaults: '默认检索',
   cmdHelp: '全部命令与用法',
+  commandCardLabel: '在对话末尾显示命令卡片',
+  commandCardHint: '在最新回复结束后显示命令菜单。点击命令只填入草稿，不会自动发送。',
+  commandCardFailed: '暂时无法读取命令菜单。',
+  commandCardRetry: '重试',
+  commandCardTurnSpent: '本轮消耗 {credits} 积分',
   topUp: '官网充值 ↗',
   cmdFailed: '读取余额失败',
   testKey: '查询余额',

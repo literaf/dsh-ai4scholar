@@ -408,7 +408,7 @@ const DRAW_MODEL_KEYS = { flash: 'modelFlash', flash31: 'modelFlash31', pro: 'mo
 function SettingsGroups(props: Ai4ScholarSettingsProps) {
   const { t } = props
   const state = props.useSearch((snapshot) => snapshot)
-  const ids = { abstract: useId(), read: useId(), credits: useId(), style: useId(), preprints: useId(), model: useId(), size: useId() }
+  const ids = { abstract: useId(), read: useId(), credits: useId(), commandCard: useId(), style: useId(), preprints: useId(), model: useId(), size: useId() }
   useEffect(() => { props.attachSearch() }, [props.attachSearch])
 
   if (state.status === 'unsupported' || state.status === 'unavailable') {
@@ -498,6 +498,7 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
             onEdit={(text) => { props.editSearch('readMaxChars', text) }}
           />
           <SwitchRow id={ids.credits} label={t('creditsLabel')} on={draft.showCredits} disabled={disabled} onToggle={() => { props.editSearch('showCredits', !draft.showCredits) }} />
+          <SwitchRow id={ids.commandCard} label={t('commandCardLabel')} hint={t('commandCardHint')} on={draft.showCommandCard} disabled={disabled} onToggle={() => { props.editSearch('showCommandCard', !draft.showCommandCard) }} />
         </div>
       </div>
 

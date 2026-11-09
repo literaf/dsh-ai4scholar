@@ -10,6 +10,7 @@ import { parseBalance } from './balance.js'
 import { cls } from './styles.js'
 import { Ai4ScholarBrand } from './Brand.js'
 import type { CommandView } from './plugin-config.js'
+import { CommandMenu } from './CommandMenu.js'
 
 /** Registration-side face of the command card (nothing injected today; kept for symmetry). */
 export interface Ai4ScholarCommandFace {
@@ -94,10 +95,10 @@ export function Ai4ScholarCommandCard(props: Ai4ScholarCommandCardProps) {
         {help.length > 0 ? <details className={cls.cmdHelp}>
           <summary>{t('cmdHelp')}</summary>
           <div className={cls.cmdHelpBody}>
-            {commands.length > 0 ? <dl className={cls.cmdCommands}>{commands.map((line) => {
+            {commands.length > 0 ? <CommandMenu commands={commands.map(line => {
               const [command, ...title] = line.split(/\s+/)
-              return <div key={command}><dt><code>{command}</code></dt><dd>{title.join(' ')}</dd></div>
-            })}</dl> : null}
+              return { name: command!.slice(1), title: title.join(' ') }
+            })}/> : null}
             {hints.length > 0 ? <p className={cls.cmdPre}>{hints.join('\n')}</p> : null}
           </div>
         </details> : null}

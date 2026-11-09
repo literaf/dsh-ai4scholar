@@ -117,7 +117,7 @@ Version 0.6.0 adds **Ai4Scholar** to the sidebar. Since 0.6.1, the sidebar uses 
 
 **Check for updates**, beside Settings, checks the latest stable release on npm and shows both versions. A newer local test build is shown as ahead, never as a downgrade target. Release notes are linked; when a new version exists, **Manage plugin** opens the host’s plugin page. Checking does not install anything or use API credits.
 
-Pick a workspace folder and ask away. Desktop upgrades: `dsh plugin --profile desktop add dsh-ai4scholar@latest`, then restart Desktop. For the Web profile, use `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`. Registry-installed bundles can also use the host’s plugin manager; replace a local test package with a registry installation to restore native version management.
+Pick a workspace folder and ask away. On current Desktop, use **Plugins → dsh-ai4scholar → Version** to update a registry installation. Desktop manages its profile itself; the CLI does not modify it. To replace a local test package, uninstall it in Desktop and use **Add plugin** with `dsh-ai4scholar@0.6.2`, then enable it. Your API key stays in the shared credentials store. For the Web profile, use `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`.
 
 Prefer files or CI? The plugin resolves the credential reference `AI4SCHOLAR_API_KEY`, so any of these also work (highest precedence first): `export AI4SCHOLAR_API_KEY=…` in the shell that launches dsh · a line in `$DSH_HOME/.credentials.yaml` · a line in the project or `$DSH_HOME/.env`. The card reports which layer is supplying the key and goes read-only when the environment does. Headless has no settings page, so use one of these there.
 
@@ -141,6 +141,7 @@ Open **Plugins → AI4Scholar** (or **Settings → AI4Scholar**; both edit the s
 
 - **Search**: tick the platforms `search_papers` queries when the model names none (Semantic Scholar only by default), and set each platform's result count. Semantic Scholar, PubMed, and Chinese literature return up to 100 per search, billed once each; arXiv returns up to 100 for free. Google Scholar returns 1–10 per call (one credit); the model follows nextOffset with the same result count for more. All sources support pagination through their standalone tools; every additional billed request costs credits. The count is also the default for that platform's own search tool.
 - **Results**: abstract length shown to the model (0–5000 characters, default 600), full-text slice per `read_*` call (2,000–200,000, default 60,000), and whether results carry the credit line.
+- **Command card**: enable **Show the command card after replies** (off by default) to show the command menu below the latest completed answer. Click a command to fill the current conversation draft, add your request, then send. Existing drafts are preserved. Starting a new turn hides the previous menu; displaying it does not query AI4Scholar or the model. Requires the host's turn-tail extension and authenticated plugin Fetch channel; older hosts keep the manual `/ai4s` and `/ai4scholar` cards.
 - **Citations and figures**: `auto_cite` reference style (IEEE by default) and whether to leave out preprints; `sci_draw` model (Flash 3.1 by default) and resolution (2K by default).
 
 The model can still pass its own values for a single call. **Save** writes the changed fields into your profile's `cordis.patch.yml` and the plugin reloads with them. The next tool call and new conversations use the new values. **Restore defaults** removes them again. This page needs DeepSeek Harness 0.2.1 or later; on older versions it tells you to edit the file instead.
@@ -170,6 +171,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     command: true                    # the /ai4scholar slash command
     balanceRoute: true               # GET /ai4scholar/balance for the settings card's key test
     showCredits: true                # credit line on billed results (plugin page)
+    showCommandCard: false           # opt-in command menu after the latest reply (plugin page)
     promptGuidance: true             # short system-prompt section describing the tools
     promptOrder: 150
     # search_papers default platforms (plugin page); any of

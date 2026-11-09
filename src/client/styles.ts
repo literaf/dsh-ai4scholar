@@ -120,6 +120,7 @@ export const cls = {
   cmdHelp: `${P}-cmd-help`,
   cmdHelpBody: `${P}-cmd-help-body`,
   cmdCommands: `${P}-cmd-commands`,
+  cmdChoice: `${P}-cmd-choice`,
 } as const
 
 export const CSS = `
@@ -176,6 +177,10 @@ export const CSS = `
 .${cls.cmdCommands} dt { min-width: 0; line-height: 18px; }
 .${cls.cmdCommands} code { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-primary); }
 .${cls.cmdCommands} dd { margin: 0; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
+.${cls.cmdChoice} { display: block; max-width: 100%; text-align: left; border: 0; background: transparent; padding: 2px 0; font: inherit; cursor: pointer; border-radius: 3px; }
+.${cls.cmdChoice}:hover { text-decoration: underline; }
+.${cls.cmdChoice}:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 3px; }
+@media (pointer: coarse) { .${cls.cmdChoice} { min-height: 44px; } }
 @container ai4s-account (max-width: 760px) {
   .${cls.cmdCommands} { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
