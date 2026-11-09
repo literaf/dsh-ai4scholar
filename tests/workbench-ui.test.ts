@@ -52,6 +52,7 @@ describe('workbench browser controls', () => {
       previousPage: vi.fn(),
       nextPage: vi.fn(),
       selectPaper: vi.fn(),
+      openPluginManager: vi.fn(() => false),
       edit: vi.fn(),
       save: vi.fn(),
       remove: vi.fn(),

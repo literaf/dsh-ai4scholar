@@ -7,6 +7,7 @@ import type { Ai4ScholarCardFace } from './Card.js'
 import type { CardStore } from './controller.js'
 import type { InjectedFace } from './plugin-config.js'
 import { Ai4ScholarBrand, Ai4ScholarLogo } from './Brand.js'
+import { UpdateCheck } from './UpdateCheck.js'
 import { NS } from './locales.js'
 import type { Ai4ScholarLocaleKey } from './locales.js'
 import { WorkbenchController } from './workbench-controller.js'
@@ -25,6 +26,7 @@ export interface WorkbenchFace extends Ai4ScholarCardFace {
   previousPage(): void
   nextPage(): void
   selectPaper(index: number): void
+  openPluginManager(): boolean
 }
 type Props = PropsLocale<'ai4scholar'> & InjectedFace<WorkbenchFace>
 type Translate = Props['t']
@@ -554,10 +556,13 @@ export function Ai4ScholarWorkbench(props: Props) {
           <span className="ai4s-wb-header-divider" />
           <span className="ai4s-wb-header-title">{t(settings ? 'wbSettings' : 'wbTitle')}</span>
         </div>
-        <button type="button" className="ai4s-wb-button" onClick={() => (settings ? closeSettings() : showSettings())}>
-          <Icon name={settings ? 'back' : 'settings'} size={16} />
-          {t(settings ? 'wbBack' : 'wbSettings')}
-        </button>
+        <div className="ai4s-wb-header-actions">
+          <button type="button" className="ai4s-wb-button" onClick={() => (settings ? closeSettings() : showSettings())}>
+            <Icon name={settings ? 'back' : 'settings'} size={16} />
+            {t(settings ? 'wbBack' : 'wbSettings')}
+          </button>
+          <UpdateCheck t={t} openPluginManager={props.openPluginManager} />
+        </div>
       </header>
       {settings ? (
         <div className="ai4s-wb-settings">
@@ -1062,6 +1067,12 @@ export function applyWorkbench(ctx: ClientContext, settings: Ai4ScholarCardFace)
       void controller.next()
     },
     selectPaper: (index) => controller.select(index),
+    openPluginManager: () => {
+      const navigation = ctx.get('pluginNavigation' as never) as { openBundle?(name: string): void } | undefined
+      if (!navigation?.openBundle) return false
+      navigation.openBundle('dsh-ai4scholar')
+      return true
+    },
   }
   const slots = ctx.slots as unknown as WorkbenchSlots
   slots.inject('main', () =>

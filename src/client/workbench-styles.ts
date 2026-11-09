@@ -22,8 +22,9 @@ export const WORKBENCH_CSS = `
 .ai4s-wb svg{flex-shrink:0}
 .ai4s-wb h1,.ai4s-wb h2,.ai4s-wb h3,.ai4s-wb p{margin:0}
 .ai4s-wb mark{background:color-mix(in srgb,#b39938 24%,transparent);color:inherit;border-radius:2px;padding:0 1px}
-.ai4s-wb-header{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:36px;margin-bottom:18px;flex-shrink:0;font-size:13px;padding-left:max(0px,calc(var(--dsh-frame-leading-clearance,0px) - 24px))}
+.ai4s-wb-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 16px;min-height:36px;margin-bottom:18px;flex-shrink:0;font-size:13px;padding-left:max(0px,calc(var(--dsh-frame-leading-clearance,0px) - 24px))}
 .ai4s-wb-header>div{display:flex;align-items:center;gap:12px;min-width:0}
+.ai4s-wb-header>.ai4s-wb-header-actions{gap:8px;flex-shrink:0;margin-left:auto}
 .ai4s-wb-header-divider{height:16px;width:1px;background:var(--wb-border)}
 .ai4s-wb-header-title{color:var(--wb-muted)}
 .ai4s-wb-header .ai4s-cmd-brand{display:flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap}
@@ -31,6 +32,15 @@ export const WORKBENCH_CSS = `
 .ai4s-wb-button:hover:not(:disabled),.ai4s-wb-links a:hover{background:var(--wb-hover);border-color:color-mix(in srgb,var(--wb-text) 18%,transparent)}
 .ai4s-wb-icon-button{display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;border-radius:8px;width:32px;height:32px;flex-shrink:0;color:var(--wb-muted)}
 .ai4s-wb-icon-button:hover{background:var(--wb-hover);color:var(--wb-text)}
+.ai4s-wb-update{position:relative}
+.ai4s-wb-update-popover{position:absolute;z-index:40;top:calc(100% + 8px);right:0;width:min(320px,calc(100cqw - 2px));max-width:calc(100vw - 32px);background:var(--wb-bg);border:1px solid var(--wb-border);border-radius:14px;box-shadow:0 8px 30px #0002,0 2px 6px #0001;overflow:hidden}
+.ai4s-wb-update-body{padding:16px;display:flex;flex-direction:column;gap:14px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.ai4s-wb-update-result{font-weight:550}
+.ai4s-wb-update-body dl{display:flex;flex-direction:column;gap:8px;margin:0}
+.ai4s-wb-update-body dl>div{display:flex;justify-content:space-between;gap:16px}
+.ai4s-wb-update-body dt,.ai4s-wb-update-hint{color:var(--wb-muted)}
+.ai4s-wb-update-body dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
+.ai4s-wb-update-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--wb-rule)}
 .ai4s-wb-workspace{display:flex;flex-direction:column;min-width:0;min-height:0;gap:12px;flex:1}
 .ai4s-wb-workspace>:not(.ai4s-wb-results){flex-shrink:0}
 .ai4s-wb-start{width:100%;max-width:896px;margin:0 auto;justify-content:center;padding:40px 0 100px;min-height:min-content}

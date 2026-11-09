@@ -5,6 +5,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 ## [Unreleased]
 
 ### Added
+- A workbench **Check for updates** button beside Settings, showing the installed version and latest stable npm release, with release notes and a plugin-management shortcut. Checks are read-only, support local prerelease builds, and do not suggest downgrading a newer build.
 - An AI4Scholar sidebar workbench with a search start page, source-specific filters, paginated results, and a paper/detail split view. It reuses the existing search tools and shared API key/settings; the Settings and plugin-detail entrances remain available.
 - Direct searches for Semantic Scholar, full-text excerpts, Google Scholar, PubMed, patents, Chinese literature, and preprints. Search results and recent queries stay in memory during the session; previously loaded pages do not trigger another paid request.
 - An authenticated owner-only workbench API. Hosts without this channel retain their existing tools and settings.
