@@ -18,6 +18,23 @@ const result = (query: string, offset = 0): WorkbenchResult => ({
 type Response = WorkbenchResponse<WorkbenchCatalog | WorkbenchResult>
 
 describe('workbench request lifecycle', () => {
+  it.each(['semantic-scholar', 'arxiv'] as const)('preserves a query typed before the initial %s catalog finishes loading', async (defaultSource) => {
+    let finish: (response: Response) => void = () => {}
+    const fetch = vi.fn(() => new Promise<Response>((resolve) => { finish = resolve }))
+    const controller = new WorkbenchController(fetch)
+    const loading = controller.attach()
+    controller.edit({ query: 'early research query' })
+    finish({ ok: true, value: { ...catalog, defaultSource } })
+    await loading
+    expect(controller.store.getSnapshot()).toMatchObject({
+      loading: false,
+      source: defaultSource,
+      draft: { query: 'early research query', limit: defaultSource === 'arxiv' ? 25 : 10 },
+    })
+    expect(fetch).toHaveBeenCalledOnce()
+    controller.dispose()
+  })
+
   it('uses submitted parameters for paging, reuses cached pages, and restores a source’s results', async () => {
     const fetch = vi.fn(
       async (body: WorkbenchRequest | undefined): Promise<Response> => ({

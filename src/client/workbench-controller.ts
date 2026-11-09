@@ -116,9 +116,11 @@ export class WorkbenchController {
         source,
         loading: false,
         draft:
-          firstLoad || changedSource
-            ? blank(entry?.defaultLimit)
-            : { ...state.draft, limit: Math.min(limit, entry?.maxLimit ?? 100) },
+          firstLoad
+            ? { ...blank(entry?.defaultLimit), query: state.draft.query }
+            : changedSource
+              ? blank(entry?.defaultLimit)
+              : { ...state.draft, limit: Math.min(limit, entry?.maxLimit ?? 100) },
         ...(changedSource ? { pages: [], pageIndex: 0, selected: 0 } : {}),
       })
     } catch (error) {

@@ -14,6 +14,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 - Refined the workbench using the website's search layouts: a compact search toolbar, staged filter and history popovers, denser result rows, independently scrolling panes, and resizable/collapsible paper details. Narrow windows use a result-to-detail flow that preserves the list position.
 
 ### Fixed
+- Preserve search text entered while the workbench's initial source settings are still loading.
 - Wait for shared search defaults to refresh when returning from Settings, so an immediate search cannot use the old result count.
 - Corrected the workbench sidebar name to `Ai4Scholar` and replaced the generic search icon with the bundled brand logo.
 - Enlarged the sidebar's Ai4 wordmark and removed its black tile; the lettering follows the theme, with a darker green accent in light mode for better contrast.
