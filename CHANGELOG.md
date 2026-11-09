@@ -15,6 +15,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 ### Fixed
 - Wait for shared search defaults to refresh when returning from Settings, so an immediate search cannot use the old result count.
 - Corrected the workbench sidebar name to `Ai4Scholar` and replaced the generic search icon with the bundled brand logo.
+- Enlarged the sidebar's Ai4 wordmark and removed its black tile; the lettering follows the theme, with a darker green accent in light mode for better contrast.
 
 ### Documentation
 - Added a repository release policy and agent instructions covering version bumps, prerelease packages, release notes, and publication verification. Linked the policy from both READMEs and included it in future packages.

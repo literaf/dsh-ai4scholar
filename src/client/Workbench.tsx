@@ -1070,7 +1070,7 @@ export function applyWorkbench(ctx: ClientContext, settings: Ai4ScholarCardFace)
   slots.inject('sidebar.panellist', () =>
     slots.register(
       { name: 'sidebar.panellist', id: WORKBENCH_ID, order: 65, label: () => 'Ai4Scholar' },
-      ({ size }) => <Ai4ScholarLogo size={size ?? 20} />,
+      ({ size }) => <Ai4ScholarLogo size={size ?? 20} variant="mark" />,
     ),
   )
 }
