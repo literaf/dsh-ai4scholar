@@ -4,9 +4,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-09
+
 ### Added
 - A workbench **Check for updates** button beside Settings, showing the installed version and latest stable npm release, with release notes and a plugin-management shortcut. Checks are read-only, support local prerelease builds, and do not suggest downgrading a newer build.
-- An AI4Scholar sidebar workbench with a search start page, source-specific filters, paginated results, and a paper/detail split view. It reuses the existing search tools and shared API key/settings; the Settings and plugin-detail entrances remain available.
+- An Ai4Scholar sidebar workbench with a search start page, source-specific filters, paginated results, and a paper/detail split view. It reuses the existing search tools and shared API key/settings; the Settings and plugin-detail entrances remain available.
 - Direct searches for Semantic Scholar, full-text excerpts, Google Scholar, PubMed, patents, Chinese literature, and preprints. Search results and recent queries stay in memory during the session; previously loaded pages do not trigger another paid request.
 - An authenticated owner-only workbench API. Hosts without this channel retain their existing tools and settings.
 
@@ -21,6 +23,12 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ### Documentation
 - Added a repository release policy and agent instructions covering version bumps, prerelease packages, release notes, and publication verification. Linked the policy from both READMEs and included it in future packages.
+
+### Compatibility and known limitations
+- Workbench searches and update checks require the host's authenticated plugin Fetch channel; validated on Harness 0.2.2-rc.1. Older hosts retain the existing tools and settings entrances.
+- Google Scholar author lookup can still return no candidates; the author command defaults to Semantic Scholar.
+- Workbench details show metadata and the available abstract, excerpt, or patent summary; they do not fetch the full paper. bioRxiv/medRxiv browse by category and recent days.
+- Update checks query the latest stable npm release. Installation remains in the host's plugin manager; local test packages may need to be replaced with a registry installation.
 
 ## [0.5.2] - 2026-11-08
 
