@@ -4,6 +4,9 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+### Changed
+- Use a monochrome search icon for the Ai4Scholar sidebar entry, matching the other navigation icons in light and dark themes.
+
 ## [0.6.0] - 2026-11-09
 
 ### Added
