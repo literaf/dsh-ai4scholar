@@ -80,6 +80,7 @@ export class WorkbenchController {
     if (this.disposed || this.catalogRequest) return
     const controller = new AbortController()
     this.catalogRequest = controller
+    this.patch({ loading: true })
     try {
       const response = await this.fetcher(undefined, controller.signal)
       if (this.disposed || controller.signal.aborted) return
@@ -178,6 +179,9 @@ export class WorkbenchController {
   }
   async search(): Promise<void> {
     const state = this.store.getSnapshot()
+    // Returning from Settings refreshes the defaults. Never bill a request
+    // using the previous configuration while that refresh is in flight.
+    if (this.disposed || state.loading) return
     const d = state.draft
     const request: WorkbenchRequest = { source: state.source, query: d.query.trim(), limit: d.limit }
     if (!request.query) return

@@ -102,4 +102,31 @@ describe('workbench request lifecycle', () => {
     expect(controller.store.getSnapshot().draft.limit).toBe(12)
     controller.dispose()
   })
+
+  it('does not start a billed search with stale defaults while returning from settings', async () => {
+    let completeRefresh: ((response: Response) => void) | undefined
+    let reads = 0
+    const fetch = vi.fn((body: WorkbenchRequest | undefined): Promise<Response> => {
+      if (body) return Promise.resolve({ ok: true, value: result(body.query) })
+      if (reads++ === 0) return Promise.resolve({ ok: true, value: catalog })
+      return new Promise((resolve) => {
+        completeRefresh = resolve
+      })
+    })
+    const controller = new WorkbenchController(fetch)
+    await controller.attach()
+    controller.edit({ query: 'bird migration' })
+    const refresh = controller.attach()
+    expect(controller.store.getSnapshot().loading).toBe(true)
+    await controller.search()
+    expect(fetch.mock.calls.filter(([request]) => request)).toHaveLength(0)
+    completeRefresh!({
+      ok: true,
+      value: { ...catalog, sources: catalog.sources.map((s) => ({ ...s, defaultLimit: 5 })) },
+    })
+    await refresh
+    await controller.search()
+    expect(fetch.mock.calls.at(-1)?.[0]).toMatchObject({ query: 'bird migration', limit: 5 })
+    controller.dispose()
+  })
 })
