@@ -4,9 +4,17 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-10
+
 ### Changed
-- Extend `sci_draw` and its model settings to all eight website image models. Forward independent GPT `quality` and Gemini `thinking_level`; keep omitted quality compatible with existing GPT Image 2 pricing. Nano Banana 2 Lite defaults to its supported 1K resolution.
-- The API still validates model-specific combinations and quotes/charges centrally; quality and resolution both affect the price. No package release has been published for these changes yet.
+- Extend `sci_draw` and its model settings to all eight website image models, including GPT Image 2.6 Flare/Sunburst and Nano Banana 2.1/2 Lite.
+- Forward independent GPT `quality` and Gemini `thinking_level` parameters. Existing GPT Image 2 calls that omit quality keep their previous routing and pricing; higher quality and resolution can cost more.
+- Limit Nano Banana and Nano Banana 2 Lite settings to their supported 1K resolution. Explicit API combinations remain validated by the website before charging.
+- Remove the retired `critic` and `iterate` actions from tool discovery. Use normal conversation for discussion and `edit` for changes to an existing image.
+
+### Validation and known limitations
+- Model-specific payloads, legacy defaults, reference images, authentication, cancellation and credit receipts are covered by offline tests. This release does not claim paid validation of every model, resolution or quality combination.
+- The website's earlier supplier tests observed a timeout for GPT Image 2.6 Sunburst at max quality. This package update does not remove that upstream limitation.
 
 ## [0.6.2] - 2026-11-09
 
