@@ -43,7 +43,7 @@ export const CITE_STYLES = ['ieee', 'apa', 'vancouver', 'nature', 'numbered'] as
 export type CiteStyle = (typeof CITE_STYLES)[number]
 
 /** sci_draw models, fastest first. */
-export const DRAW_MODELS = ['flash', 'flash31', 'pro', 'gptimage'] as const
+export const DRAW_MODELS = ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite'] as const
 export type DrawModel = (typeof DRAW_MODELS)[number]
 
 /** sci_draw output resolutions. */

@@ -101,7 +101,7 @@ export function readSettings(value: unknown): SearchSettings {
     citeStyle: oneOf(CITE_STYLES, section.citeStyle, 'ieee'),
     citeExcludePreprints: section.citeExcludePreprints === true,
     drawModel: oneOf(DRAW_MODELS, section.drawModel, 'flash31'),
-    drawImageSize: oneOf(DRAW_SIZES, section.drawImageSize, '2K'),
+    drawImageSize: section.drawModel === 'bananalite' || section.drawModel === 'flash' ? '1K' : oneOf(DRAW_SIZES, section.drawImageSize, '2K'),
   }
 }
 

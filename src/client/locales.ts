@@ -135,6 +135,10 @@ export type Ai4ScholarLocaleKey =
   | 'modelFlash31'
   | 'modelPro'
   | 'modelGptImage'
+  | 'modelGpt26Flare'
+  | 'modelGpt26Sunburst'
+  | 'modelBanana21'
+  | 'modelBananaLite'
   | 'sizeLabel'
   | 'sizeHint'
 
@@ -271,10 +275,14 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   preprintsHint: 'Applies to automatic citations.',
   modelLabel: 'Figure model',
   modelHint: 'Faster models cost fewer credits.',
-  modelFlash: 'Flash (fastest)',
-  modelFlash31: 'Flash 3.1 (balanced)',
-  modelPro: 'Pro (best quality)',
-  modelGptImage: 'GPT Image (illustrations)',
+  modelFlash: 'Nano Banana (1K)',
+  modelFlash31: 'Nano Banana 2',
+  modelPro: 'Nano Banana Pro',
+  modelGptImage: 'GPT Image 2',
+  modelGpt26Flare: 'GPT Image 2.6 Flare',
+  modelGpt26Sunburst: 'GPT Image 2.6 Sunburst',
+  modelBanana21: 'Nano Banana 2.1',
+  modelBananaLite: 'Nano Banana 2 Lite (1K)',
   sizeLabel: 'Figure resolution',
   sizeHint: 'Higher resolutions take longer.',
 }
@@ -404,10 +412,14 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   preprintsHint: '仅用于自动引用。',
   modelLabel: '配图模型',
   modelHint: '越快的模型消耗积分越少。',
-  modelFlash: 'Flash（最快）',
-  modelFlash31: 'Flash 3.1（均衡）',
-  modelPro: 'Pro（质量最高）',
-  modelGptImage: 'GPT Image（插画）',
+  modelFlash: 'Nano Banana（1K）',
+  modelFlash31: 'Nano Banana 2',
+  modelPro: 'Nano Banana Pro',
+  modelGptImage: 'GPT Image 2',
+  modelGpt26Flare: 'GPT Image 2.6 Flare',
+  modelGpt26Sunburst: 'GPT Image 2.6 Sunburst',
+  modelBanana21: 'Nano Banana 2.1',
+  modelBananaLite: 'Nano Banana 2 Lite (1K)',
   sizeLabel: '配图分辨率',
   sizeHint: '分辨率越高，生成越慢。',
 }

@@ -398,7 +398,7 @@ function KeyCheckRow(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState; 
 
 /** Choices for the select and segmented controls, with their copy keys. */
 const CITE_STYLE_KEYS = { ieee: 'styleIeee', apa: 'styleApa', vancouver: 'styleVancouver', nature: 'styleNature', numbered: 'styleNumbered' } as const satisfies Record<CiteStyle, string>
-const DRAW_MODEL_KEYS = { flash: 'modelFlash', flash31: 'modelFlash31', pro: 'modelPro', gptimage: 'modelGptImage' } as const satisfies Record<DrawModel, string>
+const DRAW_MODEL_KEYS = { flash: 'modelFlash', flash31: 'modelFlash31', pro: 'modelPro', gptimage: 'modelGptImage', gpt26flare: 'modelGpt26Flare', gpt26sunburst: 'modelGpt26Sunburst', banana21: 'modelBanana21', bananalite: 'modelBananaLite' } as const satisfies Record<DrawModel, string>
 
 /**
  * Everything the Host's configuration form holds, in three groups that share
@@ -521,7 +521,7 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
             value={draft.drawModel}
             options={DRAW_MODELS.map((v) => ({ value: v, label: t(DRAW_MODEL_KEYS[v]) }))}
             disabled={disabled}
-            onPick={(v) => { props.editSearch('drawModel', v as DrawModel) }}
+            onPick={(v) => { props.editSearch('drawModel', v as DrawModel); if (v === 'bananalite' || v === 'flash') props.editSearch('drawImageSize', '1K') }}
           />
           <div className={`${cls.row} ${cls.rowInline}`}>
             <div className={cls.rowText}>
@@ -536,7 +536,7 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
                   role="radio"
                   aria-checked={draft.drawImageSize === v}
                   className={`${cls.segment}${draft.drawImageSize === v ? ` ${cls.segmentOn}` : ''}`}
-                  disabled={disabled}
+                  disabled={disabled || ((draft.drawModel === 'bananalite' || draft.drawModel === 'flash') && v !== '1K')}
                   onClick={() => { props.editSearch('drawImageSize', v) }}
                 >
                   {v}

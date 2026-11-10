@@ -9,9 +9,10 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { InferValue } from '@deepseek-ai/dsh-tools'
 import { CREDITS_SCHEMA, compact, creditsMeta, formatCredits, isRecord, presentGenericWithCredits, str } from '../paper.js'
 import type { Runtime } from '../runtime.js'
+import { DRAW_MODELS } from '../shared/search-settings.js'
 
-const ACTIONS = ['smart', 'generate', 'edit', 'style', 'compose', 'iterate', 'critic', 'svg', 'vectorize'] as const
-const NEEDS_IMAGES = new Set(['edit', 'style', 'compose', 'iterate', 'critic', 'vectorize'])
+const ACTIONS = ['smart', 'generate', 'edit', 'style', 'compose', 'svg', 'vectorize'] as const
+const NEEDS_IMAGES = new Set(['edit', 'style', 'compose', 'vectorize'])
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -40,14 +41,16 @@ export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
   const { client, timeouts, generation } = runtime
   ctx.tools.register(defineTool({
     name: 'sci_draw',
-    description: 'Generate or process scientific figures with AI (AI4Scholar Nano Draw; costs credits). Actions: smart (auto-optimizes the prompt, Chinese OK — recommended), generate (text-to-image), edit (modify an image), style (style transfer), compose (combine 2+ images), iterate (auto-review and refine), critic (expert review, returns text), svg (vector graphic), vectorize (PNG/JPG → PDF + PPTX). Generation takes 30–90 seconds — tell the user to wait before calling. Show the returned imageUrl to the user as a Markdown image.',
+    description: 'Generate or process scientific figures with AI (AI4Scholar Nano Draw; costs credits). Actions: smart (auto-optimizes the prompt, Chinese OK — recommended), generate (text-to-image), edit (modify an image), style (style transfer), compose (combine 2+ images), svg (vector graphic), vectorize (PNG/JPG → PDF + PPTX). Generation takes 30–90 seconds — tell the user to wait before calling. Show the returned imageUrl to the user as a Markdown image.',
     parameters: {
       action: { type: 'string', required: true, enum: ACTIONS, description: 'Operation.' },
-      prompt: { type: 'string', description: 'Description or instruction; may be empty for critic and vectorize.' },
-      model: { type: 'string', enum: ['flash', 'flash31', 'pro', 'gptimage'], description: `flash (fast), flash31 (balanced), pro (highest quality), gptimage (GPT Image 2, detailed illustrations). Default ${generation.drawModel}, as the user configured.` },
-      image_size: { type: 'string', enum: ['1K', '2K', '4K'], description: `Output resolution (default ${generation.drawImageSize}, as the user configured).` },
+      prompt: { type: 'string', description: 'Description or instruction; may be empty for vectorize.' },
+      model: { type: 'string', enum: DRAW_MODELS, description: `flash (Nano Banana, 1K), flash31 (Nano Banana 2), pro (Nano Banana Pro), banana21 (Nano Banana 2.1), bananalite (Nano Banana 2 Lite, 1K only), gptimage (GPT Image 2), gpt26flare (GPT Image 2.6 Flare), gpt26sunburst (GPT Image 2.6 Sunburst). Default ${generation.drawModel}, as the user configured.` },
+      image_size: { type: 'string', enum: ['512px', '1K', '2K', '4K'], description: `Output resolution, independent of quality. Only flash31 supports 512px; flash and bananalite use 1K (default ${generation.drawImageSize}, as the user configured).` },
+      quality: { type: 'string', enum: ['low', 'medium', 'high', 'xhigh', 'max'], description: 'GPT image quality, independent of resolution; higher tiers cost more. gptimage supports low/medium/high; GPT 2.6 also supports xhigh/max. Omit for Gemini and to preserve legacy GPT Image 2 pricing.' },
+      thinking_level: { type: 'string', enum: ['minimal', 'medium', 'high'], description: 'Gemini only: banana21 supports minimal/medium/high; flash31 and bananalite support minimal/high. Omit for GPT, flash and pro.' },
       aspect_ratio: { type: 'string', description: 'Aspect ratio: 1:1 (default), 16:9, 4:3, 3:4, 9:16.' },
-      images: { type: 'array', items: { type: 'string' }, description: 'Input images as URLs or base64 data URIs; required for edit/style/compose/iterate/critic/vectorize.' },
+      images: { type: 'array', items: { type: 'string' }, description: 'Input images as URLs or base64 data URIs; required for edit/style/compose/vectorize.' },
       style_preset: { type: 'string', description: 'Style preset name (style action).' },
       lang: { type: 'string', enum: ['en', 'zh'], description: 'Language of critique/optimized prompt (default en).' },
       vectorize_mode: { type: 'string', enum: ['fast', 'standard', 'premium'], description: 'Vectorize quality (vectorize action; default fast).' },
@@ -84,7 +87,9 @@ export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
       const apiKey = await runtime.requireApiKey()
       const body: Record<string, unknown> = { action: args.action, prompt }
       body.model = args.model ?? generation.drawModel
-      body.imageSize = args.image_size ?? generation.drawImageSize
+      body.imageSize = args.image_size ?? (body.model === 'bananalite' ? '1K' : generation.drawImageSize)
+      if (args.quality !== undefined) body.quality = args.quality
+      if (args.thinking_level !== undefined) body.thinkingLevel = args.thinking_level
       if (args.aspect_ratio !== undefined) body.aspectRatio = args.aspect_ratio
       if (images.length > 0) body.images = images
       if (args.style_preset !== undefined) body.stylePreset = args.style_preset

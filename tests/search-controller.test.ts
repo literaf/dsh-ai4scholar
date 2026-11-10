@@ -11,6 +11,7 @@ describe('readSettings', () => {
     // A platform without its own count follows the file-only shared default.
     expect(readSettings({ defaultMaxResults: 20, resultsPerSource: { 'semantic-scholar': 100 } }).resultsPerSource).toEqual({ 'semantic-scholar': 100, 'pubmed': 20, 'arxiv': 20, 'google-scholar': 10, 'chinese': 20 })
     expect(readSettings({ citeStyle: 'bogus', drawImageSize: '8K' })).toMatchObject({ citeStyle: 'ieee', drawImageSize: '2K' })
+    expect(readSettings({ drawModel: 'bananalite', drawImageSize: '4K' })).toMatchObject({ drawModel: 'bananalite', drawImageSize: '1K' })
   })
 })
 

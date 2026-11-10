@@ -661,3 +661,20 @@ describe('google scholar credits', () => {
     expect(value.credits).toEqual({ charged: 1, remaining: 99, sessionTotal: 1 })
   })
 })
+
+describe('drawing model and quality options', () => {
+  it('forwards independent quality/thinking, exposes all eight models, and preserves omitted quality', async () => {
+    stub = stubFetch(() => ({ json: { success: true, imageUrl: 'https://cdn.example/fig.png' } }))
+    const tool = mount().tools.get('sci_draw')!
+    expect(tool.parameters).toMatchObject({ properties: { model: { enum: ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite'] } } })
+    await tool.execute({ action: 'edit', prompt: 'label', images: ['https://cdn.example/ref.png'], model: 'gpt26flare', quality: 'max', image_size: '1K' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'gpt26flare', quality: 'max', imageSize: '1K', images: ['https://cdn.example/ref.png'] })
+    await tool.execute({ action: 'generate', prompt: 'cell', model: 'banana21', thinking_level: 'medium' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'banana21', thinkingLevel: 'medium' })
+    expect(stub.calls.at(-1)!.body).not.toHaveProperty('quality')
+    await tool.execute({ action: 'generate', prompt: 'cell', model: 'bananalite' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'bananalite', imageSize: '1K' })
+    await tool.execute({ action: 'generate', prompt: 'legacy', model: 'gptimage', image_size: '4K' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).not.toHaveProperty('quality')
+  })
+})

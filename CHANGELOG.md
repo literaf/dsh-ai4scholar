@@ -4,6 +4,10 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+### Changed
+- Extend `sci_draw` and its model settings to all eight website image models. Forward independent GPT `quality` and Gemini `thinking_level`; keep omitted quality compatible with existing GPT Image 2 pricing. Nano Banana 2 Lite defaults to its supported 1K resolution.
+- The API still validates model-specific combinations and quotes/charges centrally; quality and resolution both affect the price. No package release has been published for these changes yet.
+
 ## [0.6.2] - 2026-11-09
 
 ### Added

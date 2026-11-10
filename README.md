@@ -69,7 +69,7 @@ Google Scholar results retain native paper, cited-by, and version identifiers. C
 | **arXiv** | `search_arxiv`, `download_arxiv`, `read_arxiv_paper` | free |
 | **bioRxiv / medRxiv** | `search_biorxiv`, `search_medrxiv`, `download_biorxiv`, `download_medrxiv`, `read_biorxiv_paper`, `read_medrxiv_paper` | free |
 | **Any DOI** | `download_by_doi`, `read_by_doi` (open access anywhere; paywalled publishers on institutional networks) | free |
-| **Writing & figures** | `auto_cite` (insert real citations + reference list + BibTeX), `sci_draw` (generate / edit / style / compose / critique / SVG / vectorize scientific figures) | credits |
+| **Writing & figures** | `auto_cite` (insert real citations + reference list + BibTeX), `sci_draw` (generate / edit / style / compose / SVG / vectorize scientific figures) | credits |
 | **Account** | `get_ai4scholar_credits`, plus the `/ai4scholar` slash command | free |
 
 **Start with one source.** With the shipped settings, omitting `sources` (or passing `[]`) queries only Semantic Scholar. If you choose other default platforms on the plugin page, the same call searches those platforms together. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If none of the configured default platforms is enabled, the default is the first enabled platform in this order: Semantic Scholar, PubMed, arXiv, Google Scholar, Chinese literature.
@@ -181,7 +181,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     resultsPerSource: {}             # e.g. { semantic-scholar: 100, google-scholar: 10 }
     citeStyle: ieee                  # auto_cite: ieee | apa | vancouver | nature | numbered (plugin page)
     citeExcludePreprints: false      # auto_cite (plugin page)
-    drawModel: flash31               # sci_draw: flash | flash31 | pro | gptimage (plugin page)
+    drawModel: flash31               # sci_draw: flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite (plugin page)
     drawImageSize: 2K                # sci_draw: 1K | 2K | 4K (plugin page)
     # sizes
     defaultMaxResults: 10            # shared fallback count (configuration file)
@@ -235,3 +235,5 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ## License
 
 MIT
+
+`/ai4s-draw` / `sci_draw` also accepts `quality` (GPT: low/medium/high, plus xhigh/max on GPT Image 2.6) independently of `image_size`, and `thinking_level` (Gemini: banana21 minimal/medium/high; flash31/bananalite minimal/high). Omit quality for other models. Higher quality/resolution can cost more; the API validates and charges the selected combination. Existing calls that omit quality keep their previous behavior.

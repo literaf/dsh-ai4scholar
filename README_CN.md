@@ -69,7 +69,7 @@ Google Scholar 论文保留原始论文 ID、被引和版本 ID；引用格式�
 | **arXiv** | `search_arxiv`、`download_arxiv`、`read_arxiv_paper` | 免费 |
 | **bioRxiv / medRxiv** | `search_biorxiv`、`search_medrxiv`、`download_biorxiv`、`download_medrxiv`、`read_biorxiv_paper`、`read_medrxiv_paper` | 免费 |
 | **任意 DOI** | `download_by_doi`、`read_by_doi`（开放获取随处可用；付费期刊需校园网/机构权限） | 免费 |
-| **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / 点评 / SVG / 矢量化科研图） | 积分 |
+| **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / SVG / 矢量化科研图） | 积分 |
 | **账户** | `get_ai4scholar_credits`，以及斜杠命令 `/ai4scholar` | 免费 |
 
 **优先单平台检索。** 出厂设置下，不传 `sources`（或传 `[]`）时只查 Semantic Scholar；在插件页面修改默认平台后，同样的调用会按你的设置同时查询所选平台。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果配置的默认平台全部被关闭，则按 Semantic Scholar、PubMed、arXiv、Google Scholar、中文文献的顺序，选择第一个已开启的平台。
@@ -181,7 +181,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     resultsPerSource: {}             # 例如 { semantic-scholar: 100, google-scholar: 10 }
     citeStyle: ieee                  # auto_cite：ieee | apa | vancouver | nature | numbered（插件页面可改）
     citeExcludePreprints: false      # auto_cite（插件页面可改）
-    drawModel: flash31               # sci_draw：flash | flash31 | pro | gptimage（插件页面可改）
+    drawModel: flash31               # sci_draw：flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite（插件页面可改）
     drawImageSize: 2K                # sci_draw：1K | 2K | 4K（插件页面可改）
     # 条数与长度
     defaultMaxResults: 10            # 各平台共用的备用条数（配置文件中修改）
@@ -235,3 +235,5 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ## 许可证
 
 MIT
+
+`/ai4s-draw` / `sci_draw` 支持独立的 `quality`（GPT：low/medium/high，GPT Image 2.6 另支持 xhigh/max）与 `image_size`；Gemini 使用 `thinking_level`（banana21：minimal/medium/high；flash31/bananalite：minimal/high）。其他模型省略 quality。质量和分辨率都会影响积分，具体组合由 API 校验并计费；旧调用省略 quality 时保留原有行为。
