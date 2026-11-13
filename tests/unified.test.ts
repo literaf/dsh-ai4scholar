@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { ARXIV_FEED } from './fixtures-extended.js'
-import { PUBMED_SEARCH_RESPONSE, S2_SEARCH_RESPONSE } from './fixtures.js'
+import { GS_PAGE_1, PUBMED_SEARCH_RESPONSE, S2_SEARCH_RESPONSE } from './fixtures.js'
 import { mount, runContext, stubFetch, textOf } from './helpers.js'
 import type { StubbedFetch } from './helpers.js'
 import { identityKeys, mergePaperLists, titleKey } from '../src/tools/unified.js'
@@ -135,7 +135,7 @@ describe('search_papers', () => {
     expect(stub.calls.find((c) => c.url.pathname.startsWith('/graph'))!.url.searchParams.get('year')).toBe('2016-2024')
     expect(stub.calls.find((c) => c.url.pathname.startsWith('/pubmed'))!.body).toMatchObject({ minDate: '2016', maxDate: '2024', limit: 2 })
     expect(value).toMatchObject({ query: 'transformers', sources: ['semantic-scholar', 'pubmed'], total: 4, truncated: true, credits: { charged: 20, remaining: 980, sessionTotal: 20 } })
-    expect(value.perSource).toEqual([{ source: 'semantic-scholar', count: 2, total: 1234, nextOffset: 2 }, { source: 'pubmed', count: 2, total: 42, nextOffset: 2 }])
+    expect(value.perSource).toEqual([{ source: 'semantic-scholar', count: 2, total: 1234, pageSize: 2, nextOffset: 2 }, { source: 'pubmed', count: 2, total: 42, pageSize: 2, nextOffset: 2 }])
     const text = textOf(tool.output.render({ query: 'transformers' }, value as never))
     expect(text).toContain('Papers for "transformers" across Semantic Scholar, PubMed — 4 unique after de-duplication (Semantic Scholar 2 of 1234, PubMed 2 of 42):')
     expect(text).toContain('AI4Scholar credits — this call: 20 · this session: 20 · remaining: 980')
@@ -155,8 +155,8 @@ describe('search_papers', () => {
     const value = await tool.execute({ query: 'x', sources: ['semantic-scholar', 'pubmed', 'arxiv'] }, ctxWithAgent()) as Record<string, unknown>
     expect(value.perSource).toEqual([
       { source: 'semantic-scholar', count: 0, error: expect.stringContaining('HTTP 500') },
-      { source: 'pubmed', count: 2, total: 42, nextOffset: 2 },
-      { source: 'arxiv', count: 2, total: 1234, nextOffset: 2 },
+      { source: 'pubmed', count: 2, total: 42, pageSize: 10, nextOffset: 2 },
+      { source: 'arxiv', count: 2, total: 1234, pageSize: 10, nextOffset: 2 },
     ])
     expect(value.warning).toMatch(/Semantic Scholar: Semantic Scholar search failed: HTTP 500/)
     expect((value.papers as unknown[]).length).toBe(4)
@@ -259,6 +259,25 @@ describe('search_papers', () => {
     expect(JSON.stringify(fake.tools.get('search_semantic')!.parameters)).toContain('(default 100, max 100)')
     expect(JSON.stringify(fake.tools.get('search_pubmed')!.parameters)).toContain('(default 30, max 100)')
     expect(() => mount({ resultsPerSource: { 'google-scholar': 20 } })).toThrow(/google-scholar/)
+  })
+
+  it('states each platform\'s own page size when telling the model how to continue', async () => {
+    stub = stubFetch((url) => {
+      if (url.pathname === '/graph/v1/paper/search') return { json: S2_SEARCH_RESPONSE }
+      if (url.pathname === '/google-scholar/v1/search') return { json: GS_PAGE_1 }
+      return { status: 404, text: 'unexpected' }
+    })
+    const fake = mount({ searchSources: ['semantic-scholar', 'google-scholar'], resultsPerSource: { 'semantic-scholar': 50 } })
+    const tool = fake.tools.get('search_papers')!
+    const value = await tool.execute({ query: 'solid-state battery' }, ctxWithAgent()) as { perSource: { source: string; pageSize?: number }[] }
+    expect(stub.calls.find((c) => c.url.pathname.startsWith('/graph'))!.url.searchParams.get('limit')).toBe('50')
+    expect(value.perSource.map((p) => [p.source, p.pageSize])).toEqual([['semantic-scholar', 50], ['google-scholar', 10]])
+    const text = textOf(tool.output.render({ query: 'solid-state battery' }, value as never))
+    expect(text).toMatch(/search_semantic\(query="solid-state battery", offset=\d+, max_results=50\)/)
+    expect(text).toContain('search_google_scholar(query="solid-state battery", offset=10, max_results=10)')
+    expect(text).not.toContain('max_results as the original request')
+    // Pages are not a result count: the parameter tells the model to keep the configured sizes.
+    expect(JSON.stringify(tool.parameters)).toContain('Omit it unless the user names a number of results')
   })
 
   it('offers only the enabled platforms and disappears when none is', () => {

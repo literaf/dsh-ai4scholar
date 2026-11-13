@@ -68,7 +68,8 @@ const OUTPUT_SCHEMA = {
           count: { type: 'integer', required: true, description: 'Records this platform returned before merging.' },
           total: { type: 'integer', description: 'Total matches the platform reported, when known.' },
           query: { type: 'string', description: 'Source-specific query when it differs from the main query.' },
-          nextOffset: { type: 'integer', description: 'Continue with this source’s standalone search tool, keeping the query, filters and requested page size unchanged.' },
+          pageSize: { type: 'integer', description: 'Results requested from this platform in this call; pass it as max_results when continuing.' },
+          nextOffset: { type: 'integer', description: 'Continue with this source’s standalone search tool at this offset, with max_results set to pageSize and the query and filters unchanged.' },
           error: { type: 'string', description: 'Set when this platform failed; the others still count.' },
         },
       },
@@ -246,9 +247,9 @@ function formatUnified(value: UnifiedValue, abstractMaxChars: number): string {
     if (value.truncated) {
       const tools: Record<string, string> = { 'semantic-scholar': 'search_semantic', pubmed: 'search_pubmed', arxiv: 'search_arxiv', 'google-scholar': 'search_google_scholar', chinese: 'search_chinese' }
       const next = value.perSource.filter((p) => p.nextOffset !== undefined).map((p) =>
-        `${tools[p.source] ?? p.source}(query=${JSON.stringify(p.query ?? value.query)}, offset=${p.nextOffset})`)
+        `${tools[p.source] ?? p.source}(query=${JSON.stringify(p.query ?? value.query)}, offset=${p.nextOffset}${p.pageSize !== undefined ? `, max_results=${p.pageSize}` : ''})`)
       parts.push(next.length > 0
-        ? `More results: continue with ${next.join('; ')}. Keep the same year filters and max_results as the original request for each source; each billed request adds to the cost.`
+        ? `More results: continue with ${next.join('; ')}. Use exactly these max_results values (each platform keeps its own page size) and the same year filters; each billed request adds to the cost.`
         : 'At least one platform has more matches; refine the query or increase the requested count within its single-call limit.')
     }
     parts.push('Cite papers by title with their DOI or platform link.')
@@ -289,7 +290,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
       query: { type: 'string', required: true, description: 'Topic or keywords; sent as-is to each selected platform unless chinese_query overrides the Chinese source.' },
       chinese_query: { type: 'string', description: 'Optional Chinese keywords for sources ["chinese"], useful when query is English. If omitted, that source also uses query. Use up to 300 characters and 20 concepts; spaces mean all concepts must match.' },
       sources: { type: 'array', items: { type: 'string', enum: offered }, description: `Platforms to query (default ${JSON.stringify(fallbackDefaults)}).${several ? '' : ' Prefer one source; select multiple only when broader coverage is requested or needed.'} Each billed source adds to the cost.` },
-      max_results_per_source: { type: 'integer', description: `Results requested from each platform; omit it to use each platform's configured default (${offered.map((s) => `${SOURCE_LABEL[s]} ${countFor(s)}`).join(', ')}). Each platform caps it at its own maximum (${offered.map((s) => `${SOURCE_LABEL[s]} ${capFor(s)}`).join(', ')}).` },
+      max_results_per_source: { type: 'integer', description: `One count applied to every selected platform. Omit it unless the user names a number of results: each platform then uses the user's configured page size (${offered.map((s) => `${SOURCE_LABEL[s]} ${countFor(s)}`).join(', ')}). A request for N pages means N calls at these page sizes, not a count of 10. Each platform caps it at its own maximum (${offered.map((s) => `${SOURCE_LABEL[s]} ${capFor(s)}`).join(', ')}).` },
       year_from: { type: 'integer', description: 'Earliest publication year.' },
       year_to: { type: 'integer', description: 'Latest publication year.' },
     },
@@ -336,6 +337,7 @@ export function applyUnifiedSearchTool(ctx: Context, runtime: Runtime, enabled: 
             source, count: outcome.value.papers.length,
             total: outcome.value.total > outcome.value.papers.length ? outcome.value.total : undefined,
             query: outcome.value.query !== query ? outcome.value.query : undefined,
+            pageSize: per(source),
             nextOffset: outcome.value.nextOffset,
           }))
           truncated = truncated || outcome.value.truncated

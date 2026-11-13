@@ -4,6 +4,12 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-11-13
+
+### Fixed
+- `search_papers` now keeps each platform's configured page size when the user asks for a number of pages. Before, a request such as "5 pages from each source" made the model pass one shared count of 10, so Semantic Scholar set to 50 still returned 10 per page. The parameter description now says to omit the count unless the user names a number of results, and `/ai4s-search` guidance says the same.
+- The continuation hint after a merged search names each platform's own `max_results` (for example `search_semantic(offset=50, max_results=50)`; Google Scholar stays at 10). The result also reports the page size used per platform as `perSource[].pageSize`.
+
 ## [0.6.4] - 2026-11-13
 
 ### Changed
