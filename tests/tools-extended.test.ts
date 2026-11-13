@@ -104,7 +104,7 @@ describe('credits accounting', () => {
     const missing = await nokey.handler(invocation())
     expect(missing.kind).toBe('error')
     expect(missing.text).toContain('插件设置')
-    expect(missing.text).toContain('https://ai4scholar.net?src=dsh')
+    expect(missing.text).toContain('https://ai4scholar.net?src=dsh_ai4scholar')
   })
 
   it('GET /ai4scholar/balance answers ok / missing key / API failure as 200 JSON', async () => {

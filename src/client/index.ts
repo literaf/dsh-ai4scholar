@@ -180,6 +180,6 @@ export function apply(ctx: ClientContext): void {
     name: 'conversation.chat.commandview',
     key: name,
     locale: NS,
-    inject: (): Ai4ScholarCommandFace => ({ topUpUrl: 'https://ai4scholar.net?src=dsh' }),
+    inject: (): Ai4ScholarCommandFace => ({ topUpUrl: 'https://ai4scholar.net?src=dsh_ai4scholar' }),
   }, Ai4ScholarCommandCard))
 }

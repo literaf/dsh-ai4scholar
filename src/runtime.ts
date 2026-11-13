@@ -178,7 +178,7 @@ export function makeCredentialResolvers(ctx: Context, apiKeyEnv: string): Pick<R
       throw new Error(
         `AI4Scholar API key is not configured. Open Plugins → Installed → dsh-ai4scholar (or Settings → AI4Scholar), `
         + `or store it as ${ref} in $DSH_HOME/.credentials.yaml (or export ${ref} in the environment that launches dsh). `
-        + `Get a key at https://ai4scholar.net?src=dsh`,
+        + `Get a key at https://ai4scholar.net?src=dsh_ai4scholar`,
       )
     }
     return key

@@ -616,7 +616,7 @@ describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emula
     expect(text).toContain('credits available')
     expect(text).toContain('Spent this session')
     expect(text).toContain('Configured (…33b7)')
-    expect(container!.querySelector('a[href="https://ai4scholar.net?src=dsh"]')).not.toBeNull()
+    expect(container!.querySelector('a[href="https://ai4scholar.net?src=dsh_ai4scholar"]')).not.toBeNull()
     expect(container!.querySelector('pre')).toBeNull()
     expect(text).not.toContain('Member monthly')
     expect(text).not.toContain('Permanent')

@@ -188,7 +188,7 @@ export function applyCreditsTools(ctx: Context, runtime: Runtime, command: boole
         if (invocation.rawInput?.trim() && !/^(help|帮助|用法|\?)$/i.test(invocation.rawInput.trim())) return { kind: 'success', text: status }
         const key = await runtime.apiKey()
         if (key === undefined) {
-          return { kind: 'error', text: `AI4Scholar API key is not configured. 请在插件设置中配置密钥：https://ai4scholar.net?src=dsh\n\n${status}` }
+          return { kind: 'error', text: `AI4Scholar API key is not configured. 请在插件设置中配置密钥：https://ai4scholar.net?src=dsh_ai4scholar\n\n${status}` }
         }
         try {
           const balance = await fetchBalance(runtime, invocation.signal, invocation.agent)

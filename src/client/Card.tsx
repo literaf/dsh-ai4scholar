@@ -284,7 +284,7 @@ function ExternalIcon(props: { className: string }) {
 function KeyAccessLink({ t }: PropsLocale<'ai4scholar'>) {
   return (
     <div className={cls.keyAccess}>
-      <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">
+      <a className={cls.link} href="https://ai4scholar.net?src=dsh_ai4scholar" target="_blank" rel="noreferrer">
         {t('getKey')}
         <ExternalIcon className={cls.linkIcon} />
       </a>

@@ -1,11 +1,11 @@
 {
   "name": "dsh-ai4scholar",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "AI4Scholar for DeepSeek Harness: 43 native research tools, natural-language /ai4s-* commands, papers, scholars, patents, full text, references and scientific figures. Powered by ai4scholar.net.",
   "type": "module",
   "license": "MIT",
   "author": "ai4scholar",
-  "homepage": "https://ai4scholar.net?src=dsh",
+  "homepage": "https://ai4scholar.net?src=dsh_ai4scholar",
   "repository": {
     "type": "git",
     "url": "https://github.com/literaf/dsh-ai4scholar.git"

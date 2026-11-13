@@ -1,4 +1,4 @@
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
 # AI4Scholar for DeepSeek Harness
@@ -7,9 +7,9 @@ English | [中文](README_CN.md)
 
 [![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
 
-<p align="center"><a href="https://ai4scholar.net?src=dsh"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
-Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 43 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh).
+Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 43 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar).
 
 ## Slash commands with natural-language requests
 
@@ -109,7 +109,7 @@ dsh web                           # prints http://127.0.0.1:3080
 Then, once, in the browser:
 
 1. **Settings → Models** — paste your DeepSeek API key ([platform.deepseek.com](https://platform.deepseek.com)).
-2. **Plugins → Installed → dsh-ai4scholar** (or **Settings → AI4Scholar**) — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. **Refresh** re-checks any time. The saved key is masked by default, with **Key configured** on the right; click the eye to reveal or hide it. Hiding, leaving the page, or switching away from the window clears the revealed value.
+2. **Plugins → Installed → dsh-ai4scholar** (or **Settings → AI4Scholar**) — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. **Refresh** re-checks any time. The saved key is masked by default, with **Key configured** on the right; click the eye to reveal or hide it. Hiding, leaving the page, or switching away from the window clears the revealed value.
 
 On current DSH Desktop, click **dsh-ai4scholar** in the sidebar’s **Plugins → Installed** list: the key form is visible immediately on its detail page. **Settings → Built-in plugins** is a host inventory, so it no longer contains this form. Older Harness versions still offer the original **Settings → Plugins → AI4Scholar** card. Existing keys keep working; all entrances use the same credential reference.
 

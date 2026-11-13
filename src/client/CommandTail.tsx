@@ -148,7 +148,7 @@ function CommandTail({ turn, useChat, useSearch, useCard, attachSearch, fillDraf
         <summary>{t('cmdHelp')}</summary>
         <div className={cls.cmdHelpBody}><CommandMenu commands={menu.commands} choose={choose}/></div>
       </details>
-      <a className={cls.link} href="https://ai4scholar.net?src=dsh" target="_blank" rel="noreferrer">{t('topUp')}</a>
+      <a className={cls.link} href="https://ai4scholar.net?src=dsh_ai4scholar" target="_blank" rel="noreferrer">{t('topUp')}</a>
     </div>
     {notice ? <div className={cls.researchNotice} role="status">{t(notice)}</div> : null}
   </section>

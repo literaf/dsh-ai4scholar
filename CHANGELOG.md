@@ -4,6 +4,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-11-13
+
+### Changed
+- Tag ai4scholar.net links for getting a key and topping up with `?src=dsh_ai4scholar` instead of `?src=dsh`, so website analytics can separate this plugin from other dsh sources. The insufficient-credits error text is unchanged.
+
 ## [0.6.3] - 2026-11-10
 
 ### Changed
