@@ -12,10 +12,30 @@ describe('readSettings', () => {
     expect(readSettings({ defaultMaxResults: 20, resultsPerSource: { 'semantic-scholar': 100 } }).resultsPerSource).toEqual({ 'semantic-scholar': 100, 'pubmed': 20, 'arxiv': 20, 'google-scholar': 10, 'chinese': 20 })
     expect(readSettings({ citeStyle: 'bogus', drawImageSize: '8K' })).toMatchObject({ citeStyle: 'ieee', drawImageSize: '2K' })
     expect(readSettings({ drawModel: 'bananalite', drawImageSize: '4K' })).toMatchObject({ drawModel: 'bananalite', drawImageSize: '1K' })
+    expect(readSettings({ drawModel: 'seedream55', drawImageSize: '4K' })).toMatchObject({ drawModel: 'seedream55', drawImageSize: '2K' })
+    expect(readSettings({ drawModel: 'seedream55', drawImageSize: '1K' })).toMatchObject({ drawModel: 'seedream55', drawImageSize: '1K' })
   })
 })
 
 describe('SearchSettingsController', () => {
+  it('switches a 4K preference to 2K for Seedream and saves the model and resolution together', async () => {
+    const host = fakeForm({ drawModel: 'pro', drawImageSize: '4K' })
+    const controller = new SearchSettingsController(() => host.form)
+    controller.attach()
+    controller.edit('drawModel', 'seedream55')
+    expect(controller.store.getSnapshot().draft).toMatchObject({ drawModel: 'seedream55', drawImageSize: '2K' })
+    await controller.save()
+    expect(host.writes).toEqual([{ revision: 0, ops: [
+      { op: 'set', path: ['drawModel'], value: 'seedream55' },
+      { op: 'set', path: ['drawImageSize'], value: '2K' },
+    ] }])
+    controller.edit('drawImageSize', '1K')
+    controller.edit('drawModel', 'pro')
+    controller.edit('drawModel', 'seedream55')
+    expect(controller.store.getSnapshot().draft.drawImageSize).toBe('1K')
+    controller.dispose()
+  })
+
   it('reports an older host without configuration forms', () => {
     const controller = new SearchSettingsController(() => undefined)
     controller.attach()

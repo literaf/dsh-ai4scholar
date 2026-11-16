@@ -139,6 +139,7 @@ export type Ai4ScholarLocaleKey =
   | 'modelGpt26Sunburst'
   | 'modelBanana21'
   | 'modelBananaLite'
+  | 'modelSeedream55'
   | 'sizeLabel'
   | 'sizeHint'
 
@@ -283,6 +284,7 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   modelGpt26Sunburst: 'GPT Image 2.6 Sunburst',
   modelBanana21: 'Nano Banana 2.1',
   modelBananaLite: 'Nano Banana 2 Lite (1K)',
+  modelSeedream55: 'Seedream 5.5 (up to 2K)',
   sizeLabel: 'Figure resolution',
   sizeHint: 'Higher resolutions take longer.',
 }
@@ -420,6 +422,7 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   modelGpt26Sunburst: 'GPT Image 2.6 Sunburst',
   modelBanana21: 'Nano Banana 2.1',
   modelBananaLite: 'Nano Banana 2 Lite (1K)',
+  modelSeedream55: 'Seedream 5.5（最高 2K）',
   sizeLabel: '配图分辨率',
   sizeHint: '分辨率越高，生成越慢。',
 }

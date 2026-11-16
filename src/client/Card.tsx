@@ -13,7 +13,7 @@ import { cls } from './styles.js'
 import { revealSavedKey } from './key-reveal.js'
 import type { InjectedFace, PluginConfigView } from './plugin-config.js'
 import type { SearchDraft, SearchSettingsState } from './search-controller.js'
-import { ABSTRACT_LIMIT, CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP, READ_MAX, READ_MIN, UNIFIED_SOURCES } from '../shared/search-settings.js'
+import { ABSTRACT_LIMIT, CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP, READ_MAX, READ_MIN, UNIFIED_SOURCES, supportedDrawSizes } from '../shared/search-settings.js'
 import type { CiteStyle, DrawModel, UnifiedSource } from '../shared/search-settings.js'
 
 /** The search-settings actions the page injects beside the key actions. */
@@ -398,7 +398,7 @@ function KeyCheckRow(props: Ai4ScholarSettingsProps & { state: ApiKeyCardState; 
 
 /** Choices for the select and segmented controls, with their copy keys. */
 const CITE_STYLE_KEYS = { ieee: 'styleIeee', apa: 'styleApa', vancouver: 'styleVancouver', nature: 'styleNature', numbered: 'styleNumbered' } as const satisfies Record<CiteStyle, string>
-const DRAW_MODEL_KEYS = { flash: 'modelFlash', flash31: 'modelFlash31', pro: 'modelPro', gptimage: 'modelGptImage', gpt26flare: 'modelGpt26Flare', gpt26sunburst: 'modelGpt26Sunburst', banana21: 'modelBanana21', bananalite: 'modelBananaLite' } as const satisfies Record<DrawModel, string>
+const DRAW_MODEL_KEYS = { flash: 'modelFlash', flash31: 'modelFlash31', pro: 'modelPro', gptimage: 'modelGptImage', gpt26flare: 'modelGpt26Flare', gpt26sunburst: 'modelGpt26Sunburst', banana21: 'modelBanana21', bananalite: 'modelBananaLite', seedream55: 'modelSeedream55' } as const satisfies Record<DrawModel, string>
 
 /**
  * Everything the Host's configuration form holds, in three groups that share
@@ -521,7 +521,7 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
             value={draft.drawModel}
             options={DRAW_MODELS.map((v) => ({ value: v, label: t(DRAW_MODEL_KEYS[v]) }))}
             disabled={disabled}
-            onPick={(v) => { props.editSearch('drawModel', v as DrawModel); if (v === 'bananalite' || v === 'flash') props.editSearch('drawImageSize', '1K') }}
+            onPick={(v) => { props.editSearch('drawModel', v as DrawModel) }}
           />
           <div className={`${cls.row} ${cls.rowInline}`}>
             <div className={cls.rowText}>
@@ -536,7 +536,7 @@ function SettingsGroups(props: Ai4ScholarSettingsProps) {
                   role="radio"
                   aria-checked={draft.drawImageSize === v}
                   className={`${cls.segment}${draft.drawImageSize === v ? ` ${cls.segmentOn}` : ''}`}
-                  disabled={disabled || ((draft.drawModel === 'bananalite' || draft.drawModel === 'flash') && v !== '1K')}
+                  disabled={disabled || !supportedDrawSizes(draft.drawModel).includes(v)}
                   onClick={() => { props.editSearch('drawImageSize', v) }}
                 >
                   {v}

@@ -9,7 +9,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { InferValue } from '@deepseek-ai/dsh-tools'
 import { CREDITS_SCHEMA, compact, creditsMeta, formatCredits, isRecord, presentGenericWithCredits, str } from '../paper.js'
 import type { Runtime } from '../runtime.js'
-import { DRAW_MODELS } from '../shared/search-settings.js'
+import { DRAW_MODELS, normalizeDrawImageSize } from '../shared/search-settings.js'
 
 const ACTIONS = ['smart', 'generate', 'edit', 'style', 'compose', 'svg', 'vectorize'] as const
 const NEEDS_IMAGES = new Set(['edit', 'style', 'compose', 'vectorize'])
@@ -45,12 +45,12 @@ export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
     parameters: {
       action: { type: 'string', required: true, enum: ACTIONS, description: 'Operation.' },
       prompt: { type: 'string', description: 'Description or instruction; may be empty for vectorize.' },
-      model: { type: 'string', enum: DRAW_MODELS, description: `flash (Nano Banana, 1K), flash31 (Nano Banana 2), pro (Nano Banana Pro), banana21 (Nano Banana 2.1), bananalite (Nano Banana 2 Lite, 1K only), gptimage (GPT Image 2), gpt26flare (GPT Image 2.6 Flare), gpt26sunburst (GPT Image 2.6 Sunburst). Default ${generation.drawModel}, as the user configured.` },
-      image_size: { type: 'string', enum: ['512px', '1K', '2K', '4K'], description: `Output resolution, independent of quality. Only flash31 supports 512px; flash and bananalite use 1K (default ${generation.drawImageSize}, as the user configured).` },
-      quality: { type: 'string', enum: ['low', 'medium', 'high', 'xhigh', 'max'], description: 'GPT image quality, independent of resolution; higher tiers cost more. gptimage supports low/medium/high; GPT 2.6 also supports xhigh/max. Omit for Gemini and to preserve legacy GPT Image 2 pricing.' },
-      thinking_level: { type: 'string', enum: ['minimal', 'medium', 'high'], description: 'Gemini only: banana21 supports minimal/medium/high; flash31 and bananalite support minimal/high. Omit for GPT, flash and pro.' },
+      model: { type: 'string', enum: DRAW_MODELS, description: `flash (Nano Banana, 1K), flash31 (Nano Banana 2), pro (Nano Banana Pro), banana21 (Nano Banana 2.1), bananalite (Nano Banana 2 Lite, 1K only), gptimage (GPT Image 2), gpt26flare (GPT Image 2.6 Flare), gpt26sunburst (GPT Image 2.6 Sunburst), seedream55 (Seedream 5.5, 1K/2K, Chinese text and reference-image editing). Default ${generation.drawModel}, as the user configured.` },
+      image_size: { type: 'string', enum: ['512px', '1K', '2K', '4K'], description: `Output resolution, independent of quality. Only flash31 supports 512px; flash and bananalite use 1K; seedream55 supports 1K/2K only (default ${generation.drawImageSize}, as the user configured, adjusted to the selected model's supported sizes).` },
+      quality: { type: 'string', enum: ['low', 'medium', 'high', 'xhigh', 'max'], description: 'GPT image quality, independent of resolution; higher tiers cost more. gptimage supports low/medium/high; GPT 2.6 also supports xhigh/max. Omit for Gemini, Seedream and to preserve legacy GPT Image 2 pricing.' },
+      thinking_level: { type: 'string', enum: ['minimal', 'medium', 'high'], description: 'Gemini only: banana21 supports minimal/medium/high; flash31 and bananalite support minimal/high. Omit for GPT, Seedream, flash and pro.' },
       aspect_ratio: { type: 'string', description: 'Aspect ratio: 1:1 (default), 16:9, 4:3, 3:4, 9:16.' },
-      images: { type: 'array', items: { type: 'string' }, description: 'Input images as URLs or base64 data URIs; required for edit/style/compose/vectorize.' },
+      images: { type: 'array', items: { type: 'string' }, description: 'Input images as URLs or base64 data URIs; required for edit/style/compose/vectorize. Seedream 5.5 accepts up to 10 reference images.' },
       style_preset: { type: 'string', description: 'Style preset name (style action).' },
       lang: { type: 'string', enum: ['en', 'zh'], description: 'Language of critique/optimized prompt (default en).' },
       vectorize_mode: { type: 'string', enum: ['fast', 'standard', 'premium'], description: 'Vectorize quality (vectorize action; default fast).' },
@@ -84,10 +84,17 @@ export function applySciDrawTool(ctx: Context, runtime: Runtime): void {
       if (args.action === 'compose' && images.length < 2) throw new Error('action "compose" requires at least 2 images')
       const prompt = args.prompt?.trim() ?? ''
       if (prompt.length === 0 && !['critic', 'vectorize'].includes(args.action)) throw new Error(`action "${args.action}" requires a prompt`)
+      const model = args.model ?? generation.drawModel
+      const imageSize = args.image_size ?? normalizeDrawImageSize(model, generation.drawImageSize)
+      if (model === 'seedream55' && !['svg', 'vectorize'].includes(args.action)) {
+        if (imageSize !== '1K' && imageSize !== '2K') throw new Error('Seedream 5.5 supports only 1K or 2K; omit image_size to use a supported default')
+        if (args.quality !== undefined || args.thinking_level !== undefined) throw new Error('Seedream 5.5 does not support quality or thinking_level; use image_size instead')
+        if (images.length > 10) throw new Error('Seedream 5.5 accepts at most 10 reference images')
+      }
       const apiKey = await runtime.requireApiKey()
       const body: Record<string, unknown> = { action: args.action, prompt }
-      body.model = args.model ?? generation.drawModel
-      body.imageSize = args.image_size ?? (body.model === 'bananalite' ? '1K' : generation.drawImageSize)
+      body.model = model
+      body.imageSize = imageSize
       if (args.quality !== undefined) body.quality = args.quality
       if (args.thinking_level !== undefined) body.thinkingLevel = args.thinking_level
       if (args.aspect_ratio !== undefined) body.aspectRatio = args.aspect_ratio

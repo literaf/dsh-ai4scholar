@@ -628,7 +628,7 @@ describe('configured generation defaults', () => {
     await draw.execute({ action: 'generate', prompt: 'cell' }, ctxWithAgent())
     expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'pro', imageSize: '4K' })
     await draw.execute({ action: 'generate', prompt: 'cell', model: 'flash' }, ctxWithAgent())
-    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'flash', imageSize: '4K' })
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'flash', imageSize: '1K' })
   })
 })
 
@@ -663,10 +663,10 @@ describe('google scholar credits', () => {
 })
 
 describe('drawing model and quality options', () => {
-  it('forwards independent quality/thinking, exposes all eight models, and preserves omitted quality', async () => {
+  it('forwards independent quality/thinking, exposes all nine models, and preserves omitted quality', async () => {
     stub = stubFetch(() => ({ json: { success: true, imageUrl: 'https://cdn.example/fig.png' } }))
     const tool = mount().tools.get('sci_draw')!
-    expect(tool.parameters).toMatchObject({ properties: { model: { enum: ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite'] } } })
+    expect(tool.parameters).toMatchObject({ properties: { model: { enum: ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite', 'seedream55'] } } })
     await tool.execute({ action: 'edit', prompt: 'label', images: ['https://cdn.example/ref.png'], model: 'gpt26flare', quality: 'max', image_size: '1K' }, ctxWithAgent())
     expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'gpt26flare', quality: 'max', imageSize: '1K', images: ['https://cdn.example/ref.png'] })
     await tool.execute({ action: 'generate', prompt: 'cell', model: 'banana21', thinking_level: 'medium' }, ctxWithAgent())
@@ -676,5 +676,60 @@ describe('drawing model and quality options', () => {
     expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'bananalite', imageSize: '1K' })
     await tool.execute({ action: 'generate', prompt: 'legacy', model: 'gptimage', image_size: '4K' }, ctxWithAgent())
     expect(stub.calls.at(-1)!.body).not.toHaveProperty('quality')
+  })
+})
+
+describe('Seedream 5.5', () => {
+  it('uses 2K when a model override inherits 4K, preserves 1K, and supports a configured Seedream default', async () => {
+    stub = stubFetch(() => ({ json: { success: true, imageUrl: 'https://cdn.example/seedream.png' } }))
+    const tool = mount({ drawModel: 'pro', drawImageSize: '4K' }).tools.get('sci_draw')!
+    const args = { action: 'generate', prompt: '带中文标注的细胞结构', model: 'seedream55' }
+    expect(validateJsonSchemaValue(tool.parameters, args, '')).toEqual([])
+    await tool.execute(args, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toEqual({ ...args, imageSize: '2K' })
+    await tool.execute({ ...args, image_size: '1K' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toEqual({ ...args, imageSize: '1K' })
+    const configured = mount({ drawModel: 'seedream55', drawImageSize: '4K' }).tools.get('sci_draw')!
+    expect(JSON.stringify(configured.parameters)).toContain('default 2K, as the user configured')
+    await configured.execute({ action: 'generate', prompt: '中文示意图' }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toEqual({ action: 'generate', prompt: '中文示意图', model: 'seedream55', imageSize: '2K' })
+  })
+
+  it.each(['smart', 'edit', 'style', 'compose'])('forwards reference images and renders the result for %s', async (action) => {
+    stub = stubFetch(() => ({ json: { success: true, imageUrl: 'https://cdn.example/seedream.png' }, headers: { 'X-Credits-Charged': '6', 'X-Credits-Remaining': '94' } }))
+    const tool = mount().tools.get('sci_draw')!
+    const images = ['https://cdn.example/ref.png', 'data:image/png;base64,aGVsbG8=']
+    const args = { action, prompt: '保留标注并调整布局', model: 'seedream55', image_size: '2K', aspect_ratio: '16:9', images, lang: 'zh' }
+    const result = await tool.execute(args, ctxWithAgent()) as Record<string, unknown>
+    expect(stub.calls.at(-1)!.url.pathname).toBe('/api/proxy/nano/generate')
+    expect(stub.calls.at(-1)!.body).toEqual({ action, prompt: args.prompt, model: 'seedream55', imageSize: '2K', aspectRatio: '16:9', images, lang: 'zh' })
+    assertOutput(tool.output.schema, result)
+    expect(result.credits).toMatchObject({ charged: 6, remaining: 94 })
+    expect(textOf(tool.output.render(args, result as never))).toContain('![scientific figure](https://cdn.example/seedream.png)')
+  })
+
+  it.each([
+    { image_size: '4K' },
+    { image_size: '512px' },
+    { quality: 'high' },
+    { thinking_level: 'minimal' },
+    { images: Array.from({ length: 11 }, () => 'https://cdn.example/ref.png') },
+  ])('rejects unsupported options before sending a request: %j', async (options) => {
+    stub = stubFetch(() => ({ json: {} }))
+    const tool = mount().tools.get('sci_draw')!
+    await expect(tool.execute({ action: 'generate', prompt: 'cell', model: 'seedream55', ...options }, ctxWithAgent())).rejects.toThrow(/Seedream 5.5/)
+    expect(stub.calls).toHaveLength(0)
+  })
+
+  it('accepts ten references and leaves SVG/vectorize on their existing paths', async () => {
+    stub = stubFetch(() => ({ json: { success: true, imageUrl: 'https://cdn.example/seedream.png', svgCode: '<svg/>', pdfUrl: 'https://cdn.example/figure.pdf' } }))
+    const tool = mount({ drawModel: 'seedream55' }).tools.get('sci_draw')!
+    const images = Array.from({ length: 10 }, () => 'https://cdn.example/ref.png')
+    await tool.execute({ action: 'compose', prompt: 'combine', images }, ctxWithAgent())
+    expect(stub.calls.at(-1)!.body).toMatchObject({ model: 'seedream55', images })
+    for (const action of ['svg', 'vectorize']) {
+      await tool.execute({ action, prompt: 'cell', images: images.slice(0, 1), image_size: '4K' }, ctxWithAgent())
+      expect(stub.calls.at(-1)!.body).toMatchObject({ action, model: 'seedream55', imageSize: '4K' })
+    }
   })
 })

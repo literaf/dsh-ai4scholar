@@ -36,7 +36,7 @@ import { applySciDrawTool } from './tools/sci-draw.js'
 import { applyCreditsTools } from './tools/credits.js'
 import { applyUnifiedSearchTool, defaultSourcesFor, DEFAULT_SOURCES, UNIFIED_SOURCES } from './tools/unified.js'
 import type { UnifiedSource } from './tools/unified.js'
-import { CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP } from './shared/search-settings.js'
+import { CITE_STYLES, DRAW_MODELS, DRAW_SIZES, PLATFORM_CAP, normalizeDrawImageSize } from './shared/search-settings.js'
 import type { CiteStyle, DrawModel, DrawSize, ResultsPerSource } from './shared/search-settings.js'
 
 export { Ai4ScholarClient } from './api-client.js'
@@ -280,7 +280,7 @@ export function apply(ctx: Context, config: Config): void {
       citeStyle: resolved.citeStyle,
       citeExcludePreprints: resolved.citeExcludePreprints,
       drawModel: resolved.drawModel,
-      drawImageSize: resolved.drawImageSize,
+      drawImageSize: normalizeDrawImageSize(resolved.drawModel, resolved.drawImageSize),
     },
     read: { maxChars: resolved.readMaxChars },
     timeouts: { tool: resolved.toolTimeoutMs, pdf: resolved.pdfTimeoutMs, generation: resolved.generationTimeoutMs },

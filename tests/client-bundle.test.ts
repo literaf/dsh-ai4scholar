@@ -254,6 +254,34 @@ afterEach(() => {
 })
 
 describe.skipIf(!existsSync(BUNDLE))('built client bundle in a module-host emulation', () => {
+  it('offers Seedream in the built settings page, adjusts 4K to 2K, and saves a supported resolution', async () => {
+    const host = fakeForm({ drawModel: 'pro', drawImageSize: '4K' })
+    const fake = fakeClientContext({ host: 'desktop', slots: 'modern', form: host.form })
+    loadBundle().exports.apply(fake.ctx)
+    await flush()
+    const entry = fake.registrations.find((r) => r.options.name === 'plugins.bundle.config')!
+    const t = (fake.ctx as { locale: { bind(ns: string): (k: string) => string } }).locale.bind('ai4scholar')
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => { root!.render(createElement(entry.component as never, { ...propsFor(entry, t), view: 'page' } as never)) })
+    const model = [...container.querySelectorAll('select')].find((select) => select.querySelector('option[value="seedream55"]'))!
+    expect(model.querySelector('option[value="seedream55"]')?.textContent).toBe('Seedream 5.5 (up to 2K)')
+    await act(async () => {
+      model.value = 'seedream55'
+      model.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const size = (value: string) => [...container!.querySelectorAll<HTMLButtonElement>('button[role="radio"]')].find((button) => button.textContent === value)!
+    expect(size('4K').disabled).toBe(true)
+    expect(size('2K').getAttribute('aria-checked')).toBe('true')
+    expect(size('1K').disabled).toBe(false)
+    await act(async () => { size('1K').click() })
+    await act(async () => { [...container!.querySelectorAll('button')].filter((button) => button.textContent === 'Save').at(-1)!.click() })
+    expect(host.user()).toMatchObject({ drawModel: 'seedream55', drawImageSize: '1K' })
+    expect(model.value).toBe('seedream55')
+    expect(size('1K').getAttribute('aria-checked')).toBe('true')
+  })
+
   it('saves the rendered search controls, rejects an invalid count, and restores defaults', async () => {
     const host = fakeForm()
     const fake = fakeClientContext({ host: 'desktop', slots: 'modern', form: host.form })

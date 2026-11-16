@@ -181,7 +181,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
     resultsPerSource: {}             # 例如 { semantic-scholar: 100, google-scholar: 10 }
     citeStyle: ieee                  # auto_cite：ieee | apa | vancouver | nature | numbered（插件页面可改）
     citeExcludePreprints: false      # auto_cite（插件页面可改）
-    drawModel: flash31               # sci_draw：flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite（插件页面可改）
+    drawModel: flash31               # sci_draw：flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite | seedream55（插件页面可改）
     drawImageSize: 2K                # sci_draw：1K | 2K | 4K（插件页面可改）
     # 条数与长度
     defaultMaxResults: 10            # 各平台共用的备用条数（配置文件中修改）
@@ -237,3 +237,5 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 MIT
 
 `/ai4s-draw` / `sci_draw` 支持独立的 `quality`（GPT：low/medium/high，GPT Image 2.6 另支持 xhigh/max）与 `image_size`；Gemini 使用 `thinking_level`（banana21：minimal/medium/high；flash31/bananalite：minimal/high）。其他模型省略 quality。质量和分辨率都会影响积分，具体组合由 API 校验并计费；旧调用省略 quality 时保留原有行为。
+
+Seedream 5.5 可通过 `model: "seedream55"` 或配图模型设置选择，支持 1K／2K 的生成、编辑、风格转换和多图组合，最多接收 10 张参考图（可访问的链接或图片 Data URI）。省略 `quality` 和 `thinking_level`。从 4K 模型切换过来时，继承的分辨率会自动调整为 2K；显式指定 4K 或 512px 会在请求 API 前被拦截。例如：`/ai4s-draw 用 Seedream 5.5 画一张带中文标注的细胞结构图，2K`。

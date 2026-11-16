@@ -4,6 +4,17 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-11-16
+
+### Added
+- Add Seedream 5.5 (`seedream55`) to `sci_draw`, the plugin's configuration schema, and the English/Chinese figure-model settings. Generate, edit, restyle and compose through the existing AI4Scholar API with up to 10 reference images.
+
+### Fixed
+- Keep configured and inherited drawing resolutions within each model's supported sizes. Switching from 4K to Seedream selects 2K and disables 4K in settings; an explicit unsupported Seedream resolution, quality, thinking level or reference count is rejected before an API request.
+
+### Validation and known limitations
+- Automated checks cover model discovery, request payloads, reference-image forwarding, size defaults, rejected options, credit/result rendering and settings persistence using mocked APIs. No new paid image-generation test was run for this release; upstream generation availability is not established by these tests.
+
 ## [0.6.5] - 2026-11-13
 
 ### Fixed

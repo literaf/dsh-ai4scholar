@@ -9,7 +9,7 @@
 
 import {
   ABSTRACT_LIMIT, CITE_STYLES, DEFAULT_RESULTS, DEFAULT_SOURCES, DRAW_MODELS, DRAW_SIZES,
-  PLATFORM_CAP, READ_MAX, READ_MIN, UNIFIED_SOURCES,
+  PLATFORM_CAP, READ_MAX, READ_MIN, UNIFIED_SOURCES, normalizeDrawImageSize,
 } from '../shared/search-settings.js'
 import type { CiteStyle, DrawModel, DrawSize, SearchSettings, UnifiedSource } from '../shared/search-settings.js'
 import { createCardStore } from './controller.js'
@@ -101,7 +101,7 @@ export function readSettings(value: unknown): SearchSettings {
     citeStyle: oneOf(CITE_STYLES, section.citeStyle, 'ieee'),
     citeExcludePreprints: section.citeExcludePreprints === true,
     drawModel: oneOf(DRAW_MODELS, section.drawModel, 'flash31'),
-    drawImageSize: section.drawModel === 'bananalite' || section.drawModel === 'flash' ? '1K' : oneOf(DRAW_SIZES, section.drawImageSize, '2K'),
+    drawImageSize: normalizeDrawImageSize(oneOf(DRAW_MODELS, section.drawModel, 'flash31'), oneOf(DRAW_SIZES, section.drawImageSize, '2K')),
   }
 }
 
@@ -259,7 +259,15 @@ export class SearchSettingsController {
   /** Stage one field's draft. */
   edit<K extends keyof SearchDraft>(field: K, value: SearchDraft[K]): void {
     this.touched.add(field)
-    this.publish({ ...this.state.draft, [field]: value }, { notice: undefined })
+    const draft = { ...this.state.draft, [field]: value }
+    if (field === 'drawModel' || field === 'drawImageSize') {
+      const size = normalizeDrawImageSize(draft.drawModel, draft.drawImageSize)
+      if (size !== draft.drawImageSize) {
+        this.touched.add('drawImageSize')
+        draft.drawImageSize = size
+      }
+    }
+    this.publish(draft, { notice: undefined })
   }
 
   /** Whether `save()` would write. */

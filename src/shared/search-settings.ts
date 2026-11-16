@@ -43,12 +43,25 @@ export const CITE_STYLES = ['ieee', 'apa', 'vancouver', 'nature', 'numbered'] as
 export type CiteStyle = (typeof CITE_STYLES)[number]
 
 /** sci_draw models, fastest first. */
-export const DRAW_MODELS = ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite'] as const
+export const DRAW_MODELS = ['flash', 'flash31', 'pro', 'gptimage', 'gpt26flare', 'gpt26sunburst', 'banana21', 'bananalite', 'seedream55'] as const
 export type DrawModel = (typeof DRAW_MODELS)[number]
 
 /** sci_draw output resolutions. */
 export const DRAW_SIZES = ['1K', '2K', '4K'] as const
 export type DrawSize = (typeof DRAW_SIZES)[number]
+
+/** Resolutions offered in the settings page for each drawing model. */
+export function supportedDrawSizes(model: string): readonly DrawSize[] {
+  if (model === 'flash' || model === 'bananalite') return ['1K']
+  if (model === 'seedream55') return ['1K', '2K']
+  return DRAW_SIZES
+}
+
+/** Keep a supported preference; use 2K (or 1K for limited models) otherwise. */
+export function normalizeDrawImageSize(model: string, preferred: string): DrawSize {
+  const sizes = supportedDrawSizes(model)
+  return sizes.includes(preferred as DrawSize) ? preferred as DrawSize : sizes.includes('2K') ? '2K' : '1K'
+}
 
 /** Per-platform default counts; an absent platform falls back to `defaultMaxResults`. */
 export type ResultsPerSource = Partial<Record<UnifiedSource, number>>

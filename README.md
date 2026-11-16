@@ -181,7 +181,7 @@ The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from 
     resultsPerSource: {}             # e.g. { semantic-scholar: 100, google-scholar: 10 }
     citeStyle: ieee                  # auto_cite: ieee | apa | vancouver | nature | numbered (plugin page)
     citeExcludePreprints: false      # auto_cite (plugin page)
-    drawModel: flash31               # sci_draw: flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite (plugin page)
+    drawModel: flash31               # sci_draw: flash | flash31 | pro | gptimage | gpt26flare | gpt26sunburst | banana21 | bananalite | seedream55 (plugin page)
     drawImageSize: 2K                # sci_draw: 1K | 2K | 4K (plugin page)
     # sizes
     defaultMaxResults: 10            # shared fallback count (configuration file)
@@ -237,3 +237,5 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 MIT
 
 `/ai4s-draw` / `sci_draw` also accepts `quality` (GPT: low/medium/high, plus xhigh/max on GPT Image 2.6) independently of `image_size`, and `thinking_level` (Gemini: banana21 minimal/medium/high; flash31/bananalite minimal/high). Omit quality for other models. Higher quality/resolution can cost more; the API validates and charges the selected combination. Existing calls that omit quality keep their previous behavior.
+
+Seedream 5.5 is available as `model: "seedream55"` and in the figure-model settings. It supports 1K/2K generation, editing, style transfer and composition with up to 10 reference images (accessible URLs or image data URIs). Omit `quality` and `thinking_level`. When switching from a 4K model, an inherited resolution becomes 2K; explicitly requesting 4K or 512px is rejected before an API call. Example: `/ai4s-draw Use Seedream 5.5 to draw a cell structure diagram with Chinese labels at 2K`.
