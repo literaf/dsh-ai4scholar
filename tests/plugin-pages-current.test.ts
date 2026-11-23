@@ -70,15 +70,17 @@ describe.skipIf(!compatRoot)('published current UI runtime', () => {
       // this plugin's compatibility types or its legacy SDK.
       const source = readFileSync(sdk.resolve('@deepseek-ai/dsh-client-ui-plugin-manager/client'), 'utf8')
       const children: Record<string, object> = { 'settings.section': { kind: 'list', scope: 'root' } }
+      // Published hosts can minify string values to single quotes or backticks.
+      const quote = '[\\x22\\x27\\x60]'
       for (const name of ['plugins.bundle.config', 'plugins.row.config']) {
         const escaped = name.replaceAll('.', '\\.')
-        const declaration = source.match(new RegExp(`"${escaped}":\\s*(\\{\\s*kind:\\s*"\\w+",\\s*scope:\\s*"[\\w-]+"\\s*\\})`))
+        const declaration = source.match(new RegExp(`"${escaped}":\\s*(\\{\\s*kind:\\s*${quote}\\w+${quote},\\s*scope:\\s*${quote}[\\w-]+${quote}\\s*\\})`))
         expect(declaration, `published declaration ${name}`).not.toBeNull()
         children[name] = new Function(`return (${declaration![1]})`)() as object
       }
       if (isScholar) for (const [name, pkg] of [['main', 'layout'], ['sidebar.panellist', 'sidebar']] as const) {
         const source = readFileSync(sdk.resolve(`@deepseek-ai/dsh-client-ui-${pkg}/client`), 'utf8')
-        const declaration = source.match(new RegExp(`"${name.replaceAll('.', '\\.')}":\\s*(\\{\\s*kind:\\s*"\\w+",\\s*scope:\\s*"[\\w-]+"\\s*\\})`))
+        const declaration = source.match(new RegExp(`"${name.replaceAll('.', '\\.')}":\\s*(\\{\\s*kind:\\s*${quote}\\w+${quote},\\s*scope:\\s*${quote}[\\w-]+${quote}\\s*\\})`))
         expect(declaration, `published declaration ${name}`).not.toBeNull()
         children[name] = new Function(`return (${declaration![1]})`)() as object
       }

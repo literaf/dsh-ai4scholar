@@ -234,7 +234,6 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 - Full-text extraction uses `pdf-parse` (pdf.js) in-process; scanned/image-only PDFs yield an explicit error rather than empty text.
 - The same tool set ships for [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw), [Codex](https://github.com/literaf/ai4scholar-plugin-codex) and [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes).
 
-
 `/ai4s-draw` / `sci_draw` also accepts `quality` (GPT: low/medium/high, plus xhigh/max on GPT Image 2.6) independently of `image_size`, and `thinking_level` (Gemini: banana21 minimal/medium/high; flash31/bananalite minimal/high). Omit quality for other models. Higher quality/resolution can cost more; the API validates and charges the selected combination. Existing calls that omit quality keep their previous behavior.
 
 Seedream 5.5 is available as `model: "seedream55"` and in the figure-model settings. It supports 1K/2K generation, editing, style transfer and composition with up to 10 reference images (accessible URLs or image data URIs). Omit `quality` and `thinking_level`. When switching from a 4K model, an inherited resolution becomes 2K; explicitly requesting 4K or 512px is rejected before an API call. Example: `/ai4s-draw Use Seedream 5.5 to draw a cell structure diagram with Chinese labels at 2K`.

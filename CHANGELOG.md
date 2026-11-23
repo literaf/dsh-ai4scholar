@@ -4,7 +4,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
-## 0.7.0 — 2026-11-23
+## [0.7.0] - 2026-11-23
 
 ### Licensing change
 
@@ -12,7 +12,7 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 - Preserve all existing MIT grants for **0.6.6 and earlier releases**. Third-party licenses and separately identified asset terms remain applicable.
 - Include licensing guidance, the historical MIT notice, third-party notices and version-specific Corresponding Source instructions in the npm package.
 - Use a new minor version to make this license transition explicit. Plugin features, API billing and runtime behavior are unchanged.
-
+- Update the native-page test parser to accept the current Harness bundle’s string quote styles; plugin runtime code is unchanged.
 
 ## [0.6.6] - 2026-11-16
 

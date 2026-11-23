@@ -234,7 +234,6 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 - 全文抽取使用进程内的 `pdf-parse`（pdf.js）；扫描版/纯图片 PDF 会明确报错而不是返回空文本。
 - 同一套工具已提供 [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw)、[Codex](https://github.com/literaf/ai4scholar-plugin-codex) 和 [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes) 版本。
 
-
 `/ai4s-draw` / `sci_draw` 支持独立的 `quality`（GPT：low/medium/high，GPT Image 2.6 另支持 xhigh/max）与 `image_size`；Gemini 使用 `thinking_level`（banana21：minimal/medium/high；flash31/bananalite：minimal/high）。其他模型省略 quality。质量和分辨率都会影响积分，具体组合由 API 校验并计费；旧调用省略 quality 时保留原有行为。
 
 Seedream 5.5 可通过 `model: "seedream55"` 或配图模型设置选择，支持 1K／2K 的生成、编辑、风格转换和多图组合，最多接收 10 张参考图（可访问的链接或图片 Data URI）。省略 `quality` 和 `thinking_level`。从 4K 模型切换过来时，继承的分辨率会自动调整为 2K；显式指定 4K 或 512px 会在请求 API 前被拦截。例如：`/ai4s-draw 用 Seedream 5.5 画一张带中文标注的细胞结构图，2K`。
