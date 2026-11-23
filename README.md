@@ -1,23 +1,85 @@
-> **License change in 0.7.0:** AGPL-3.0-only with separate commercial licensing. Earlier MIT grants remain valid. [Details](LICENSING.md).
-
-<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
-<p align="center"><strong>dsh-ai4scholar</strong></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="96" alt="Ai4Scholar"></a></p>
 
 # AI4Scholar for DeepSeek Harness
 
 English | [中文](README_CN.md)
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
 
-<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+**Search literature, read papers, follow citations, and create scientific figures inside DeepSeek Harness.** A sidebar workspace for direct searches, plus **43 native tools** for your chat model. Data services are provided by [ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar).
 
-Academic literature tools for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`), delivered as 43 native agent tools. Powered by [ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar).
+[Install](#install-and-get-started) · [Slash commands](#slash-commands) · [Sources and costs](#sources-and-costs) · [Settings](#settings) · [Commercial licensing](COMMERCIAL-LICENSE.md)
 
-## Slash commands with natural-language requests
+![Current Ai4Scholar workspace in Harness: live arXiv results on the left and the selected paper on the right](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/workbench-en.png)
 
-Choose a capability with a slash command, then describe the request normally. Unspecified criteria inherit the plugin settings.
+*Captured on 2026-11-23 with plugin 0.7.0 and Harness 0.2.2-rc.5. These are real results from the free arXiv API; source results can change. [Screenshot details](docs/SCREENSHOTS.md).*
 
-| Command | Purpose |
+## What you can do
+
+| Research task | Plugin capability |
+|---|---|
+| Find papers | Semantic Scholar, PubMed, Google Scholar, Chinese literature, and arXiv; request multiple sources in chat to search and deduplicate together |
+| Read and follow evidence | Full-text excerpts, accessible PDF text in slices, paper and author details, references, incoming citations, and related papers |
+| Find patents and preprints | Google Patents search; browse bioRxiv / medRxiv by subject and date window |
+| Write and illustrate | Add references to prose, format known-paper citations, and generate or edit figures with Seedream 5.5, GPT Image, and Nano Banana models |
+| Set your defaults | Shared API key, per-source result counts, abstract and full-text lengths, drawing defaults, and credit receipts |
+
+## Two ways to work
+
+**Search directly in the sidebar.** Open **Ai4Scholar**, choose a source, enter a topic, and search. Browse results beside the selected paper, read its abstract or matching excerpt, and open source/full-text links. The workspace does not call a chat model; arXiv, bioRxiv, and medRxiv also need no AI4Scholar API key. Filters depend on the source, with distinct detail views for patents and excerpts.
+
+**Continue your research in chat.** Ask normally or choose a slash command below. Your model can chain searches, paper lookup, full-text reading, and citation follow-ups, keeping results in the conversation. Configure a chat model in Harness to use this workflow.
+
+```text
+/ai4s-search Search Google Scholar and Semantic Scholar for solid-state batteries and merge duplicates
+/ai4s-read Read the third paper above, focusing on its methodology
+/ai4s-citations Find papers citing the first paper
+/ai4s-cite Add real references to this paragraph in APA style: …
+/ai4s-draw Use Seedream 5.5 to draw a cell structure diagram with Chinese labels at 2K
+```
+
+## Install and get started
+
+### DeepSeek Harness Desktop
+
+1. Open **Plugins → Add plugin**, enter `dsh-ai4scholar`, install, and enable it.
+2. Open **Ai4Scholar → Settings** in the sidebar. For billed sources, paste an API key from [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar) and save. It takes effect on the next tool call.
+3. Return to the workspace, choose a source, and search. For natural-language research, configure a Harness chat model and send a request or an `/ai4s-*` command.
+
+Workspace settings, the plugin detail page, and **Settings → AI4Scholar** share the same key and defaults. The current Desktop's built-in plugin inventory does not contain this plugin's settings form.
+
+### Web / CLI
+
+Requires Node.js **≥ 22.19.0** and pnpm:
+
+```sh
+npm i -g pnpm                   # skip if already installed
+npm i -g @deepseek-ai/dsh
+dsh plugin --profile web add dsh-ai4scholar
+dsh web
+```
+
+Open the URL printed in your terminal and configure the plugin as above. For command-line tasks, install into `--profile headless` and set `AI4SCHOLAR_API_KEY` through the environment or Harness credentials store.
+
+**Updates:** **Check for updates** in the workspace shows your version, the latest stable npm release, and release notes; it does not install automatically. Update a Desktop registry installation under **Plugins → dsh-ai4scholar → Version**. For Web, run `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`. Desktop manages its own installation; Web/CLI profile commands do not update it.
+
+## Settings
+
+![Current plugin settings: API key, default sources, result counts, and result options](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card-en.png)
+
+*Captured from the current settings page with no real API key configured.*
+
+- **Search:** unified search defaults to Semantic Scholar. Enable other default sources and set each source's result count. Calls inherit these settings when options are omitted.
+- **Results:** abstracts default to 600 characters; full-text reading defaults to 60,000 characters per slice and can continue as needed. Credit display is configurable.
+- **Command card:** optionally show the command menu after the latest completed reply. Off by default. Buttons prepare a draft; add your request and send it.
+- **Citations and figures:** IEEE is the default citation style. Drawing defaults to Nano Banana 2 (`flash31`), 2K; Seedream 5.5, GPT Image, and other supported models are also available.
+- **Key and saving:** the key is stored in Harness credentials and is not added to model context. It stays hidden until you explicitly reveal it. Saved defaults apply to subsequent calls.
+
+## Slash commands
+
+Choose a capability, then describe your request in natural language. The default catalog has **20 research commands plus one account command**. Disabling a capability hides its shortcut. `/ai4scholar` remains an alias for `/ai4s`.
+
+| Command |Purpose |
 |---|---|
 | `/ai4s` | Key status, balance, default sources/counts, and command index |
 | `/ai4s-search` | Unified paper search; request multiple sources and deduplication in plain language |
@@ -38,32 +100,56 @@ Choose a capability with a slash command, then describe the request normally. Un
 | `/ai4s-pdf` | Obtain a PDF URL; this does not save a local file |
 | `/ai4s-export` | Citation formats and BibTeX/export links for a known paper (Google Scholar) |
 | `/ai4s-cite` | Add real references to prose |
-| `/ai4s-draw` | Generate, edit, style, compose, iterate, critique, SVG, and vectorize scientific figures |
+| `/ai4s-draw` | Generate, edit, restyle, compose, create SVG, and vectorize scientific figures |
 
-There are 20 research commands plus `/ai4s` for account status, with `/ai4scholar` retained as an alias. Operation shortcuts disappear when their primary capability is disabled; lookup helpers alone do not keep them visible. Source and operation constraints are checked during tool execution. Snippets return excerpts, references are outgoing, citations are incoming, export formats an existing paper, and cite inserts references into prose.
+An empty research command shows help without starting a search. Source-specific commands constrain that request without changing global defaults. For multi-source search, use `/ai4s-search` and name the sources.
 
-```text
-/ai4s-google 10 solid-state battery papers published since 2022
-/ai4s-search Search Google Scholar and Semantic Scholar for solid-state batteries and merge duplicates
-/ai4s-author Use Semantic Scholar to find Geoffrey Hinton; confirm the author’s identity before showing the profile and representative papers
-/ai4s-read Read the third paper above, focusing on its methodology
-/ai4s-snippets Find 5 passages describing solid-state battery interface resistance experiments
-/ai4s-references List the references cited by the first paper
-/ai4s-citations Find papers citing the first paper
-/ai4s-export Get the APA reference and BibTeX link for the first paper
-/ai4s-patents Find CATL’s solid-state battery patent applications in China from the last five years
-```
+Current Harness paper, author, and patent cards offer applicable follow-ups. Buttons prepare an editable request with exact identifiers and preserve existing drafts. Source and PDF links open directly.
 
-An empty command shows an example without searching. Research commands queue a normal model turn in the current conversation: your configured model interprets the request, briefly states the source and material criteria, then calls tools. Results remain available for follow-ups. Conflicting sources and ambiguous authors require clarification; source-specific commands enforce the selected source at execution and leave global defaults unchanged. `/ai4scholar` remains an alias for the status command.
+![Current /ai4s account card and command menu with clearly labeled demonstration credits](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card-en.png)
 
-On current Harness, paper, author, and patent result cards offer applicable actions. Buttons prepare an editable natural-language follow-up containing the exact identifiers; they preserve existing composer drafts. PDF/source links open directly. Older clients without the tool-view slot retain ordinary tool results.
+*The image uses the current plugin's actual card component with local demonstration values, not a real account or charge. Command descriptions currently come from the plugin's Chinese command catalog.*
 
-Google Scholar results retain native paper, cited-by, and version identifiers. Citation-format lookup requires the native paper ID, not a DOI, URL, or author-page citationId. Author search defaults to Semantic Scholar; explicitly requesting Google Scholar selects its author tools. Google’s available article list is not guaranteed complete and supplies no h-index. bioRxiv/medRxiv browse by category and time, not free-text keywords. Patents stay separate from unified paper search.
+## Sources and costs
 
-| Family | Tools | Cost |
+| Source / capability | AI4Scholar credits |
+|---|---|
+| Semantic Scholar, PubMed, Google Scholar, Google Patents, Chinese literature | Billed according to the called API |
+| arXiv, bioRxiv, medRxiv | Free; no AI4Scholar key required |
+| DOI resolution and accessible PDF reading | No plugin API-credit charge; access rights still depend on the source |
+| Automatic citations and AI figures | Uses credits; image model, resolution, and quality can affect the cost |
+| Balance lookup, command-menu display, update checks | No API-credit charge |
+
+Multi-source search calls each selected source. New searches and new pages on billed sources incur their corresponding charges; actual API receipts determine credit usage. Your configured Harness model provider bills chat-model usage separately.
+
+Workspace results and recent searches remain in the current client session. Revisiting loaded pages makes no new request; refreshing the page clears that in-memory history.
+
+## Boundaries and related plugins
+
+- **Abstracts, excerpts, and full text differ.** Chinese literature provides metadata and available abstracts. Excerpt search matches indexed titles, abstracts, or body passages. The `read_*` tools attempt to fetch accessible PDFs and extract their text; scanned/image-only PDFs cannot be extracted as ordinary text.
+- **PDF commands return links.** `/ai4s-pdf` does not save a file to your computer. Paywalled papers still require institutional-network or other applicable access.
+- **Citation direction and purpose matter.** References are outgoing; citations are incoming. Export formats a known paper; Cite adds references to prose. Google Scholar citation formats require the original paper ID returned by that source.
+- **bioRxiv / medRxiv browse categories and time windows.** They are not keyword full-text searches. Patents are separate from unified paper search.
+- **Scientific figures:** current operations are `smart / generate / edit / style / compose / svg / vectorize`. Seedream 5.5 supports 1K/2K and up to 10 reference images. GPT `quality` and Gemini `thinking_level` depend on the model; the API validates each combination.
+- For a dedicated canvas, layer editing, and PSD export, install [PlotFig](https://ai4scholar.net/integrations/dsh-plotfig?src=dsh_ai4scholar). For saved HTML/CSV/JSON evidence reports, install [Fulltext](https://ai4scholar.net/integrations/dsh-fulltext?src=dsh_ai4scholar). These are separate plugins.
+
+## AI4Scholar website
+
+[Get an API key](https://ai4scholar.net?src=dsh_ai4scholar) · [Plugin guide](https://ai4scholar.net/integrations/dsh-ai4scholar?src=dsh_ai4scholar) · [Pricing](https://ai4scholar.net/pricing?src=dsh_ai4scholar)
+
+[![Current public AI4Scholar homepage, captured on 2026-11-23](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home-en.jpg)](https://ai4scholar.net?src=dsh_ai4scholar)
+
+*Captured from the public website. The web workspace's full feature set is broader than this plugin's tools.*
+
+## Tools and advanced configuration
+
+<details>
+<summary>All 43 native tools</summary>
+
+| Family |Tools | Cost |
 |---|---|---|
 | **Paper search** | `search_papers` — Semantic Scholar only by default; select PubMed, arXiv, Google Scholar, or Chinese literature via `sources` as needed. Multiple sources are merged by DOI / arXiv id / PMID / title, with multi-platform hits ranked first | per selected platform |
-| **Semantic Scholar** (200M+ papers, all fields) | `search_semantic`, `search_semantic_bulk`, `search_semantic_snippets` (full-text excerpts), `search_semantic_paper_match` (title → paper), `get_semantic_paper_detail`, `get_semantic_paper_batch`, `get_semantic_citations`, `get_semantic_references`, `get_semantic_paper_authors`, `search_semantic_authors`, `get_semantic_author_detail`, `get_semantic_author_batch`, `get_semantic_author_papers`, `get_semantic_recommendations`, `get_semantic_recommendations_for_paper`, `download_semantic`, `read_semantic_paper` | credits |
+| **Semantic Scholar** | `search_semantic`, `search_semantic_bulk`, `search_semantic_snippets` (full-text excerpts), `search_semantic_paper_match` (title → paper), `get_semantic_paper_detail`, `get_semantic_paper_batch`, `get_semantic_citations`, `get_semantic_references`, `get_semantic_paper_authors`, `search_semantic_authors`, `get_semantic_author_detail`, `get_semantic_author_batch`, `get_semantic_author_papers`, `get_semantic_recommendations`, `get_semantic_recommendations_for_paper`, `download_semantic`, `read_semantic_paper` | credits |
 | **PubMed** (biomedical & life sciences) | `search_pubmed`, `get_pubmed_paper_detail`, `get_pubmed_paper_batch`, `get_pubmed_citations`, `get_pubmed_related` | credits |
 | **Chinese literature** (journals, theses, conferences; metadata and available abstracts) | `search_chinese` | credits |
 | **Google Scholar** (papers, authors, reference formats) | `search_google_scholar`, `search_google_scholar_profiles`, `get_google_scholar_author`, `get_google_scholar_citation` | credits |
@@ -74,81 +160,10 @@ Google Scholar results retain native paper, cited-by, and version identifiers. C
 | **Writing & figures** | `auto_cite` (insert real citations + reference list + BibTeX), `sci_draw` (generate / edit / style / compose / SVG / vectorize scientific figures) | credits |
 | **Account** | `get_ai4scholar_credits`, plus the `/ai4scholar` slash command | free |
 
-**Start with one source.** With the shipped settings, omitting `sources` (or passing `[]`) queries only Semantic Scholar. If you choose other default platforms on the plugin page, the same call searches those platforms together. For biomedical or clinical topics, select `sources: ["pubmed"]` as appropriate. Use multiple sources, such as `["semantic-scholar", "pubmed"]`, when broader coverage is explicitly requested or one source is insufficient. Each billed API request adds to the charge; Google Scholar bills per page, while arXiv is free. If none of the configured default platforms is enabled, the default is the first enabled platform in this order: Semantic Scholar, PubMed, arXiv, Google Scholar, Chinese literature.
+</details>
 
-Every paper-list tool returns one normalized record shape — title, authors, year, venue, citation count, DOI/PMID/arXiv ids, URL, open-access PDF, abstract — so the model (and Code Mode programs) can chain calls across platforms without special cases. Results render as citation cards in the dsh Web UI; full-text tools return the PDF text in slices (`offset` / `max_chars`) so a 40-page paper never floods the context.
-
-**Credits are visible.** Every billed tool card in the chat carries the charge in its title (`Semantic Scholar: protein folding · 10 credits · 4,990 left`), the model-facing result ends with `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960` (from the API's `X-Credits-*` headers) and the model is asked to close a billed turn with a one-line credit note; `/ai4scholar` renders a balance card (available credits, breakdown, membership, key status, session spend) and `get_ai4scholar_credits` gives the model the same numbers. Free platforms (arXiv, bioRxiv/medRxiv, DOI) carry no credit line.
-
-**Chinese literature.** Use `search_chinese` for Chinese keywords, document types (`journal`, `thesis`, `conference`), year filters, sorting, and pagination. It is also `sources: ["chinese"]` in `search_papers`, and stays unchecked in the shipped defaults. For a bilingual search, pass e.g. `query: "bird migration"`, `chinese_query: "鸟类迁徙"`, and `sources: ["semantic-scholar", "chinese"]`. Results share DOI and normalized-title de-duplication; short Chinese titles need the same year and first author, and conflicting DOIs stay separate. Translated titles without a shared identifier may remain separate. Chinese results provide metadata and available abstracts, not full-text downloads.
-
-## Screenshots
-
-| API key card (legacy Settings view) | `/ai4scholar` balance card |
-|---|---|
-| ![AI4Scholar settings card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![balance card](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
-
-## Install
-
-**Quick start** (macOS / Linux; Windows PowerShell is the same):
-
-```sh
-# 0. Prerequisites: Node.js ≥ 22.19 (or ≥ 24) and pnpm (dsh manages plugins with pnpm)
-node -v
-npm i -g pnpm                     # skip if you already have it
-
-# 1. DeepSeek Harness
-npm i -g @deepseek-ai/dsh
-dsh --version
-
-# 2. This plugin (into the web profile; use --profile headless for the CLI runner)
-dsh plugin --profile web add dsh-ai4scholar
-
-# 3. Start
-dsh web                           # prints http://127.0.0.1:3080
-```
-
-Then, once, in the browser:
-
-1. **Settings → Models** — paste your DeepSeek API key ([platform.deepseek.com](https://platform.deepseek.com)).
-2. **Plugins → Installed → dsh-ai4scholar** (or **Settings → AI4Scholar**) — paste your AI4Scholar API key ([ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar)) and press **Save**. The card stores it in the dsh credentials store (`$DSH_HOME/.credentials.yaml`, mode 0600, the same place the Models page keeps provider keys), tests it at once (`✓ Key works · 89,419 credits available`), and it takes effect on the next tool call — no restart. **Refresh** re-checks any time. The saved key is masked by default, with **Key configured** on the right; click the eye to reveal or hide it. Hiding, leaving the page, or switching away from the window clears the revealed value.
-
-On current DSH Desktop, click **dsh-ai4scholar** in the sidebar’s **Plugins → Installed** list: the key form is visible immediately on its detail page. **Settings → Built-in plugins** is a host inventory, so it no longer contains this form. Older Harness versions still offer the original **Settings → Plugins → AI4Scholar** card. Existing keys keep working; all entrances use the same credential reference.
-
-Version 0.6.0 adds **Ai4Scholar** to the sidebar. Since 0.6.1, the sidebar uses a monochrome search icon that follows the theme and matches the other navigation icons. Its workbench searches directly without a chat model: choose a source, enter a query, and browse results beside the selected paper’s details. **Settings** in the workbench edits the same API key and defaults as the two existing entrances. Source-specific filters include result count, supported year ranges/date sorting, and the look-back window for bioRxiv/medRxiv category browsing. Full-text excerpts and patents have their own detail views. Results and recent queries stay in memory during the session; going back to an already loaded page does not make another request. Billed sources use API credits, including new pages; reported charges appear with the results. The workbench requires the authenticated plugin Fetch channel, validated on Harness 0.2.2-rc.1. Older hosts retain the existing tools and settings entrances.
-
-**Check for updates**, beside Settings, checks the latest stable release on npm and shows both versions. A newer local test build is shown as ahead, never as a downgrade target. Release notes are linked; when a new version exists, **Manage plugin** opens the host’s plugin page. Checking does not install anything or use API credits.
-
-Pick a workspace folder and ask away. On current Desktop, use **Plugins → dsh-ai4scholar → Version** to update a registry installation. Desktop manages its profile itself; the CLI does not modify it. To replace a local test package, uninstall it in Desktop and use **Add plugin** with `dsh-ai4scholar@0.7.0`, then enable it. Your API key stays in the shared credentials store. For the Web profile, use `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`.
-
-Prefer files or CI? The plugin resolves the credential reference `AI4SCHOLAR_API_KEY`, so any of these also work (highest precedence first): `export AI4SCHOLAR_API_KEY=…` in the shell that launches dsh · a line in `$DSH_HOME/.credentials.yaml` · a line in the project or `$DSH_HOME/.env`. The card reports which layer is supplying the key and goes read-only when the environment does. Headless has no settings page, so use one of these there.
-
-Publishing requests an npmmirror sync. Mirror availability is verified separately and may lag behind the official npm registry.
-
-Verify the layer without booting: `dsh --profile web --dump-config` prints a `# == dsh-ai4scholar` section.
-
-Then just ask:
-
-> Find recent papers on CRISPR base editing for sickle cell disease and compare their delivery methods.
-
-> Search PubMed for GLP-1 receptor agonists and cardiovascular outcomes since 2022, sorted by date.
-
-> Which paper is "Attention Is All You Need"? Give me its DOI and citation count.
-
-## Configuration
-
-### On the plugin page
-
-Open **Plugins → AI4Scholar** (or **Settings → AI4Scholar**; both edit the same values). Under the API key:
-
-- **Search**: tick the platforms `search_papers` queries when the model names none (Semantic Scholar only by default), and set each platform's result count. Semantic Scholar, PubMed, and Chinese literature return up to 100 per search, billed once each; arXiv returns up to 100 for free. Google Scholar returns 1–10 per call (one credit); the model follows nextOffset with the same result count for more. All sources support pagination through their standalone tools; every additional billed request costs credits. The count is also the default for that platform's own search tool.
-- **Results**: abstract length shown to the model (0–5000 characters, default 600), full-text slice per `read_*` call (2,000–200,000, default 60,000), and whether results carry the credit line.
-- **Command card**: enable **Show the command card after replies** (off by default) to show the command menu below the latest completed answer. Click a command to fill the current conversation draft, add your request, then send. Existing drafts are preserved. Starting a new turn hides the previous menu; displaying it does not query AI4Scholar or the model. Requires the host's turn-tail extension and authenticated plugin Fetch channel; older hosts keep the manual `/ai4s` and `/ai4scholar` cards.
-- **Citations and figures**: `auto_cite` reference style (IEEE by default) and whether to leave out preprints; `sci_draw` model (Flash 3.1 by default) and resolution (2K by default).
-
-The model can still pass its own values for a single call. **Save** writes the changed fields into your profile's `cordis.patch.yml` and the plugin reloads with them. The next tool call and new conversations use the new values. **Restore defaults** removes them again. This page needs DeepSeek Harness 0.2.1 or later; on older versions it tells you to edit the file instead.
-
-### In the profile file
+<details>
+<summary>Configure defaults and credentials in a profile file</summary>
 
 The bundle mounts one row (`id: ai4scholar`) with these defaults. Override from your profile's `cordis.patch.yml` (a patch replaces the whole `config`, so restate every key you keep). For DeepSeek Harness Desktop the file is `~/.dsh/profiles/desktop/cordis.patch.yml` on macOS; for the CLI it is `$DSH_HOME/profiles/<profile>/cordis.patch.yml`:
 
@@ -203,13 +218,7 @@ The API key is resolved **per call** through `ctx.credentials`, so storing or ro
 
 The settings card always edits `AI4SCHOLAR_API_KEY` (the browser half does not receive the row config); a deployment that overrides `apiKeyEnv` manages that reference through the environment or the credentials file instead. The session credit tally is process-local (it restarts with dsh); the balance itself always comes from the API.
 
-## How it fits dsh
-
-- Two halves in one package: the Node half registers the tools; the browser half (`exports["./client"]`, declared by `dsh.client`) contributes the settings card through native `plugins.bundle.config` / `plugins.row.config` slots and `settings.section` (plus `settings.plugin.item` on older hosts) writes keys through the credentials API. An explicit reveal uses `POST /api/ai4scholar/key/reveal` on the host’s authenticated, owner-only channel with `Cache-Control: no-store`; it is not a model tool and does not add the key to model context. Older hosts without this protected channel cannot reveal saved keys.
-- Tools are registered on `ctx.tools` with `defineTool`: typed, schema-validated arguments; a canonical JSON value per call (`{ source, query, total, papers[], truncated, nextOffset? }`); a Markdown rendering for the model; and a `web` result card (structured sources) for the Web UI.
-- A single `tool:ai4scholar` system-prompt section tells the model when to use which platform and to cite by DOI/link.
-- Everything is an effect: unloading the plugin (or editing its config, which triggers HMR) withdraws every tool and the prompt section.
-- No model-visible input is added outside the tool results, so sessions stay fully replayable from the log.
+</details>
 
 ## Development
 
@@ -227,16 +236,6 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ```
 
 `dsh plugin add github:<you>/dsh-ai4scholar` also works: the `prepare` script builds `lib/` from source, and pnpm asks you to allow it once via `allowBuilds` in the profile's `pnpm-workspace.yaml`.
-
-## Notes
-
-- `download_by_doi` / `read_by_doi` resolve through doi.org and known publisher PDF patterns (Elsevier, Springer/Nature, Wiley, T&F, MDPI, IEEE, ACM, ACS, RSC, PLOS, Frontiers, bioRxiv/medRxiv, arXiv). Paywalled articles only download when dsh runs on a network with institutional access; a refusal names the landing page so the user can fetch it by hand.
-- Full-text extraction uses `pdf-parse` (pdf.js) in-process; scanned/image-only PDFs yield an explicit error rather than empty text.
-- The same tool set ships for [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw), [Codex](https://github.com/literaf/ai4scholar-plugin-codex) and [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes).
-
-`/ai4s-draw` / `sci_draw` also accepts `quality` (GPT: low/medium/high, plus xhigh/max on GPT Image 2.6) independently of `image_size`, and `thinking_level` (Gemini: banana21 minimal/medium/high; flash31/bananalite minimal/high). Omit quality for other models. Higher quality/resolution can cost more; the API validates and charges the selected combination. Existing calls that omit quality keep their previous behavior.
-
-Seedream 5.5 is available as `model: "seedream55"` and in the figure-model settings. It supports 1K/2K generation, editing, style transfer and composition with up to 10 reference images (accessible URLs or image data URIs). Omit `quality` and `thinking_level`. When switching from a 4K model, an inherited resolution becomes 2K; explicitly requesting 4K or 512px is rejected before an API call. Example: `/ai4s-draw Use Seedream 5.5 to draw a cell structure diagram with Chinese labels at 2K`.
 
 ## License
 

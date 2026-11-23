@@ -1,23 +1,92 @@
-> **0.7.0 许可变更：** 采用 AGPL-3.0-only，可另行协商商业授权；此前 MIT 授权继续有效。[说明](LICENSING.md)。
-
-<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
-<p align="center"><strong>dsh-ai4scholar</strong></p>
+<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="96" alt="Ai4Scholar"></a></p>
 
 # AI4Scholar × DeepSeek Harness
 
 [English](README.md) | 中文
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) [![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
 
-<p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
+**在 DeepSeek Harness 中检索文献、阅读论文、追踪引用和制作科研配图。** 一个可直接使用的侧栏工作台，加上供聊天模型调用的 **43 个原生工具**。数据服务由 [ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar) 提供。
 
-为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）提供学术文献能力的插件：43 个原生 agent 工具。由 [ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar) 提供数据服务。
+[安装](#安装与开始使用) · [斜杠命令](#斜杠命令) · [来源与费用](#来源与费用) · [设置](#设置) · [商业授权](COMMERCIAL-LICENSE.md)
 
-## 斜杠命令：后面接自然语言
+![当前 Harness 中的 Ai4Scholar 工作台：左侧为真实 arXiv 检索结果，右侧为所选论文详情](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/workbench.png)
 
-用斜杠选择能力，再直接说明条件，无需记忆参数名。未指定的来源和条数沿用插件设置。
+*插件 0.7.0、Harness 0.2.2-rc.5，2026-11-23 实拍。上图使用免费 arXiv 接口的真实返回结果；结果会随来源更新。[截图来源说明](docs/SCREENSHOTS.md)。*
 
-| 命令 | 用途 |
+## 能做什么
+
+| 研究任务 | 插件能力 |
+|---|---|
+| 查文献 | Semantic Scholar、PubMed、Google Scholar、中文文献与 arXiv；在聊天中指定多个来源时，可统一搜索并去重 |
+| 找证据、追踪论文 | 全文片段、可访问 PDF 的分段读取、论文与作者详情、参考文献、被引论文和相关推荐 |
+| 查专利与预印本 | Google Patents 专利检索；按学科和时间浏览 bioRxiv / medRxiv |
+| 写作与配图 | 为文字补引用、获取已有论文的引用格式；调用 Seedream 5.5、GPT Image、Nano Banana 系列模型生成或处理科研图 |
+| 管理默认选项 | 共用 API Key、各来源返回条数、摘要与全文长度、绘图默认模型、积分消耗与余额 |
+
+## 两种使用方式
+
+**在侧栏直接检索。** 打开 **Ai4Scholar**，选择来源、输入主题并搜索，左侧看结果，右侧读摘要或匹配片段、打开原文和全文链接。工作台不调用聊天模型；arXiv、bioRxiv、medRxiv 也无需 AI4Scholar API Key。筛选条件按来源提供，专利和全文片段有各自的详情展示。
+
+**在聊天中继续研究。** 直接提问，或用下面的斜杠命令选择能力。模型可以把搜索、论文定位、全文阅读、引用追踪等工具串起来，结果留在当前对话中供后续追问。聊天方式需要先在 Harness 配置模型。
+
+```text
+/ai4s-search 同时用 Google Scholar 和 Semantic Scholar 查固态电池，合并去重
+/ai4s-read 读刚才第三篇的全文，重点解释研究方法
+/ai4s-citations 查哪些论文引用了刚才第一篇
+/ai4s-cite 为这段文字补充真实参考文献，采用 APA 格式：……
+/ai4s-draw 用 Seedream 5.5 画一张带中文标注的细胞结构图，2K
+```
+
+<details>
+<summary>查看深色工作台</summary>
+
+![深色主题下的 Ai4Scholar 文献检索工作台](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/workbench-dark.png)
+
+</details>
+
+## 安装与开始使用
+
+### DeepSeek Harness Desktop
+
+1. 在 **插件 → 添加插件** 中输入 `dsh-ai4scholar`，安装并启用。
+2. 打开侧栏 **Ai4Scholar → 设置**。使用收费来源时，粘贴从 [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar) 获取的 API Key 并保存；密钥在下一次工具调用即生效。
+3. 返回工作台选择来源开始检索。需要自然语言研究时，再配置 Harness 的聊天模型，在对话中输入需求或 `/ai4s-*` 命令。
+
+工作台设置、插件详情页和 **设置 → AI4Scholar** 共用密钥与默认选项。当前 Desktop 的内置插件清单不承载本插件的设置表单。
+
+### Web / 命令行
+
+需要 Node.js **≥ 22.19.0** 和 pnpm：
+
+```sh
+npm i -g pnpm                   # 已安装则跳过
+npm i -g @deepseek-ai/dsh
+dsh plugin --profile web add dsh-ai4scholar
+dsh web
+```
+
+浏览器打开终端打印的地址，后续设置与上面相同。命令行任务可把安装目标换成 `--profile headless`，并通过 `AI4SCHOLAR_API_KEY` 环境变量或 Harness 凭据存储配置密钥。
+
+**更新：** 工作台右上角的 **检查更新** 显示当前版本、npm 最新正式版和发布说明，不会自动安装。Desktop 从 **插件 → dsh-ai4scholar → 版本** 更新注册表安装；Web 运行 `dsh plugin --profile web add dsh-ai4scholar@latest` 后重启 `dsh web`。Desktop 自行管理安装，Web/CLI 的 profile 操作不会替它更新。
+
+## 设置
+
+![当前插件设置页：API Key、默认来源、返回条数及结果选项](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png)
+
+*实拍当前设置页，未配置任何真实密钥。*
+
+- **检索设置：** 统一检索默认只查 Semantic Scholar，可勾选其他来源，并分别设置每个来源的返回条数。单次未指定条件时继承这些设置。
+- **结果内容：** 摘要长度默认为 600 字符；全文分段默认每次 60,000 字符，可按需继续读取；可控制是否显示积分信息。
+- **命令卡片：** 可在最新回复结束后显示命令菜单，默认关闭。点击命令只填写草稿，补充需求后再发送。
+- **引用与配图：** 自动引用默认 IEEE；配图默认 Nano Banana 2（`flash31`）、2K。也可选择 Seedream 5.5、GPT Image 和其他受支持模型。
+- **密钥与保存：** 密钥存入 Harness 的凭据存储，不加入模型上下文；默认隐藏，主动点击眼睛才显示。保存默认选项后，后续调用采用新设置。
+
+## 斜杠命令
+
+选择能力后直接接自然语言。默认提供 **20 个研究命令＋1 个状态命令**；关闭某项能力后，对应入口会隐藏。`/ai4scholar` 继续作为 `/ai4s` 的兼容别名。
+
+| 命令 |用途 |
 |---|---|
 | `/ai4s` | 密钥状态、余额、默认来源和条数、功能索引 |
 | `/ai4s-search` | 统一论文检索，可用自然语言临时指定多个来源并去重 |
@@ -38,32 +107,56 @@
 | `/ai4s-pdf` | 获取 PDF 链接，不等于保存本地文件 |
 | `/ai4s-export` | 获取已知论文的引用格式和 BibTeX 等导出链接（Google Scholar） |
 | `/ai4s-cite` | 为一段文字补充真实引用 |
-| `/ai4s-draw` | 科研绘图、编辑、风格、合成、迭代、点评、SVG 和矢量化 |
+| `/ai4s-draw` | 科研绘图、编辑、风格转换、多图合成、SVG 与矢量化 |
 
-```text
-/ai4s-google 固态电池，2022 年以来的 10 篇
-/ai4s-search 同时用 Google Scholar 和 Semantic Scholar 查固态电池，合并去重
-/ai4s-author 用 Semantic Scholar 查 Geoffrey Hinton，先确认作者身份，再看资料和代表论文
-/ai4s-read 读刚才第三篇论文，重点解释研究方法
-/ai4s-snippets 查找固态电池界面阻抗的实验描述，返回 5 段
-/ai4s-references 查刚才第一篇引用的参考文献
-/ai4s-citations 查哪些论文引用了刚才第一篇
-/ai4s-export 获取刚才第一篇的 APA 引用格式和 BibTeX 链接
-/ai4s-patents 找宁德时代近五年在中国申请的固态电池专利
-```
+空的研究命令显示用法，不发起检索。来源专用命令会约束本次调用的来源，不改全局默认设置。需要多平台搜索时使用 `/ai4s-search` 并明确列出来源。
 
-空命令显示用法，不调用检索接口。研究命令作为当前对话的新请求排队，由已配置的模型理解自然语言并调用工具；结果进入对话历史，可以继续追问。执行前模型会简要说明理解出的来源和条件，遇到来源冲突或作者重名才澄清。来源命令在执行时校验来源，独立操作命令会校验操作类型，不修改全局设置。关闭对应能力时入口会隐藏，即使仍有可用的论文定位工具。旧 `/ai4scholar` 与 `/ai4s` 都可查看状态。
+当前 Harness 的论文、作者和专利结果卡片提供适用的后续操作。按钮会把带准确标识的请求填入草稿，不覆盖已有草稿；原文和 PDF 链接直接打开。
 
-默认提供 20 个研究命令，加上 `/ai4s` 状态入口共 21 个主命令；旧 `/ai4scholar` 继续兼容。Snippets 返回匹配片段，不是整篇全文；References 是向外引用，Citations 是被引关系，Export 是已有论文的引用格式，Cite 是为文字补充引用。
+![当前 /ai4s 账户与命令菜单，使用明确标注的演示余额](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png)
 
-当前 Harness 的论文、作者和专利结果卡片提供适用的后续操作。点击按钮会把带有准确标识的自然语言请求填入输入框，修改后发送即可；已有草稿会保留。PDF 和来源链接直接打开。旧版 Harness 没有对应卡片插槽时仍显示普通工具结果。
+*上图使用当前插件的真实卡片组件和本地演示余额，用于展示布局；不代表真实账号或实际消费。*
 
-Google Scholar 论文保留原始论文 ID、被引和版本 ID；引用格式接口只接受原始论文 ID，不接受 DOI、URL 或作者页面的 citationId。作者查询默认 Semantic Scholar，明确指定 Google Scholar 时使用其作者接口；Google 返回的是可用论文列表，不能据此声称是全部成果，也不提供 h-index。bioRxiv/medRxiv 按分类与时间浏览，不是关键词全文检索。专利结果独立于论文统一检索。
+## 来源与费用
 
-| 家族 | 工具 | 计费 |
+| 来源 / 能力 | AI4Scholar 积分 |
+|---|---|
+| Semantic Scholar、PubMed、Google Scholar、Google Patents、中文文献 | 按所调用的 API 计费 |
+| arXiv、bioRxiv、medRxiv | 免费，无需 AI4Scholar Key |
+| DOI 解析与可访问 PDF 的读取 | 本插件不收 API 积分；访问权限仍由文献来源决定 |
+| 自动引用、AI 科研配图 | 消耗积分；绘图模型、分辨率和质量会影响费用 |
+| 查询余额、显示命令菜单、检查更新 | 不收 API 积分 |
+
+多平台检索会分别请求所选来源；收费来源的新搜索和新分页会产生相应费用。积分记录以 API 实际回执为准。聊天模型的用量由 Harness 中配置的模型服务另行计费。
+
+工作台结果和最近搜索仅保留在当前客户端会话内。回看已经加载的分页不重复请求；刷新页面后需要重新搜索。
+
+## 使用边界与相关插件
+
+- **摘要、全文片段和整篇全文不同。** 中文文献返回题录与可用摘要；全文片段来自索引中的标题、摘要或正文；`read_*` 才会尝试获取可访问 PDF 并抽取全文。扫描版或纯图片 PDF 无法直接按文本抽取。
+- **PDF 命令返回链接。** `/ai4s-pdf` 不等于把文件保存到电脑。付费文章仍需要机构网络或相应访问权限。
+- **引用的方向与用途不同。** References 是“它引用了谁”，Citations 是“谁引用了它”；Export 获取已有论文的引用格式，Cite 为一段文字补引用。Google Scholar 引用格式需要该来源返回的原始论文 ID。
+- **bioRxiv / medRxiv 按分类与时间浏览。** 不应当作关键词全文搜索；专利结果也不混入统一论文检索。
+- **科研绘图：** 当前操作为 `smart / generate / edit / style / compose / svg / vectorize`。Seedream 5.5 支持 1K/2K、最多 10 张参考图；GPT 的 `quality` 与 Gemini 的 `thinking_level` 按模型使用。具体组合由 API 校验。
+- 需要独立画布、图层编辑与 PSD 导出，可另装 [PlotFig](https://ai4scholar.net/integrations/dsh-plotfig?src=dsh_ai4scholar)；需要保存为 HTML/CSV/JSON 的全文摘录报告，可另装 [Fulltext](https://ai4scholar.net/integrations/dsh-fulltext?src=dsh_ai4scholar)。这两个插件独立安装。
+
+## AI4Scholar 网站
+
+[获取 API Key](https://ai4scholar.net?src=dsh_ai4scholar) · [插件安装指南](https://ai4scholar.net/integrations/dsh-ai4scholar?src=dsh_ai4scholar) · [定价](https://ai4scholar.net/pricing?src=dsh_ai4scholar)
+
+[![AI4Scholar 当前公开首页，2026-11-23](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg)](https://ai4scholar.net?src=dsh_ai4scholar)
+
+*网站公开首页实拍；网页工作区的全部功能不等于本插件提供的工具范围。*
+
+## 工具与高级配置
+
+<details>
+<summary>展开全部 43 个原生工具</summary>
+
+| 家族 |工具 | 计费 |
 |---|---|---|
 | **论文检索** | `search_papers`——默认只查 Semantic Scholar；通过 `sources` 按需选择 PubMed、arXiv、Google Scholar、中文文献。多平台结果按 DOI / arXiv id / PMID / 标题去重合并，同时命中的排前面 | 按所选平台计 |
-| **Semantic Scholar**（2 亿+ 论文，全学科） | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
+| **Semantic Scholar** | `search_semantic`、`search_semantic_bulk`、`search_semantic_snippets`（全文片段）、`search_semantic_paper_match`（标题→论文）、`get_semantic_paper_detail`、`get_semantic_paper_batch`、`get_semantic_citations`、`get_semantic_references`、`get_semantic_paper_authors`、`search_semantic_authors`、`get_semantic_author_detail`、`get_semantic_author_batch`、`get_semantic_author_papers`、`get_semantic_recommendations`、`get_semantic_recommendations_for_paper`、`download_semantic`、`read_semantic_paper` | 积分 |
 | **PubMed**（生物医学） | `search_pubmed`、`get_pubmed_paper_detail`、`get_pubmed_paper_batch`、`get_pubmed_citations`、`get_pubmed_related` | 积分 |
 | **中文文献**（期刊、学位论文、会议论文；题录与可用摘要） | `search_chinese` | 积分 |
 | **Google Scholar**（论文、学者与引用格式） | `search_google_scholar`、`search_google_scholar_profiles`、`get_google_scholar_author`、`get_google_scholar_citation` | 积分 |
@@ -74,81 +167,10 @@ Google Scholar 论文保留原始论文 ID、被引和版本 ID；引用格式�
 | **写作与绘图** | `auto_cite`（自动插入真实引用 + 参考文献 + BibTeX）、`sci_draw`（生成 / 编辑 / 风格 / 合成 / SVG / 矢量化科研图） | 积分 |
 | **账户** | `get_ai4scholar_credits`，以及斜杠命令 `/ai4scholar` | 免费 |
 
-**优先单平台检索。** 出厂设置下，不传 `sources`（或传 `[]`）时只查 Semantic Scholar；在插件页面修改默认平台后，同样的调用会按你的设置同时查询所选平台。生物医学或临床主题可按需选择 `sources: ["pubmed"]`。明确要求扩大覆盖面，或单平台结果不足时，再指定多个来源，例如 `["semantic-scholar", "pubmed"]`。各收费 API 请求的积分会累加；Google Scholar 按页计费，arXiv 免费。如果配置的默认平台全部被关闭，则按 Semantic Scholar、PubMed、arXiv、Google Scholar、中文文献的顺序，选择第一个已开启的平台。
+</details>
 
-所有论文列表类工具返回统一的结构——标题、作者、年份、期刊/会议、被引数、DOI/PMID/arXiv 等标识、链接、开放获取 PDF、摘要——模型（以及 Code Mode 程序）可以跨平台链式调用而无需特判。结果在 dsh Web UI 中渲染为引用卡片；全文类工具按片段返回（`offset` / `max_chars`），40 页的论文不会一次冲爆上下文。
-
-**积分看得见。** 对话里每张计费工具卡片的标题都带本次消耗（`Semantic Scholar: protein folding · 10 credits · 4,990 left`）；模型看到的结果末尾有 `AI4Scholar credits — this call: 10 · this session: 40 · remaining: 4,960`（来自 API 的 `X-Credits-*` 响应头），并且提示词要求模型在用了计费工具的回合结尾用一句话汇报本轮消耗与余额；`/ai4scholar` 渲染成余额卡片（可用积分、明细、会员、Key 状态、本会话消耗），`get_ai4scholar_credits` 给模型同样的数字。免费源（arXiv、bioRxiv/medRxiv、DOI）不带积分行。
-
-**中文文献。** `search_chinese` 支持中文关键词、文献类型（期刊／学位论文／会议论文）、年份筛选、排序和分页，也可以在 `search_papers` 中通过 `sources: ["chinese"]` 使用；出厂默认不勾选。中英文联合检索可传入 `query: "bird migration"`、`chinese_query: "鸟类迁徙"`、`sources: ["semantic-scholar", "chinese"]`。各来源按共同 DOI 和规范化标题去重；较短的中文标题还需年份和第一作者相同，DOI 不同的记录不会仅凭标题合并。中英文标题不同又没有共同标识时，可能仍保留两条。中文文献目前返回题录和可用摘要，不提供全文下载。
-
-## 截图
-
-| API Key 卡片（旧版设置界面） | `/ai4scholar` 余额卡 |
-|---|---|
-| ![AI4Scholar 设置卡片](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/settings-card.png) | ![余额卡](https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/balance-card.png) |
-
-## 安装
-
-**快速开始**（macOS / Linux；Windows 用 PowerShell 同理）：
-
-```sh
-# 0. 前置：Node.js ≥ 22.19（或 ≥ 24）和 pnpm（dsh 用 pnpm 管理插件）
-node -v
-npm i -g pnpm                     # 已有可跳过
-
-# 1. 安装 DeepSeek Harness
-npm i -g @deepseek-ai/dsh
-dsh --version
-
-# 2. 安装本插件（装进 web profile；命令行一次性任务用 --profile headless）
-dsh plugin --profile web add dsh-ai4scholar
-
-# 3. 启动
-dsh web                           # 打印 http://127.0.0.1:3080
-```
-
-然后在网页里配置一次：
-
-1. **设置 → 模型**：填 DeepSeek API Key（[platform.deepseek.com](https://platform.deepseek.com) 获取）。
-2. **插件 → 已安装 → dsh-ai4scholar**（也可以打开 **设置 → AI4Scholar**）：粘贴 AI4Scholar API Key（[ai4scholar.net](https://ai4scholar.net?src=dsh_ai4scholar) 获取），点 **保存**。卡片会把它存进 dsh 的凭据存储（`$DSH_HOME/.credentials.yaml`，权限 0600，和模型页保存 DeepSeek Key 是同一个地方），立刻测试（`✓ Key 有效 · 可用积分 89,419`），下一次工具调用即生效，无需重启；「刷新」可随时再测。已保存的密钥默认隐藏，右侧显示「密钥已配置」；点击眼睛可显示或隐藏。收起、离开页面或切换到其他窗口后会清除已显示的明文。
-
-新版 DSH Desktop 在左侧 **插件 → 已安装** 中点击 **dsh-ai4scholar**，详情页就会直接显示 Key 表单。**设置 → 内置插件** 现在是宿主清单，不再承载这个表单。旧版 Harness 仍保留原来的 **设置 → 插件 → AI4Scholar** 卡片。已保存的 Key 继续有效，各入口使用同一个凭据引用。
-
-0.6.0 新增侧栏 **Ai4Scholar** 工作台。0.6.1 起，入口使用随主题变色的单色放大镜，与其他导航图标保持一致。选择来源、输入关键词即可直接搜索，无需先发起聊天或配置聊天模型。搜索后左侧显示结果列表，右侧显示所选文献详情；右上角的**设置**与原来的两个入口共用 API Key 和默认参数。筛选按来源提供条数、可用的年份范围和日期排序；bioRxiv/medRxiv 使用学科分类与最近天数浏览。全文片段和专利分别展示对应内容。结果与最近搜索仅保存在本次运行的内存中，回看已加载页面不会重复请求；收费来源的新搜索与新分页会使用 API 积分，结果显示接口实际返回的消耗。工作台需要宿主的认证插件 Fetch 通道，已在 Harness 0.2.2-rc.1 验证；旧版宿主仍可使用原有工具和设置入口。
-
-**设置**旁的**检查更新**会查询 npm 最新正式版并显示当前与最新版本；本地测试版领先时会明确提示，不建议降级。可查看发布说明，发现新版本后可进入**管理插件**。检查本身不会安装或替换插件，也不消耗 API 积分。
-
-选一个工作区目录就可以直接提问了。当前 Desktop 从注册表安装的版本，可在 **插件 → dsh-ai4scholar → 版本** 中更新。Desktop 自行管理 profile，CLI 不会修改它。替换本地测试包时，在 Desktop 卸载该包，再用**添加插件**输入 `dsh-ai4scholar@0.7.0` 并启用；API Key 保留在共用凭据存储中。Web 使用 `dsh plugin --profile web add dsh-ai4scholar@latest` 并重启 `dsh web`。
-
-更喜欢文件或 CI 方式？插件解析的是凭据引用 `AI4SCHOLAR_API_KEY`，以下途径同样有效（优先级从高到低）：启动 dsh 的 shell 里 `export AI4SCHOLAR_API_KEY=…` · `$DSH_HOME/.credentials.yaml` 中一行 · 项目目录或 `$DSH_HOME` 下的 `.env` 中一行。卡片会显示当前 Key 来自哪一层；来自环境变量时卡片变为只读。headless 没有设置页，请用其中一种。
-
-每次发布后会请求 npmmirror 同步，镜像可用性需单独核验，可能晚于 npm 官方源。
-
-不启动也能验证配置层：`dsh --profile web --dump-config` 会打印出 `# == dsh-ai4scholar` 一节。
-
-然后直接对话：
-
-> 帮我找 2023 年以来 CRISPR 碱基编辑治疗镰状细胞病的论文，比较它们的递送方式。
-
-> 在 PubMed 上按日期搜索 2022 年后 GLP-1 受体激动剂与心血管结局的研究。
-
-> "Attention Is All You Need" 这篇论文的 DOI 和被引数是多少？
-
-## 配置
-
-### 在插件页面里改
-
-打开 **插件 → dsh-ai4scholar**（或 **设置 → AI4Scholar**，两处改的是同一份配置），API Key 下面可以改：
-
-- **检索设置**：勾选模型没指定时 search_papers 查的平台（默认只查 Semantic Scholar），并给每个平台设返回条数。Semantic Scholar、PubMed、中文文献每次最多 100 条、各计费一次；arXiv 每次最多 100 条且免费。Google Scholar 每次返回 1–10 条、计 1 积分，模型需要更多时保持相同条数并用 nextOffset 翻页。所有来源都能通过独立检索工具继续翻页；收费来源每多请求一页都会计费。这里的条数也是独立检索工具的默认条数。
-- **结果内容**：提供给模型的摘要长度（0–5000 字符，默认 600）、read_* 每次读取的全文长度（2,000–200,000，默认 60,000）、是否在结果里显示积分。
-- **命令卡片**：开启 **在对话末尾显示命令卡片**（默认关闭）并保存，最新回复结束后就会显示命令菜单。点击命令填入当前对话的草稿，补充需求后再发送，已有草稿会保留。发起新一轮对话后，上一轮菜单自动隐藏。展示卡片只读取本机命令信息和本轮已有积分记录，不请求 AI4Scholar 或模型。需要宿主的回复末尾扩展和认证插件 Fetch 通道；旧宿主仍可手动输入 `/ai4s` 或 `/ai4scholar` 查看原有卡片。
-- **引用与配图**：auto_cite 的参考文献格式（默认 IEEE）和是否排除预印本；sci_draw 的配图模型（默认 Flash 3.1）和分辨率（默认 2K）。
-
-模型在单次调用里仍可以自己指定这些参数。点 **保存** 会把改动写进 profile 的 `cordis.patch.yml`，插件随即按新设置重新加载，下一次工具调用和新对话都会生效。**恢复默认** 会删掉这些覆盖。这个页面需要 DeepSeek Harness 0.2.1 或更高版本；旧版本会提示你改配置文件。
-
-### 在 profile 配置文件里改
+<details>
+<summary>在 profile 文件中配置默认值与凭据</summary>
 
 组合包只插入一行（`id: ai4scholar`），默认值如下。在你 profile 的 `cordis.patch.yml` 中覆盖（patch 会整体替换 `config`，请把要保留的键一起写上）。DeepSeek Harness 桌面版在 macOS 上的文件是 `~/.dsh/profiles/desktop/cordis.patch.yml`；命令行版是 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`：
 
@@ -203,13 +225,7 @@ API Key 通过 `ctx.credentials` **按调用**解析：新存入或轮换的 Key
 
 设置卡片固定编辑 `AI4SCHOLAR_API_KEY`（浏览器半侧拿不到行配置）；覆盖了 `apiKeyEnv` 的部署请改用环境变量或凭据文件管理该引用。会话累计消耗是进程内计数（dsh 重启后归零）；余额本身始终来自 API。
 
-## 与 dsh 的契合方式
-
-- 一个包、两个半侧：Node 半侧注册工具；浏览器半侧（`exports["./client"]`，由 `dsh.client` 声明）通过 `plugins.bundle.config` / `plugins.row.config` 贡献原生插件详情页，通过 `settings.section` 贡献独立设置页，并兼容旧版 `settings.plugin.item` 卡片，通过凭据 API 保存密钥。主动点击显示时，使用宿主认证且仅允许 owner 访问的 `POST /api/ai4scholar/key/reveal` 接口，响应禁止缓存；该接口不是模型工具，也不会把密钥加入模型上下文。没有这一受保护通道的旧宿主不支持显示已保存的密钥。
-- 工具通过 `defineTool` 注册到 `ctx.tools`：参数有类型且经 schema 校验；每次调用返回规范 JSON 值（`{ source, query, total, papers[], truncated, nextOffset? }`）；给模型看的是 Markdown 渲染；给 Web UI 的是 `web` 结果卡片（结构化来源）。
-- 一段 `tool:ai4scholar` system prompt 告诉模型何时用哪个平台、如何用 DOI/链接引用。
-- 一切皆 effect：卸载插件（或修改其配置触发 HMR）会同时撤销全部工具和提示词片段。
-- 除工具结果外不新增任何模型可见输入，会话仍可从日志完整回放。
+</details>
 
 ## 开发
 
@@ -227,16 +243,6 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 ```
 
 也支持 `dsh plugin add github:<you>/dsh-ai4scholar`：`prepare` 脚本会从源码构建 `lib/`，pnpm 会要求你在 profile 的 `pnpm-workspace.yaml` 中通过 `allowBuilds` 授权一次。
-
-## 说明
-
-- `download_by_doi` / `read_by_doi` 经 doi.org 解析并尝试已知出版商的 PDF 路径（Elsevier、Springer/Nature、Wiley、T&F、MDPI、IEEE、ACM、ACS、RSC、PLOS、Frontiers、bioRxiv/medRxiv、arXiv）。付费文章只有当 dsh 运行在有机构权限的网络上才能下载；失败时会给出落地页链接，方便用户手动获取。
-- 全文抽取使用进程内的 `pdf-parse`（pdf.js）；扫描版/纯图片 PDF 会明确报错而不是返回空文本。
-- 同一套工具已提供 [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw)、[Codex](https://github.com/literaf/ai4scholar-plugin-codex) 和 [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes) 版本。
-
-`/ai4s-draw` / `sci_draw` 支持独立的 `quality`（GPT：low/medium/high，GPT Image 2.6 另支持 xhigh/max）与 `image_size`；Gemini 使用 `thinking_level`（banana21：minimal/medium/high；flash31/bananalite：minimal/high）。其他模型省略 quality。质量和分辨率都会影响积分，具体组合由 API 校验并计费；旧调用省略 quality 时保留原有行为。
-
-Seedream 5.5 可通过 `model: "seedream55"` 或配图模型设置选择，支持 1K／2K 的生成、编辑、风格转换和多图组合，最多接收 10 张参考图（可访问的链接或图片 Data URI）。省略 `quality` 和 `thinking_level`。从 4K 模型切换过来时，继承的分辨率会自动调整为 2K；显式指定 4K 或 512px 会在请求 API 前被拦截。例如：`/ai4s-draw 用 Seedream 5.5 画一张带中文标注的细胞结构图，2K`。
 
 ## 许可证
 
