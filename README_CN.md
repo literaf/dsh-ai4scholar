@@ -1,3 +1,5 @@
+> **0.7.0 许可变更：** 采用 AGPL-3.0-only，可另行协商商业授权；此前 MIT 授权继续有效。[说明](LICENSING.md)。
+
 <p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
@@ -5,7 +7,7 @@
 
 [English](README.md) | 中文
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
@@ -117,7 +119,7 @@ dsh web                           # 打印 http://127.0.0.1:3080
 
 **设置**旁的**检查更新**会查询 npm 最新正式版并显示当前与最新版本；本地测试版领先时会明确提示，不建议降级。可查看发布说明，发现新版本后可进入**管理插件**。检查本身不会安装或替换插件，也不消耗 API 积分。
 
-选一个工作区目录就可以直接提问了。当前 Desktop 从注册表安装的版本，可在 **插件 → dsh-ai4scholar → 版本** 中更新。Desktop 自行管理 profile，CLI 不会修改它。替换本地测试包时，在 Desktop 卸载该包，再用**添加插件**输入 `dsh-ai4scholar@0.6.2` 并启用；API Key 保留在共用凭据存储中。Web 使用 `dsh plugin --profile web add dsh-ai4scholar@latest` 并重启 `dsh web`。
+选一个工作区目录就可以直接提问了。当前 Desktop 从注册表安装的版本，可在 **插件 → dsh-ai4scholar → 版本** 中更新。Desktop 自行管理 profile，CLI 不会修改它。替换本地测试包时，在 Desktop 卸载该包，再用**添加插件**输入 `dsh-ai4scholar@0.7.0` 并启用；API Key 保留在共用凭据存储中。Web 使用 `dsh plugin --profile web add dsh-ai4scholar@latest` 并重启 `dsh web`。
 
 更喜欢文件或 CI 方式？插件解析的是凭据引用 `AI4SCHOLAR_API_KEY`，以下途径同样有效（优先级从高到低）：启动 dsh 的 shell 里 `export AI4SCHOLAR_API_KEY=…` · `$DSH_HOME/.credentials.yaml` 中一行 · 项目目录或 `$DSH_HOME` 下的 `.env` 中一行。卡片会显示当前 Key 来自哪一层；来自环境变量时卡片变为只读。headless 没有设置页，请用其中一种。
 
@@ -232,10 +234,13 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 - 全文抽取使用进程内的 `pdf-parse`（pdf.js）；扫描版/纯图片 PDF 会明确报错而不是返回空文本。
 - 同一套工具已提供 [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw)、[Codex](https://github.com/literaf/ai4scholar-plugin-codex) 和 [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes) 版本。
 
-## 许可证
-
-MIT
 
 `/ai4s-draw` / `sci_draw` 支持独立的 `quality`（GPT：low/medium/high，GPT Image 2.6 另支持 xhigh/max）与 `image_size`；Gemini 使用 `thinking_level`（banana21：minimal/medium/high；flash31/bananalite：minimal/high）。其他模型省略 quality。质量和分辨率都会影响积分，具体组合由 API 校验并计费；旧调用省略 quality 时保留原有行为。
 
 Seedream 5.5 可通过 `model: "seedream55"` 或配图模型设置选择，支持 1K／2K 的生成、编辑、风格转换和多图组合，最多接收 10 张参考图（可访问的链接或图片 Data URI）。省略 `quality` 和 `thinking_level`。从 4K 模型切换过来时，继承的分辨率会自动调整为 2K；显式指定 4K 或 512px 会在请求 API 前被拦截。例如：`/ai4s-draw 用 Seedream 5.5 画一张带中文标注的细胞结构图，2K`。
+
+## 许可证
+
+从 **0.7.0** 起，本插件中由 AI4Scholar 拥有权利的代码采用 [AGPL-3.0-only](LICENSE)。**遵守 AGPL 的商业使用是允许的**；需要其他条件时，可就 AI4Scholar 拥有的权利另行协商[书面商业授权](COMMERCIAL-LICENSE.md)。
+
+**0.6.6 及更早版本**保留原 MIT 授权，第三方许可继续适用。详见[许可说明](LICENSING.md)、[第三方声明](THIRD_PARTY_NOTICES.md)和[对应源码](SOURCE.md)。

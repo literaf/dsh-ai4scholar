@@ -1,3 +1,5 @@
+> **License change in 0.7.0:** AGPL-3.0-only with separate commercial licensing. Earlier MIT grants remain valid. [Details](LICENSING.md).
+
 <p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/logo.svg" width="120" alt="AI4Scholar"></a></p>
 <p align="center"><strong>dsh-ai4scholar</strong></p>
 
@@ -5,7 +7,7 @@
 
 English | [中文](README_CN.md)
 
-[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-MIT-green)
+[![npm](https://img.shields.io/npm/v/dsh-ai4scholar?label=npm)](https://www.npmjs.com/package/dsh-ai4scholar) [![CI](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml/badge.svg)](https://github.com/literaf/dsh-ai4scholar/actions/workflows/ci.yml) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-blue)](https://github.com/topics/dsh-plugin) ![license](https://img.shields.io/badge/license-AGPL--3.0--only-blue)
 
 <p align="center"><a href="https://ai4scholar.net?src=dsh_ai4scholar"><img src="https://raw.githubusercontent.com/literaf/dsh-ai4scholar/main/docs/ai4scholar-home.jpg" alt="ai4scholar.net" width="100%"></a></p>
 
@@ -117,7 +119,7 @@ Version 0.6.0 adds **Ai4Scholar** to the sidebar. Since 0.6.1, the sidebar uses 
 
 **Check for updates**, beside Settings, checks the latest stable release on npm and shows both versions. A newer local test build is shown as ahead, never as a downgrade target. Release notes are linked; when a new version exists, **Manage plugin** opens the host’s plugin page. Checking does not install anything or use API credits.
 
-Pick a workspace folder and ask away. On current Desktop, use **Plugins → dsh-ai4scholar → Version** to update a registry installation. Desktop manages its profile itself; the CLI does not modify it. To replace a local test package, uninstall it in Desktop and use **Add plugin** with `dsh-ai4scholar@0.6.2`, then enable it. Your API key stays in the shared credentials store. For the Web profile, use `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`.
+Pick a workspace folder and ask away. On current Desktop, use **Plugins → dsh-ai4scholar → Version** to update a registry installation. Desktop manages its profile itself; the CLI does not modify it. To replace a local test package, uninstall it in Desktop and use **Add plugin** with `dsh-ai4scholar@0.7.0`, then enable it. Your API key stays in the shared credentials store. For the Web profile, use `dsh plugin --profile web add dsh-ai4scholar@latest` and restart `dsh web`.
 
 Prefer files or CI? The plugin resolves the credential reference `AI4SCHOLAR_API_KEY`, so any of these also work (highest precedence first): `export AI4SCHOLAR_API_KEY=…` in the shell that launches dsh · a line in `$DSH_HOME/.credentials.yaml` · a line in the project or `$DSH_HOME/.env`. The card reports which layer is supplying the key and goes read-only when the environment does. Headless has no settings page, so use one of these there.
 
@@ -232,10 +234,13 @@ dsh plugin --profile web add /absolute/path/to/dsh-ai4scholar
 - Full-text extraction uses `pdf-parse` (pdf.js) in-process; scanned/image-only PDFs yield an explicit error rather than empty text.
 - The same tool set ships for [OpenClaw](https://github.com/literaf/ai4scholar-plugin-openclaw), [Codex](https://github.com/literaf/ai4scholar-plugin-codex) and [Hermes](https://github.com/literaf/ai4scholar-plugin-hermes).
 
-## License
-
-MIT
 
 `/ai4s-draw` / `sci_draw` also accepts `quality` (GPT: low/medium/high, plus xhigh/max on GPT Image 2.6) independently of `image_size`, and `thinking_level` (Gemini: banana21 minimal/medium/high; flash31/bananalite minimal/high). Omit quality for other models. Higher quality/resolution can cost more; the API validates and charges the selected combination. Existing calls that omit quality keep their previous behavior.
 
 Seedream 5.5 is available as `model: "seedream55"` and in the figure-model settings. It supports 1K/2K generation, editing, style transfer and composition with up to 10 reference images (accessible URLs or image data URIs). Omit `quality` and `thinking_level`. When switching from a 4K model, an inherited resolution becomes 2K; explicitly requesting 4K or 512px is rejected before an API call. Example: `/ai4s-draw Use Seedream 5.5 to draw a cell structure diagram with Chinese labels at 2K`.
+
+## License
+
+Starting with **0.7.0**, this plugin's AI4Scholar-authored code uses [AGPL-3.0-only](LICENSE). **Commercial use is allowed under AGPL**; a separate written [commercial license](COMMERCIAL-LICENSE.md) is available for other terms covering rights AI4Scholar owns.
+
+Earlier releases through **0.6.6** keep their original MIT grants. Third-party licenses remain applicable. See [licensing details](LICENSING.md), [third-party notices](THIRD_PARTY_NOTICES.md) and [corresponding source](SOURCE.md).
