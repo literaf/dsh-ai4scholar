@@ -4,6 +4,11 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+### Documentation
+- Rework both READMEs around the current sidebar workspace and chat workflows, with Desktop-first installation and clearer source, billing and full-text boundaries.
+- Replace the old README logo with the current Ai4 mark and refresh screenshots of the Harness workspace/settings and public website; use explicitly labeled demonstration values for the account/command card.
+- Remove retired drawing operations from the command descriptions, refresh the native Chinese plugin guide, and declare current marketplace screenshots.
+
 ## [0.7.0] - 2026-11-23
 
 ### Licensing change
