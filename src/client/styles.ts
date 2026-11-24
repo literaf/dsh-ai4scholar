@@ -229,8 +229,8 @@ export const CSS = `
 .${cls.keyToggle}:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .${cls.keyToggle}:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
 .${cls.keyToggle}:disabled { opacity: .5; cursor: default; }
-.${cls.keyAccess} { display: flex; align-items: baseline; justify-content: flex-end; flex-wrap: wrap; gap: 4px 10px; }
-.${cls.keyAccess} > * { white-space: nowrap; }
+.${cls.keyAccess} { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; max-width: 100%; margin-left: auto; }
+.${cls.keyAccess} > .${cls.button} { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; color: var(--dsw-alias-bg-layer-3); text-decoration: none; }
 .${cls.link} { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-link, var(--dsw-alias-brand-primary)); text-decoration: none; }
 .${cls.link}:hover { text-decoration: underline; }
 .${cls.linkIcon} { width: 12px; height: 12px; }
@@ -250,7 +250,7 @@ export const CSS = `
 .${cls.pageTitle} { margin: 0; font-size: 20px; font-weight: 500; line-height: 28px; color: var(--dsw-alias-label-primary); }
 .${cls.pageIntro} { margin: 0; font-size: 14px; line-height: 22px; color: var(--dsw-alias-label-secondary); }
 .${cls.group} { display: flex; flex-direction: column; gap: 12px; }
-.${cls.groupHead} { display: flex; align-items: baseline; gap: 12px; }
+.${cls.groupHead} { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .${cls.groupText} { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .${cls.groupTitle} { margin: 0; font-size: 14px; font-weight: 500; line-height: 20px; color: var(--dsw-alias-label-primary); }
 .${cls.groupIntro} { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary); }
@@ -350,7 +350,6 @@ export const CSS = `
 .${cls.segment}:focus-visible { outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, var(--dsw-alias-brand-primary))); outline-offset: 1px; }
 
 @media (max-width: 560px) {
-  .${cls.groupHead} { flex-wrap: wrap; }
   .${cls.rowInline} { flex-direction: column; align-items: stretch; }
   .${cls.numberBox}, .${cls.selectBox} { width: 100%; }
   .${cls.inputRow} { flex-wrap: wrap; }

@@ -36,6 +36,7 @@ export type Ai4ScholarLocaleKey =
   | 'apiKeyLabel'
   | 'apiKeyPlaceholder'
   | 'getKey'
+  | 'getKeyHint'
   | 'keyOffer'
   | 'configured'
   | 'configuredVia'
@@ -180,7 +181,8 @@ export const en: Record<Ai4ScholarLocaleKey, string> = {
   description: 'Find papers on Semantic Scholar, PubMed, Google Scholar, arXiv, bioRxiv/medRxiv, and Chinese literature, read full texts, and generate citations and figures. Powered by ai4scholar.net.',
   apiKeyLabel: 'API key',
   apiKeyPlaceholder: 'sk-user-…',
-  getKey: 'Ai4Scholar',
+  getKey: 'Get API key',
+  getKeyHint: 'Open AI4Scholar, sign in, then create a key in the Open Platform.',
   keyOffer: 'Claim 100 credits on the official site',
   configured: 'Configured',
   configuredVia: 'Configured via {source}',
@@ -318,7 +320,8 @@ export const zh: Record<Ai4ScholarLocaleKey, string> = {
   description: '在 Semantic Scholar、PubMed、Google Scholar、arXiv、bioRxiv/medRxiv 及中文文献 上找论文，读取全文，生成引用和科研配图。由 ai4scholar.net 提供。',
   apiKeyLabel: '密钥（API Key）',
   apiKeyPlaceholder: 'sk-user-…',
-  getKey: 'Ai4Scholar',
+  getKey: '获取密钥',
+  getKeyHint: '前往 AI4Scholar 首页，登录后在「开放平台」创建密钥',
   keyOffer: '官网领取100积分',
   configured: '已配置',
   configuredVia: '已配置（来源：{source}）',

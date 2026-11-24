@@ -43,7 +43,7 @@ English | [中文](README_CN.md)
 ### DeepSeek Harness Desktop
 
 1. Open **Plugins → Add plugin**, enter `dsh-ai4scholar`, install, and enable it.
-2. Open **Ai4Scholar → Settings** in the sidebar. For billed sources, paste an API key from [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar) and save. It takes effect on the next tool call.
+2. Open **Ai4Scholar → Settings** in the sidebar. For billed sources, click **Get API key**, sign in to [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar), and create a key in the Open Platform. Paste it into the settings field and save. It takes effect on the next tool call.
 3. Return to the workspace, choose a source, and search. For natural-language research, configure a Harness chat model and send a request or an `/ai4s-*` command.
 
 Workspace settings, the plugin detail page, and **Settings → AI4Scholar** share the same key and defaults. The current Desktop's built-in plugin inventory does not contain this plugin's settings form.

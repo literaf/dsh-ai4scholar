@@ -50,7 +50,7 @@
 ### DeepSeek Harness Desktop
 
 1. 在 **插件 → 添加插件** 中输入 `dsh-ai4scholar`，安装并启用。
-2. 打开侧栏 **Ai4Scholar → 设置**。使用收费来源时，粘贴从 [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar) 获取的 API Key 并保存；密钥在下一次工具调用即生效。
+2. 打开侧栏 **Ai4Scholar → 设置**。使用收费来源时，点击 **获取密钥**，登录 [AI4Scholar](https://ai4scholar.net?src=dsh_ai4scholar) 后在「开放平台」创建密钥，再粘贴回设置页并保存；密钥在下一次工具调用即生效。
 3. 返回工作台选择来源开始检索。需要自然语言研究时，再配置 Harness 的聊天模型，在对话中输入需求或 `/ai4s-*` 命令。
 
 工作台设置、插件详情页和 **设置 → AI4Scholar** 共用密钥与默认选项。当前 Desktop 的内置插件清单不承载本插件的设置表单。

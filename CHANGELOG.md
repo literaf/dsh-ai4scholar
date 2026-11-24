@@ -4,10 +4,18 @@ All notable changes to `dsh-ai4scholar` are recorded here. The format follows [K
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-24
+
+### Changed
+- Make the API key entry a prominent “Get API key” button across settings, the workspace and the legacy card, following PlotFig. Add a sign-in/create-key tooltip in English and Chinese while keeping the credit offer and referral link.
+
 ### Documentation
 - Rework both READMEs around the current sidebar workspace and chat workflows, with Desktop-first installation and clearer source, billing and full-text boundaries.
 - Replace the old README logo with the current Ai4 mark and refresh screenshots of the Harness workspace/settings and public website; use explicitly labeled demonstration values for the account/command card.
 - Remove retired drawing operations from the command descriptions, refresh the native Chinese plugin guide, and declare current marketplace screenshots.
+
+### Validation and limits
+- Check the key-entry layout with mocked settings in English/Chinese, light/dark themes, and narrow windows. No new live paid API request was made for this interface change.
 
 ## [0.7.0] - 2026-11-23
 

@@ -284,11 +284,11 @@ function ExternalIcon(props: { className: string }) {
 function KeyAccessLink({ t }: PropsLocale<'ai4scholar'>) {
   return (
     <div className={cls.keyAccess}>
-      <a className={cls.link} href="https://ai4scholar.net?src=dsh_ai4scholar" target="_blank" rel="noreferrer">
+      <span className={cls.hint}>{t('keyOffer')}</span>
+      <a className={`${cls.button} ${cls.buttonPrimary}`} href="https://ai4scholar.net?src=dsh_ai4scholar" target="_blank" rel="noopener noreferrer" title={t('getKeyHint')}>
         {t('getKey')}
         <ExternalIcon className={cls.linkIcon} />
       </a>
-      <span className={cls.hint}>{t('keyOffer')}</span>
     </div>
   )
 }
